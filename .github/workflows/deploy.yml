@@ -87,7 +87,7 @@ jobs:
             export DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
 
-            echo "${{ secrets.GHCR_TOKEN }}" | sudo -E docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo -E docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             sudo -E docker compose pull
             sudo -E docker compose up -d --remove-orphans
