@@ -81,13 +81,13 @@ jobs:
           script: |
             cd ~/homebudget
 
-            echo "${{ secrets.GHCR_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
             export DOCKER_IMAGE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):latest
             export DB_USERNAME=${{ secrets.DB_USERNAME }}
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             export DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
+
+            echo "${{ secrets.GHCR_TOKEN }}" | sudo -E docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             sudo -E docker compose pull
             sudo -E docker compose up -d --remove-orphans
