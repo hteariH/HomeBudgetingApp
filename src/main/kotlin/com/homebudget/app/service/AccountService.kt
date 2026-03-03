@@ -13,20 +13,23 @@ import java.time.LocalDateTime
 @Transactional
 class AccountService(
     private val accountRepo: AccountRepository,
-    private val currencyService: CurrencyService
+    private val currencyService: CurrencyService,
+    private val securityUtils: com.homebudget.app.security.SecurityUtils
 ) {
-    fun findAll(): List<Account> = accountRepo.findAll()
+    fun findAll(): List<Account> = accountRepo.findAllByUser(securityUtils.getCurrentUser())
 
-    fun findById(id: Long): Account = accountRepo.findByIdOrNull(id)
+    fun findById(id: Long): Account = accountRepo.findByIdAndUser(id, securityUtils.getCurrentUser())
         ?: throw NoSuchElementException("Account not found: $id")
 
     fun create(req: CreateAccountRequest): Account {
+        val user = securityUtils.getCurrentUser()
         val currency = currencyService.findById(req.currencyId)
         return accountRepo.save(
             Account(
                 name = req.name,
                 type = req.type,
                 balance = req.initialBalance,
+                user = user,
                 currency = currency,
                 description = req.description,
                 color = req.color

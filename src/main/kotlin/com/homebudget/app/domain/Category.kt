@@ -17,6 +17,10 @@ data class Category(
     @Column(nullable = false)
     var name: String,
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    var user: User,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var type: CategoryType,

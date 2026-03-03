@@ -24,6 +24,7 @@ out/
 
 # Node.js / Frontend
 node_modules/
+src/main/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

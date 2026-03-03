@@ -2,6 +2,8 @@ package com.homebudget.app.service
 
 import com.homebudget.app.domain.*
 import com.homebudget.app.dto.*
+import com.homebudget.app.domain.Transfer
+import com.homebudget.app.dto.TransferResponse
 
 // ───── Currency Mappers ─────
 fun Currency.toResponse() = CurrencyResponse(
@@ -36,6 +38,15 @@ fun Category.toResponse() = CategoryResponse(
     color = color,
     description = description,
     createdAt = createdAt
+)
+
+fun User.toResponse() = UserResponse(
+    id = id,
+    email = email,
+    firstName = firstName,
+    lastName = lastName,
+    role = role,
+    baseCurrency = baseCurrency?.toResponse()
 )
 
 // ───── Transaction Mappers ─────

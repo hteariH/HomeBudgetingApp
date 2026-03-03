@@ -138,7 +138,6 @@ data class CreateTransferRequest(
     @field:Positive val toAccountId: Long,
     @field:Positive val fromAmount: BigDecimal,
     @field:Positive val toAmount: BigDecimal,
-    @field:Positive val exchangeRate: BigDecimal = BigDecimal.ONE,
     val date: LocalDate,
     val description: String? = null
 )
@@ -151,4 +150,36 @@ data class PagedResponse<T>(
     val size: Int,
     val totalElements: Long,
     val totalPages: Int
+)
+
+// ───────── Auth DTOs ─────────
+
+data class LoginRequest(
+    @field:Email @field:NotBlank val email: String,
+    @field:NotBlank val password: String
+)
+
+data class RegisterRequest(
+    @field:Email @field:NotBlank val email: String,
+    @field:NotBlank @field:Size(min = 6) val password: String,
+    @field:NotBlank val firstName: String,
+    @field:NotBlank val lastName: String,
+    val baseCurrencyId: Long? = null
+)
+
+data class JwtResponse(
+    val token: String,
+    val email: String,
+    val firstName: String,
+    val lastName: String,
+    val role: String
+)
+
+data class UserResponse(
+    val id: Long,
+    val email: String,
+    val firstName: String,
+    val lastName: String,
+    val role: Role,
+    val baseCurrency: CurrencyResponse?
 )

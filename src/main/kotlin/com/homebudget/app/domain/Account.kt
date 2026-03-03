@@ -25,6 +25,10 @@ data class Account(
     @Column(nullable = false, precision = 18, scale = 2)
     var balance: BigDecimal = BigDecimal.ZERO,
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    var user: User,
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "currency_id", nullable = false)
     var currency: Currency,

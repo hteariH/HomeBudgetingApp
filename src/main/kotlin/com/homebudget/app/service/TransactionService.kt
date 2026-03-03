@@ -19,7 +19,8 @@ import java.time.LocalDateTime
 class TransactionService(
     private val transactionRepo: TransactionRepository,
     private val accountService: AccountService,
-    private val categoryService: CategoryService
+    private val categoryService: CategoryService,
+    private val securityUtils: com.homebudget.app.security.SecurityUtils
 ) {
     fun findFiltered(
         accountId: Long?,
@@ -28,17 +29,19 @@ class TransactionService(
         dateFrom: LocalDate?,
         dateTo: LocalDate?,
         pageable: Pageable
-    ): Page<Transaction> = transactionRepo.findFiltered(accountId, categoryId, type, dateFrom, dateTo, pageable)
+    ): Page<Transaction> = transactionRepo.findFiltered(securityUtils.getCurrentUser(), accountId, categoryId, type, dateFrom, dateTo, pageable)
 
-    fun findById(id: Long): Transaction = transactionRepo.findByIdOrNull(id)
+    fun findById(id: Long): Transaction = transactionRepo.findByIdAndUser(id, securityUtils.getCurrentUser())
         ?: throw NoSuchElementException("Transaction not found: $id")
 
     fun create(req: CreateTransactionRequest): Transaction {
+        val user = securityUtils.getCurrentUser()
         val account = accountService.findById(req.accountId)
         val category = categoryService.findById(req.categoryId)
 
         val transaction = transactionRepo.save(
             Transaction(
+                user = user,
                 account = account,
                 category = category,
                 amount = req.amount,
