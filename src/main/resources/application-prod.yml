@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://localhost:3306/homebudget
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: ${DB_USERNAME:homebudget}
+    password: ${DB_PASSWORD:homebudget}
+  jpa:
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
