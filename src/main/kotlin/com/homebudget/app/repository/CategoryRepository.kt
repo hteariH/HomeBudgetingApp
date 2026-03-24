@@ -14,7 +14,7 @@ interface CategoryRepository : JpaRepository<Category, Long> {
     fun existsByNameAndTypeAndUser(name: String, type: CategoryType, user: User): Boolean
     fun findByIdAndUser(id: Long, user: User): Category?
 
-    @Query("SELECT DISTINCT c FROM Category c JOIN c.mccCodes m WHERE c.user = :user AND m = :mcc")
-    fun findByUserAndMccCode(user: User, mcc: Int): List<Category>
+    @Query("SELECT DISTINCT c FROM Category c JOIN c.mccCodes m WHERE c.user = :user AND m = :mcc and c.type = :type")
+    fun findByUserAndMccCodeAndType(user: User, mcc: Int, type: CategoryType): List<Category>
 }
 

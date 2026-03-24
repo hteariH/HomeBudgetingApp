@@ -2,6 +2,7 @@ package com.homebudget.app.service
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.homebudget.app.domain.CategoryType
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.*
@@ -119,10 +120,11 @@ class MonobankService(
         val pending = statements.map { stmt ->
             val amount = BigDecimal.valueOf(Math.abs(stmt.amount)).divide(BigDecimal("100"))
             val type = if (stmt.amount < 0) TransactionType.EXPENSE else TransactionType.INCOME
+            val categoryType = if (type == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
             val date = Instant.ofEpochSecond(stmt.time).atZone(ZoneId.systemDefault()).toLocalDate()
             val existing = transactionRepo.findByAccountAndMonobankId(account, stmt.id)
             val suggestedCategoryId = if (stmt.mcc != 0)
-                categoryRepo.findByUserAndMccCode(user, stmt.mcc).firstOrNull()?.id
+                categoryRepo.findByUserAndMccCodeAndType(user, stmt.mcc, categoryType).firstOrNull()?.id
             else null
             MonobankPendingTransaction(
                 monobankId = stmt.id,
@@ -175,6 +177,10 @@ class MonobankService(
             val type = if (stmt.amount < 0) TransactionType.EXPENSE else TransactionType.INCOME
             val date = Instant.ofEpochSecond(stmt.time).atZone(ZoneId.systemDefault()).toLocalDate()
 
+            // Guard: category type must match transaction type
+            val expectedCategoryType = if (type == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME
+            if (category.type != expectedCategoryType) { skipped++; continue }
+
             transactionRepo.save(
                 Transaction(
                     user = user, account = account, category = category,
@@ -184,13 +190,14 @@ class MonobankService(
                 )
             )
 
-            // Learn MCC → category mapping
+            // Learn MCC → category mapping (only when types actually match)
             if (stmt.mcc != 0 && !category.mccCodes.contains(stmt.mcc)) {
                 category.mccCodes.add(stmt.mcc)
                 categoryRepo.save(category)
             }
 
             val delta = if (type == TransactionType.INCOME) amount else amount.negate()
+
             account.balance = account.balance.add(delta)
             imported++
         }
