@@ -8,6 +8,7 @@ import Categories from './pages/Categories';
 import Transactions from './pages/Transactions';
 import Transfers from './pages/Transfers';
 import Currencies from './pages/Currencies';
+import MonobankImport from './pages/MonobankImport';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Header from './components/Header';
@@ -38,6 +39,7 @@ const App: React.FC = () => (
                     <Route path="/transfers" element={<Transfers />} />
                     <Route path="/categories" element={<Categories />} />
                     <Route path="/currencies" element={<Currencies />} />
+                    <Route path="/import" element={<MonobankImport />} />
                   </Routes>
                 </main>
               </div>

@@ -35,9 +35,12 @@ data class Account(
 
     @Column
     var description: String? = null,
-
     @Column(nullable = false)
     var color: String = "#4F46E5",
+    @Column
+    var monobankToken: String? = null,
+    @Column
+    var monobankAccountId: String? = null,
 
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

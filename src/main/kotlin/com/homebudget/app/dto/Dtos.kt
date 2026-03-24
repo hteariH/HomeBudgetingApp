@@ -42,6 +42,8 @@ data class AccountResponse(
     val currency: CurrencyResponse,
     val description: String?,
     val color: String,
+    val monobankAccountId: String?,
+    val isMonobankLinked: Boolean,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 )
@@ -140,6 +142,65 @@ data class CreateTransferRequest(
     @field:Positive val toAmount: BigDecimal,
     val date: LocalDate,
     val description: String? = null
+)
+
+// ───────── Monobank DTOs ─────────
+data class LinkMonobankRequest(
+    @field:NotBlank val token: String,
+    @field:NotBlank val monobankAccountId: String
+)
+
+data class MonobankClientInfo(
+    val clientId: String,
+    val name: String,
+    val accounts: List<MonobankAccountInfo>
+)
+
+data class MonobankAccountInfo(
+    val id: String,
+    val currencyCode: Int,
+    val balance: Long,
+    val creditLimit: Long,
+    val type: String,
+    val maskedPan: List<String>
+)
+
+// ── Two-phase import ──
+data class MonobankPreviewRequest(
+    val accountId: Long,
+    val dateFrom: Long,
+    val dateTo: Long
+)
+
+data class MonobankPendingTransaction(
+    val monobankId: String,
+    val date: LocalDate,
+    val description: String,
+    val amount: BigDecimal,
+    val type: TransactionType,
+    val alreadyExists: Boolean,
+    val existingTransactionId: Long? = null
+)
+
+data class MonobankPreviewResponse(
+    val transactions: List<MonobankPendingTransaction>
+)
+
+data class MonobankConfirmItem(
+    val monobankId: String,
+    val categoryId: Long
+)
+
+data class MonobankConfirmRequest(
+    val accountId: Long,
+    val dateFrom: Long,
+    val dateTo: Long,
+    val items: List<MonobankConfirmItem>
+)
+
+data class MonobankImportResult(
+    val imported: Int,
+    val skipped: Int
 )
 
 // ───────── Paged Response ─────────

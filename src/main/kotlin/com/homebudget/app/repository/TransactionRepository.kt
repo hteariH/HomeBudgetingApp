@@ -1,5 +1,6 @@
 package com.homebudget.app.repository
 
+import com.homebudget.app.domain.Account
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.domain.User
@@ -13,6 +14,8 @@ import java.time.LocalDate
 @Repository
 interface TransactionRepository : JpaRepository<Transaction, Long> {
     fun findByIdAndUser(id: Long, user: User): Transaction?
+    fun existsByAccountAndMonobankId(account: Account, monobankId: String): Boolean
+    fun findByAccountAndMonobankId(account: Account, monobankId: String): Transaction?
 
     @Query("""
         SELECT t FROM Transaction t

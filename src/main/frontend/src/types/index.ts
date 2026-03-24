@@ -20,8 +20,49 @@ export interface Account {
     currency: Currency;
     description?: string;
     color: string;
+    monobankAccountId?: string;
+    isMonobankLinked: boolean;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface MonobankAccountInfo {
+    id: string;
+    currencyCode: number;
+    balance: number;
+    creditLimit: number;
+    type: string;
+    maskedPan: string[];
+}
+
+export interface MonobankClientInfo {
+    clientId: string;
+    name: string;
+    accounts: MonobankAccountInfo[];
+}
+
+export interface MonobankImportResult {
+    imported: number;
+    skipped: number;
+}
+
+export interface MonobankPendingTransaction {
+    monobankId: string;
+    date: string;
+    description: string;
+    amount: number;
+    type: TransactionType;
+    alreadyExists: boolean;
+    existingTransactionId?: number;
+}
+
+export interface MonobankPreviewResponse {
+    transactions: MonobankPendingTransaction[];
+}
+
+export interface MonobankConfirmItem {
+    monobankId: string;
+    categoryId: number;
 }
 
 export type CategoryType = 'INCOME' | 'EXPENSE';

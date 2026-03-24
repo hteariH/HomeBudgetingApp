@@ -1,8 +1,9 @@
 import {
     Account, Category, CategoryType, CreateAccountRequest, CreateCategoryRequest,
     CreateCurrencyRequest, CreateTransactionRequest, CreateTransferRequest,
-    Currency, PagedResponse, Transaction, Transfer, UpdateAccountRequest,
-    UpdateCategoryRequest, UpdateCurrencyRequest
+    Currency, MonobankClientInfo, MonobankConfirmItem, MonobankImportResult,
+    MonobankPreviewResponse, PagedResponse, Transaction, Transfer,
+    UpdateAccountRequest, UpdateCategoryRequest, UpdateCurrencyRequest
 } from '../types';
 
 const BASE = '/api';
@@ -91,6 +92,21 @@ export const transactionApi = {
     create: (data: CreateTransactionRequest) => request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<CreateTransactionRequest>) => request<Transaction>(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => request<void>(`/transactions/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Monobank ──────────────────────────────────────────────────────
+const monobankBase = '/monobank';
+export const monobankApi = {
+    getClientInfo: (token: string) =>
+        request<MonobankClientInfo>(`${monobankBase}/client-info?token=${encodeURIComponent(token)}`),
+    linkAccount: (accountId: number, token: string, monobankAccountId: string) =>
+        request<void>(`${monobankBase}/accounts/${accountId}/link`, { method: 'POST', body: JSON.stringify({ token, monobankAccountId }) }),
+    unlinkAccount: (accountId: number) =>
+        request<void>(`${monobankBase}/accounts/${accountId}/link`, { method: 'DELETE' }),
+    preview: (accountId: number, dateFrom: number, dateTo: number) =>
+        request<MonobankPreviewResponse>(`${monobankBase}/preview`, { method: 'POST', body: JSON.stringify({ accountId, dateFrom, dateTo }) }),
+    confirmImport: (accountId: number, dateFrom: number, dateTo: number, items: MonobankConfirmItem[]) =>
+        request<MonobankImportResult>(`${monobankBase}/confirm`, { method: 'POST', body: JSON.stringify({ accountId, dateFrom, dateTo, items }) }),
 };
 
 // ─── Transfers ────────────────────────────────────────────────────────────────

@@ -25,6 +25,8 @@ fun Account.toResponse() = AccountResponse(
     currency = currency.toResponse(),
     description = description,
     color = color,
+    monobankAccountId = monobankAccountId,
+    isMonobankLinked = monobankToken != null && monobankAccountId != null,
     createdAt = createdAt,
     updatedAt = updatedAt
 )

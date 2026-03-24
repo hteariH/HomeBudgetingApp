@@ -231,8 +231,19 @@ input, select, textarea { font-family: inherit; }
 .btn-danger { background: var(--red); color: #fff; }
 .btn-danger:hover { background: #dc2626; }
 
+.btn-secondary {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+.btn-secondary:hover { background: var(--border); border-color: var(--accent); color: var(--accent-light); }
+
+.btn-warning { background: var(--yellow); color: #000; }
+.btn-warning:hover { opacity: 0.85; }
+
 .btn-sm { padding: 6px 12px; font-size: 13px; }
 .btn-icon { padding: 8px; border-radius: var(--radius-sm); }
+
 
 /* ─── Form Controls ───────────────────────────────────────────────────── */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
