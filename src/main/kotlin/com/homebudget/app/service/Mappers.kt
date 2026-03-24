@@ -39,6 +39,7 @@ fun Category.toResponse() = CategoryResponse(
     icon = icon,
     color = color,
     description = description,
+    mccCodes = mccCodes,
     createdAt = createdAt
 )
 

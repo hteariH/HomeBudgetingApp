@@ -153,9 +153,11 @@ const MonobankImport: React.FC = () => {
             const incCat = String(categories.find(c => c.type === 'INCOME')?.id ?? '');
             const rs: Record<string, { checked: boolean; categoryId: string }> = {};
             for (const tx of preview.transactions) {
+                // Priority: 1) backend MCC suggestion, 2) default category, 3) type fallback
+                const suggested = tx.suggestedCategoryId ? String(tx.suggestedCategoryId) : null;
                 rs[tx.monobankId] = {
                     checked: !tx.alreadyExists,
-                    categoryId: defaultCategoryId || (tx.type === 'EXPENSE' ? expCat : incCat),
+                    categoryId: suggested ?? defaultCategoryId ?? (tx.type === 'EXPENSE' ? expCat : incCat),
                 };
             }
             setRowState(rs);
@@ -513,9 +515,14 @@ const MonobankImport: React.FC = () => {
                                                                     <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap', color: mn.type === 'INCOME' ? 'var(--green)' : 'var(--red)' }}>
                                                                         {fmtSigned(mn.amount, mn.type)}
                                                                     </td>
-                                                                    {/* Description */}
+                                                                    {/* Description + MCC badge */}
                                                                     <td style={{ ...tdStyle, maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
-                                                                        {mn.description}
+                                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden', maxWidth: '100%' }}>
+                                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mn.description}</span>
+                                                                            {mn.mcc !== 0 && (
+                                                                                <span title={`MCC: ${mn.mcc}`} style={tagStyle('rgba(6,182,212,0.12)', 'var(--cyan)')}>{mn.mcc}</span>
+                                                                            )}
+                                                                        </span>
                                                                     </td>
                                                                     {/* Category */}
                                                                     <td style={{ ...tdStyle, width: '190px' }}>

@@ -52,8 +52,10 @@ export interface MonobankPendingTransaction {
     description: string;
     amount: number;
     type: TransactionType;
+    mcc: number;
     alreadyExists: boolean;
     existingTransactionId?: number;
+    suggestedCategoryId?: number;
 }
 
 export interface MonobankPreviewResponse {
@@ -74,6 +76,7 @@ export interface Category {
     icon: string;
     color: string;
     description?: string;
+    mccCodes: number[];
     createdAt: string;
 }
 

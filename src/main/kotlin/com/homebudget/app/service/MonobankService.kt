@@ -45,6 +45,7 @@ data class MonoStatement(
     val id: String = "",
     val time: Long = 0,
     val description: String = "",
+    val mcc: Int = 0,
     val amount: Long = 0,
     val operationAmount: Long = 0,
     val currencyCode: Int = 980,
@@ -120,14 +121,19 @@ class MonobankService(
             val type = if (stmt.amount < 0) TransactionType.EXPENSE else TransactionType.INCOME
             val date = Instant.ofEpochSecond(stmt.time).atZone(ZoneId.systemDefault()).toLocalDate()
             val existing = transactionRepo.findByAccountAndMonobankId(account, stmt.id)
+            val suggestedCategoryId = if (stmt.mcc != 0)
+                categoryRepo.findByUserAndMccCode(user, stmt.mcc).firstOrNull()?.id
+            else null
             MonobankPendingTransaction(
                 monobankId = stmt.id,
                 date = date,
                 description = stmt.description.ifBlank { "—" },
                 amount = amount,
                 type = type,
+                mcc = stmt.mcc,
                 alreadyExists = existing != null,
-                existingTransactionId = existing?.id
+                existingTransactionId = existing?.id,
+                suggestedCategoryId = suggestedCategoryId
             )
         }
 
@@ -177,6 +183,12 @@ class MonobankService(
                     monobankId = stmt.id
                 )
             )
+
+            // Learn MCC → category mapping
+            if (stmt.mcc != 0 && !category.mccCodes.contains(stmt.mcc)) {
+                category.mccCodes.add(stmt.mcc)
+                categoryRepo.save(category)
+            }
 
             val delta = if (type == TransactionType.INCOME) amount else amount.negate()
             account.balance = account.balance.add(delta)

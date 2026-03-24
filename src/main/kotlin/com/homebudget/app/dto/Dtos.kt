@@ -73,6 +73,7 @@ data class CategoryResponse(
     val icon: String,
     val color: String,
     val description: String?,
+    val mccCodes: Set<Int>,
     val createdAt: LocalDateTime
 )
 
@@ -88,7 +89,8 @@ data class UpdateCategoryRequest(
     val name: String? = null,
     val icon: String? = null,
     val color: String? = null,
-    val description: String? = null
+    val description: String? = null,
+    val mccCodes: Set<Int>? = null
 )
 
 // ───────── Transaction DTOs ─────────
@@ -178,8 +180,10 @@ data class MonobankPendingTransaction(
     val description: String,
     val amount: BigDecimal,
     val type: TransactionType,
+    val mcc: Int = 0,
     val alreadyExists: Boolean,
-    val existingTransactionId: Long? = null
+    val existingTransactionId: Long? = null,
+    val suggestedCategoryId: Long? = null
 )
 
 data class MonobankPreviewResponse(

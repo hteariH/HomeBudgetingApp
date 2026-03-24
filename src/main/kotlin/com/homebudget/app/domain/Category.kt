@@ -34,6 +34,12 @@ data class Category(
     @Column
     var description: String? = null,
 
+    /** MCC codes (Merchant Category Codes) learned from Monobank imports */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "category_mcc_codes", joinColumns = [JoinColumn(name = "category_id")])
+    @Column(name = "mcc_code")
+    var mccCodes: MutableSet<Int> = mutableSetOf(),
+
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 )

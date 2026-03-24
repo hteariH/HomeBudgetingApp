@@ -44,13 +44,15 @@ class CategoryService(
 
     fun update(id: Long, req: UpdateCategoryRequest): Category {
         val category = findById(id)
-        val updated = category.copy(
-            name = req.name ?: category.name,
-            icon = req.icon ?: category.icon,
-            color = req.color ?: category.color,
-            description = req.description ?: category.description
-        )
-        return repo.save(updated)
+        req.name?.let { category.name = it }
+        req.icon?.let { category.icon = it }
+        req.color?.let { category.color = it }
+        req.description?.let { category.description = it }
+        req.mccCodes?.let {
+            category.mccCodes.clear()
+            category.mccCodes.addAll(it)
+        }
+        return repo.save(category)
     }
 
     fun delete(id: Long) {
