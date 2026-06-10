@@ -30,6 +30,7 @@ class UserPreferences @Inject constructor(
         val TRANSACTION_SAVE_COUNT = longPreferencesKey("transaction_save_count")
         val ADS_CONSENT_OBTAINED = booleanPreferencesKey("ads_consent_obtained")
         val BIOMETRIC_LOCK_ENABLED = booleanPreferencesKey("biometric_lock_enabled")
+        val NUMPAD_PHONE_LAYOUT = booleanPreferencesKey("numpad_phone_layout")
     }
 
     val baseCurrency: Flow<String> = context.dataStore.data.map { it[Keys.BASE_CURRENCY] ?: "USD" }
@@ -44,6 +45,7 @@ class UserPreferences @Inject constructor(
     val transactionSaveCount: Flow<Long> = context.dataStore.data.map { it[Keys.TRANSACTION_SAVE_COUNT] ?: 0L }
     val adsConsentObtained: Flow<Boolean> = context.dataStore.data.map { it[Keys.ADS_CONSENT_OBTAINED] ?: false }
     val biometricLockEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.BIOMETRIC_LOCK_ENABLED] ?: false }
+    val numpadPhoneLayout: Flow<Boolean> = context.dataStore.data.map { it[Keys.NUMPAD_PHONE_LAYOUT] ?: false }
 
     suspend fun setBaseCurrency(code: String) {
         context.dataStore.edit { it[Keys.BASE_CURRENCY] = code }
@@ -92,5 +94,9 @@ class UserPreferences @Inject constructor(
 
     suspend fun setBiometricLockEnabled(value: Boolean) {
         context.dataStore.edit { it[Keys.BIOMETRIC_LOCK_ENABLED] = value }
+    }
+
+    suspend fun setNumpadPhoneLayout(value: Boolean) {
+        context.dataStore.edit { it[Keys.NUMPAD_PHONE_LAYOUT] = value }
     }
 }

@@ -95,6 +95,7 @@
     <string name="freq_weekly">Weekly</string>
     <string name="freq_monthly">Monthly</string>
     <string name="freq_yearly">Yearly</string>
+    <string name="freq_interval_prefix">every %1$d </string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -161,10 +162,38 @@
     <string name="lang_ukrainian">Українська</string>
 
     <!-- Privacy -->
+    <string name="settings_numpad_layout">Numpad layout</string>
+    <string name="settings_numpad_calc">Calculator (7–8–9)</string>
+    <string name="settings_numpad_phone">Phone (1–2–3)</string>
+
     <string name="settings_privacy_policy">Privacy policy</string>
     <string name="settings_open_source_licenses">Open source licenses</string>
 
-    <!-- Charts -->
+    <!-- Charts / Analytics -->
     <string name="chart_expenses_by_category">Expenses by category</string>
     <string name="chart_no_data">No data for this period</string>
+    <string name="analytics_title">Analytics</string>
+    <string name="analytics_by_month">Monthly</string>
+    <string name="analytics_last_months">Last %1$d months</string>
+
+    <!-- Period filter -->
+    <string name="period_all">All</string>
+    <string name="period_today">Today</string>
+    <string name="period_week">Week</string>
+    <string name="period_month">Month</string>
+    <string name="period_year">Year</string>
+
+    <!-- Transaction edit -->
+    <string name="transaction_edit_title">Edit transaction</string>
+    <string name="transaction_transfer_readonly">Transfers cannot be edited individually</string>
+    <string name="transaction_delete_confirm">Delete this transaction?</string>
+
+    <!-- Onboarding extras -->
+    <string name="onboarding_currency_not_here">My currency is not here</string>
+    <string name="onboarding_all_currencies">All currencies</string>
+
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_account_name">Account name</string>
+    <string name="onboarding_account_placeholder">e.g. Cash, Card</string>
+    <string name="onboarding_step_of">Step %1$d of %2$d</string>
 </resources>

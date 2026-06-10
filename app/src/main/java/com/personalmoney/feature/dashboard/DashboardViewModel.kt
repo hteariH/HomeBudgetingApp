@@ -16,10 +16,12 @@ import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.TransactionType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Clock
@@ -64,19 +66,29 @@ class DashboardViewModel @Inject constructor(
     userPreferences: UserPreferences
 ) : ViewModel() {
 
-    private val zone = TimeZone.currentSystemDefault()
-    private val today: LocalDate = Clock.System.now().toLocalDateTime(zone).date
-    private val monthStart = LocalDate(today.year, today.month, 1).atStartOfDayIn(zone)
-    private val nextMonth = run {
-        val m = today.month.value
-        val y = today.year
-        val nm = if (m == 12) LocalDate(y + 1, 1, 1) else LocalDate(y, m + 1, 1)
-        nm.atStartOfDayIn(zone)
+    // Emits every hour so month boundaries are picked up without a restart.
+    private val hourlyTick = flow {
+        while (true) {
+            emit(Unit)
+            delay(60 * 60 * 1_000L)
+        }
     }
 
     private val fxSnapshotFlow = exchangeRateRepository.observeAll().map { FxSnapshot.from(it) }
 
-    val uiState: StateFlow<DashboardUiState> = userPreferences.baseCurrency.flatMapLatest { base ->
+    val uiState: StateFlow<DashboardUiState> = combine(
+        userPreferences.baseCurrency,
+        hourlyTick
+    ) { base, _ -> base }.flatMapLatest { base ->
+        val zone = TimeZone.currentSystemDefault()
+        val today = Clock.System.now().toLocalDateTime(zone).date
+        val monthStart = LocalDate(today.year, today.month, 1).atStartOfDayIn(zone)
+        val nextMonth = run {
+            val m = today.month.value
+            val y = today.year
+            val nm = if (m == 12) LocalDate(y + 1, 1, 1) else LocalDate(y, m + 1, 1)
+            nm.atStartOfDayIn(zone)
+        }
         combine(
             accountRepository.observeActive(),
             accountRepository.observeBalances(),

@@ -67,7 +67,10 @@ class MainActivity : AppCompatActivity() {
                 if (locked) {
                     LockScreen(onUnlock = { promptUnlock { unlocked = true } })
                 } else {
-                    PersonalMoneyNavHost(deepLinkIntent = intent)
+                    PersonalMoneyNavHost(
+                        deepLinkIntent = intent,
+                        userPreferences = preferences
+                    )
                 }
             }
         }

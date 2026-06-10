@@ -22,3 +22,7 @@ google-services.json
 upload-keystore.jks
 play-publish-key.json
 .kotlin/
+
+# Local debugging artifacts (UI automator dumps & emulator screenshots)
+/screen_*.png
+/ui*.xml

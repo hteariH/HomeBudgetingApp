@@ -5,7 +5,7 @@ object Routes {
     const val QUICK_ADD = "quickadd?type={type}&categoryId={categoryId}"
     const val QUICK_ADD_BASE = "quickadd"
     const val TRANSACTIONS = "transactions"
-    const val TRANSACTION_DETAIL = "transaction/{transactionId}"
+    const val TRANSACTION_EDIT = "transaction/edit/{transactionId}"
     const val ACCOUNTS = "accounts"
     const val ACCOUNT_EDIT = "account/edit?accountId={accountId}"
     const val CATEGORIES = "categories"
@@ -17,6 +17,7 @@ object Routes {
     const val CURRENCIES = "currencies"
     const val CURRENCY_EDIT = "currency/edit?code={code}"
     const val ONBOARDING = "onboarding"
+    const val ANALYTICS = "analytics"
 
     fun quickAdd(type: String = "EXPENSE", categoryId: Long? = null): String {
         val params = buildList {
@@ -26,7 +27,7 @@ object Routes {
         return "$QUICK_ADD_BASE?$params"
     }
 
-    fun transactionDetail(id: Long) = "transaction/$id"
+    fun transactionEdit(id: Long) = "transaction/edit/$id"
     fun accountEdit(id: Long? = null) = "account/edit" + (id?.let { "?accountId=$it" } ?: "")
     fun categoryEdit(id: Long? = null, type: String = "EXPENSE") =
         "category/edit?type=$type" + (id?.let { "&categoryId=$it" } ?: "")

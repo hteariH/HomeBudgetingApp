@@ -21,6 +21,7 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     val biometricLockEnabled: Boolean = false,
+    val numpadPhoneLayout: Boolean = false,
     val currencies: List<CurrencyEntity> = emptyList(),
     val message: String? = null
 )
@@ -33,18 +34,20 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        preferences.baseCurrency,
-        preferences.themeMode,
-        preferences.dynamicColor,
-        preferences.biometricLockEnabled,
-        currencyRepository.observeAll()
-    ) { base, theme, dynamic, biometric, currencies ->
+        combine(preferences.baseCurrency, preferences.themeMode, preferences.dynamicColor) { base, theme, dynamic ->
+            Triple(base, theme, dynamic)
+        },
+        combine(preferences.biometricLockEnabled, preferences.numpadPhoneLayout, currencyRepository.observeAll()) { biometric, phoneLayout, currencies ->
+            Triple(biometric, phoneLayout, currencies)
+        }
+    ) { abc, def ->
         SettingsUiState(
-            baseCurrency = base,
-            themeMode = theme,
-            dynamicColor = dynamic,
-            biometricLockEnabled = biometric,
-            currencies = currencies
+            baseCurrency = abc.first,
+            themeMode = abc.second,
+            dynamicColor = abc.third,
+            biometricLockEnabled = def.first,
+            numpadPhoneLayout = def.second,
+            currencies = def.third
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -62,6 +65,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setBiometricLockEnabled(value: Boolean) {
         viewModelScope.launch { preferences.setBiometricLockEnabled(value) }
+    }
+
+    fun setNumpadPhoneLayout(value: Boolean) {
+        viewModelScope.launch { preferences.setNumpadPhoneLayout(value) }
     }
 
     fun exportTo(uri: Uri, onDone: (String) -> Unit) {

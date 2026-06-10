@@ -191,10 +191,12 @@ fun QuickAddScreen(
             HorizontalDivider(Modifier.padding(top = 4.dp))
 
             // Numpad
+            val numpadPhoneLayout by viewModel.numpadPhoneLayout.collectAsStateWithLifecycle()
             Numpad(
                 onKey = viewModel::onKey,
                 doneEnabled = state.canSave,
-                decimalSeparator = "."
+                decimalSeparator = ".",
+                phoneLayout = numpadPhoneLayout
             )
         }
 

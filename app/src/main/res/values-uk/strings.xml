@@ -87,6 +87,7 @@
     <string name="freq_weekly">Щотижня</string>
     <string name="freq_monthly">Щомісяця</string>
     <string name="freq_yearly">Щорічно</string>
+    <string name="freq_interval_prefix">кожні %1$d </string>
 
     <string name="settings_title">Налаштування</string>
     <string name="settings_base_currency">Базова валюта</string>
@@ -147,9 +148,31 @@
     <string name="lang_russian">Русский</string>
     <string name="lang_ukrainian">Українська</string>
 
+    <string name="settings_numpad_layout">Розкладка клавіатури</string>
+    <string name="settings_numpad_calc">Калькулятор (7–8–9)</string>
+    <string name="settings_numpad_phone">Телефон (1–2–3)</string>
+
     <string name="settings_privacy_policy">Політика конфіденційності</string>
     <string name="settings_open_source_licenses">Open Source ліцензії</string>
 
     <string name="chart_expenses_by_category">Витрати за категоріями</string>
     <string name="chart_no_data">Немає даних за цей період</string>
+    <string name="analytics_title">Аналітика</string>
+    <string name="analytics_by_month">По місяцях</string>
+    <string name="analytics_last_months">За останні %1$d міс.</string>
+    <string name="period_all">Всі</string>
+    <string name="period_today">Сьогодні</string>
+    <string name="period_week">Тиждень</string>
+    <string name="period_month">Місяць</string>
+    <string name="period_year">Рік</string>
+    <string name="transaction_edit_title">Змінити транзакцію</string>
+    <string name="transaction_transfer_readonly">Перекази не можна редагувати окремо</string>
+    <string name="transaction_delete_confirm">Видалити цю транзакцію?</string>
+    <string name="onboarding_currency_not_here">Моєї валюти немає в списку</string>
+    <string name="onboarding_all_currencies">Всі валюти</string>
+
+    <string name="onboarding_skip">Пропустити</string>
+    <string name="onboarding_account_name">Назва рахунку</string>
+    <string name="onboarding_account_placeholder">Наприклад: Готівка, Картка</string>
+    <string name="onboarding_step_of">Крок %1$d з %2$d</string>
 </resources>

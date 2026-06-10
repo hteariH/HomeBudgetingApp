@@ -1,36 +1,59 @@
 package com.personalmoney.navigation
 
 import android.content.Intent
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.feature.accounts.AccountEditScreen
 import com.personalmoney.feature.accounts.AccountsScreen
+import com.personalmoney.feature.analytics.AnalyticsScreen
 import com.personalmoney.feature.categories.CategoriesScreen
 import com.personalmoney.feature.categories.CategoryEditScreen
 import com.personalmoney.feature.currencies.CurrenciesScreen
 import com.personalmoney.feature.currencies.CurrencyEditScreen
 import com.personalmoney.feature.dashboard.DashboardScreen
+import com.personalmoney.feature.onboarding.OnboardingScreen
 import com.personalmoney.feature.quickadd.QuickAddScreen
 import com.personalmoney.feature.settings.SettingsScreen
 import com.personalmoney.feature.subscriptions.SubscriptionEditScreen
 import com.personalmoney.feature.subscriptions.SubscriptionsScreen
+import com.personalmoney.feature.transactions.TransactionEditScreen
 import com.personalmoney.feature.transactions.TransactionsScreen
 import com.personalmoney.feature.transfers.TransferScreen
 
 @Composable
-fun PersonalMoneyNavHost(deepLinkIntent: Intent? = null) {
+fun PersonalMoneyNavHost(
+    deepLinkIntent: Intent? = null,
+    userPreferences: UserPreferences
+) {
+    val onboarded by userPreferences.onboarded.collectAsStateWithLifecycle(initialValue = null)
+
+    // Wait for preference to be read (typically <16ms from DataStore cache)
+    if (onboarded == null) return
+
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = Routes.DASHBOARD
+        startDestination = if (onboarded == true) Routes.DASHBOARD else Routes.ONBOARDING
     ) {
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onDone = {
+                    navController.navigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Routes.DASHBOARD) {
             DashboardScreen(
                 onAddExpense = { navController.navigate(Routes.quickAdd("EXPENSE")) },
@@ -40,7 +63,8 @@ fun PersonalMoneyNavHost(deepLinkIntent: Intent? = null) {
                 onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
                 onOpenSubscriptions = { navController.navigate(Routes.SUBSCRIPTIONS) },
                 onOpenTransfer = { navController.navigate(Routes.TRANSFER) },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) }
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenAnalytics = { navController.navigate(Routes.ANALYTICS) }
             )
         }
 
@@ -124,9 +148,29 @@ fun PersonalMoneyNavHost(deepLinkIntent: Intent? = null) {
                 onSaved = { navController.popBackStack() }
             )
         }
+
         composable(Routes.TRANSACTIONS) {
-            TransactionsScreen(onBack = { navController.popBackStack() })
+            TransactionsScreen(
+                onBack = { navController.popBackStack() },
+                onEdit = { id -> navController.navigate(Routes.transactionEdit(id)) }
+            )
         }
+
+        composable(
+            route = Routes.TRANSACTION_EDIT,
+            arguments = listOf(
+                navArgument("transactionId") {
+                    type = NavType.StringType
+                    nullable = false
+                }
+            )
+        ) {
+            TransactionEditScreen(
+                onClose = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
+            )
+        }
+
         composable(Routes.TRANSFER) {
             TransferScreen(
                 onBack = { navController.popBackStack() },
@@ -183,10 +227,9 @@ fun PersonalMoneyNavHost(deepLinkIntent: Intent? = null) {
                 onDone = { navController.popBackStack() }
             )
         }
-    }
-}
 
-@Composable
-private fun PlaceholderScreen(name: String) {
-    Text(text = name)
+        composable(Routes.ANALYTICS) {
+            AnalyticsScreen(onBack = { navController.popBackStack() })
+        }
+    }
 }

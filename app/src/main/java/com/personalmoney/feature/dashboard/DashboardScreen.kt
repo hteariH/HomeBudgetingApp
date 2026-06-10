@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
@@ -75,6 +76,7 @@ fun DashboardScreen(
     onOpenSubscriptions: () -> Unit,
     onOpenTransfer: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenAnalytics: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -250,6 +252,18 @@ fun DashboardScreen(
                             onClick = onOpenTransactions,
                             modifier = Modifier.weight(1f)
                         )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        NavTile(
+                            label = stringResource(R.string.analytics_title),
+                            icon = Icons.Filled.BarChart,
+                            onClick = onOpenAnalytics,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.weight(1f))
                     }
                 }
             }

@@ -172,7 +172,7 @@ private fun SubscriptionRow(
 
 @Composable
 private fun frequencyLabel(frequency: SubscriptionFrequency, interval: Int): String {
-    val every = if (interval > 1) "every $interval " else ""
+    val every = if (interval > 1) stringResource(R.string.freq_interval_prefix, interval) else ""
     return when (frequency) {
         SubscriptionFrequency.DAILY -> every + stringResource(R.string.freq_daily)
         SubscriptionFrequency.WEEKLY -> every + stringResource(R.string.freq_weekly)

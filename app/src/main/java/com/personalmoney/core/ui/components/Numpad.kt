@@ -44,10 +44,17 @@ fun Numpad(
     doneEnabled: Boolean = true,
     decimalSeparator: String = ".",
     showOperators: Boolean = true,
+    phoneLayout: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val rows: List<List<NumpadKey>> = if (showOperators) {
-        listOf(
+        if (phoneLayout) listOf(
+            listOf(NumpadKey.DIGIT_1, NumpadKey.DIGIT_2, NumpadKey.DIGIT_3, NumpadKey.DIVIDE),
+            listOf(NumpadKey.DIGIT_4, NumpadKey.DIGIT_5, NumpadKey.DIGIT_6, NumpadKey.MULTIPLY),
+            listOf(NumpadKey.DIGIT_7, NumpadKey.DIGIT_8, NumpadKey.DIGIT_9, NumpadKey.MINUS),
+            listOf(NumpadKey.DOT, NumpadKey.DIGIT_0, NumpadKey.BACKSPACE, NumpadKey.PLUS),
+            listOf(NumpadKey.DONE)
+        ) else listOf(
             listOf(NumpadKey.DIGIT_7, NumpadKey.DIGIT_8, NumpadKey.DIGIT_9, NumpadKey.DIVIDE),
             listOf(NumpadKey.DIGIT_4, NumpadKey.DIGIT_5, NumpadKey.DIGIT_6, NumpadKey.MULTIPLY),
             listOf(NumpadKey.DIGIT_1, NumpadKey.DIGIT_2, NumpadKey.DIGIT_3, NumpadKey.MINUS),
@@ -55,7 +62,13 @@ fun Numpad(
             listOf(NumpadKey.DONE)
         )
     } else {
-        listOf(
+        if (phoneLayout) listOf(
+            listOf(NumpadKey.DIGIT_1, NumpadKey.DIGIT_2, NumpadKey.DIGIT_3),
+            listOf(NumpadKey.DIGIT_4, NumpadKey.DIGIT_5, NumpadKey.DIGIT_6),
+            listOf(NumpadKey.DIGIT_7, NumpadKey.DIGIT_8, NumpadKey.DIGIT_9),
+            listOf(NumpadKey.DOT, NumpadKey.DIGIT_0, NumpadKey.BACKSPACE),
+            listOf(NumpadKey.DONE)
+        ) else listOf(
             listOf(NumpadKey.DIGIT_7, NumpadKey.DIGIT_8, NumpadKey.DIGIT_9),
             listOf(NumpadKey.DIGIT_4, NumpadKey.DIGIT_5, NumpadKey.DIGIT_6),
             listOf(NumpadKey.DIGIT_1, NumpadKey.DIGIT_2, NumpadKey.DIGIT_3),

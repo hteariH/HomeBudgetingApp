@@ -150,6 +150,31 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
+            // Numpad layout
+            SectionLabel(stringResource(R.string.settings_numpad_layout))
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = !state.numpadPhoneLayout,
+                        onClick = { viewModel.setNumpadPhoneLayout(false) },
+                        label = { Text(stringResource(R.string.settings_numpad_calc)) }
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = state.numpadPhoneLayout,
+                        onClick = { viewModel.setNumpadPhoneLayout(true) },
+                        label = { Text(stringResource(R.string.settings_numpad_phone)) }
+                    )
+                }
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
             // Language picker
             SectionLabel(stringResource(R.string.settings_language))
             var currentLangTag by remember { mutableStateOf(LocaleManager.currentTag()) }

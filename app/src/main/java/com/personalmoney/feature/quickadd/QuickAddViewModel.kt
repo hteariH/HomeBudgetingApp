@@ -138,6 +138,9 @@ class QuickAddViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), QuickAddUiState(type = initialType))
 
+    val numpadPhoneLayout: StateFlow<Boolean> = userPreferences.numpadPhoneLayout
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     init {
         // Resolve default account on first run.
         viewModelScope.launch {
