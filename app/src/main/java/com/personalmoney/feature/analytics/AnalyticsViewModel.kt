@@ -40,7 +40,9 @@ data class AnalyticsUiState(
     val totalExpenses: Money = Money(0L, CurrencyCode("USD")),
     val totalIncome: Money = Money(0L, CurrencyCode("USD"))
 ) {
-    val maxValue: Long get() = months.maxOfOrNull { maxOf(it.expenses.minor, it.income.minor) } ?: 1L
+    // Always at least 1 so charts never divide by zero (empty months or all-zero bars).
+    val maxValue: Long get() =
+        (months.maxOfOrNull { maxOf(it.expenses.minor, it.income.minor) } ?: 0L).coerceAtLeast(1L)
 }
 
 private val MONTH_NAMES = listOf(

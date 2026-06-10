@@ -33,6 +33,7 @@ class OnboardingViewModelTest {
     }
     private val currencyRepository = mockk<CurrencyRepository>(relaxed = true) {
         every { observeActive() } returns flowOf(emptyList())
+        every { observeAll() } returns flowOf(emptyList())
     }
 
     private fun createViewModel() = OnboardingViewModel(

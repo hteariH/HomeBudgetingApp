@@ -2,6 +2,7 @@ package com.personalmoney.feature.transactions
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.CategoryRepository
 import com.personalmoney.core.data.repository.TransactionRepository
@@ -79,12 +80,14 @@ class TransactionEditViewModelTest {
     private val transactionRepository = mockk<TransactionRepository>(relaxed = true)
     private val accountRepository = mockk<AccountRepository>(relaxed = true)
     private val categoryRepository = mockk<CategoryRepository>(relaxed = true)
+    private val userPreferences = mockk<UserPreferences>(relaxed = true)
 
     private fun setupDefaultMocks(tx: TransactionEntity = testTransaction) {
         every { transactionRepository.observeById(42L) } returns flowOf(tx)
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         every { categoryRepository.observeByType(CategoryType.EXPENSE) } returns flowOf(listOf(testCategory))
         every { categoryRepository.observeByType(CategoryType.INCOME) } returns flowOf(emptyList())
+        every { userPreferences.numpadPhoneLayout } returns flowOf(false)
         coEvery { accountRepository.findById(1L) } returns testAccount
         coEvery { transactionRepository.update(any()) } just Runs
         coEvery { transactionRepository.delete(any()) } just Runs
@@ -97,7 +100,8 @@ class TransactionEditViewModelTest {
             savedStateHandle = SavedStateHandle(mapOf("transactionId" to "42")),
             transactionRepository = transactionRepository,
             accountRepository = accountRepository,
-            categoryRepository = categoryRepository
+            categoryRepository = categoryRepository,
+            userPreferences = userPreferences
         )
     }
 
@@ -207,15 +211,17 @@ class TransactionEditViewModelTest {
 
     @Test
     fun `onKey backspace on single char leaves empty`() = runTest {
+        // Expression is derived from accountAmountMinor, so set both. $1.00 → "1"
         val vm = createViewModel(
-            testTransaction.copy(amountMinor = 100L) // $1.00 → "1"
+            testTransaction.copy(amountMinor = 100L, accountAmountMinor = 100L)
         )
         coEvery { accountRepository.findById(1L) } returns testAccount
 
         vm.uiState.test {
-            awaitItem() // "1"
+            var state = awaitItem()
+            while (state.expression != "1") state = awaitItem() // drain to loaded
             vm.onKey(NumpadKey.BACKSPACE)
-            val state = awaitItem()
+            while (state.expression != "") state = awaitItem()
             assertEquals("", state.expression)
             cancelAndIgnoreRemainingEvents()
         }
@@ -281,9 +287,10 @@ class TransactionEditViewModelTest {
     fun `setType clears selected category`() = runTest {
         val vm = createViewModel()
         vm.uiState.test {
-            awaitItem()
+            var state = awaitItem()
+            while (state.selectedCategory == null) state = awaitItem() // drain to loaded (category set)
             vm.setType(TransactionType.INCOME)
-            val state = awaitItem()
+            while (state.selectedCategory != null) state = awaitItem()
             assertNull(state.selectedCategory)
             cancelAndIgnoreRemainingEvents()
         }
@@ -301,7 +308,8 @@ class TransactionEditViewModelTest {
             savedStateHandle = SavedStateHandle(mapOf("transactionId" to "42")),
             transactionRepository = transactionRepository,
             accountRepository = accountRepository,
-            categoryRepository = categoryRepository
+            categoryRepository = categoryRepository,
+            userPreferences = userPreferences
         )
 
         vm.uiState.test {
@@ -322,7 +330,8 @@ class TransactionEditViewModelTest {
             savedStateHandle = SavedStateHandle(mapOf("transactionId" to "42")),
             transactionRepository = transactionRepository,
             accountRepository = accountRepository,
-            categoryRepository = categoryRepository
+            categoryRepository = categoryRepository,
+            userPreferences = userPreferences
         )
 
         vm.uiState.test {
@@ -415,10 +424,11 @@ class TransactionEditViewModelTest {
 
     @Test
     fun `save does nothing when canSave is false`() = runTest {
-        // Empty expression → not valid
-        val vm = createViewModel(testTransaction.copy(amountMinor = 0L))
+        // Zero amount → expression "0" → not a valid amount. Expression derives from accountAmountMinor.
+        val vm = createViewModel(testTransaction.copy(amountMinor = 0L, accountAmountMinor = 0L))
         vm.uiState.test {
-            awaitItem()
+            var state = awaitItem()
+            while (state.loading) state = awaitItem() // drain to loaded
             vm.save()
             cancelAndIgnoreRemainingEvents()
         }
