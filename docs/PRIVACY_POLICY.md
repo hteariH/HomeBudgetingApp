@@ -1,10 +1,10 @@
 # Privacy Policy — PersonalMoney
 
-_Last updated: 2026-05-28_
+_Last updated: 2026-06-11_
 
 This Privacy Policy describes how the PersonalMoney Android application (the **App**) handles your information.
 
-The App is operated by the developer **(replace with your legal name or company)** ("we", "us", "our"). If you have any questions about this policy, contact us at **(replace with contact email)**.
+The App is operated by the developer **mamoru** ("we", "us", "our"). If you have any questions about this policy, contact us at **aberkunsky@gmail.com**.
 
 ## TL;DR
 
@@ -109,8 +109,8 @@ We may update this policy from time to time. Material changes will be reflected 
 
 Questions, requests, or complaints regarding this policy:
 
-- Email: **(replace with contact email)**
-- Postal address: **(optional — required in some jurisdictions)**
+- Email: **aberkunsky@gmail.com**
+- Postal address: available on request.
 
 ---
 
