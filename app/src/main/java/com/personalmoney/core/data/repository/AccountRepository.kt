@@ -16,6 +16,7 @@ class AccountRepository @Inject constructor(
     fun observeById(id: Long): Flow<AccountEntity?> = dao.observeById(id)
     fun observeActiveCount(): Flow<Int> = dao.observeActiveCount()
     fun observeBalances(): Flow<List<AccountBalanceRow>> = dao.observeBalances()
+    suspend fun balancesAsOf(asOfMs: Long): List<AccountBalanceRow> = dao.balancesAsOf(asOfMs)
 
     suspend fun findById(id: Long): AccountEntity? = dao.findById(id)
 

@@ -25,9 +25,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 
@@ -62,6 +65,7 @@ data class DashboardUiState(
     val monthIncomeMinor: Long = 0L,
     val expenseByCategory: List<CategorySlice> = emptyList(),
     val budgets: List<BudgetProgress> = emptyList(),
+    val netWorthTrend: List<Long> = emptyList(),
     val recent: List<TransactionEntity> = emptyList(),
     val accountsById: Map<Long, AccountEntity> = emptyMap(),
     val categoriesById: Map<Long, CategoryEntity> = emptyMap()
@@ -175,6 +179,18 @@ class DashboardViewModel @Inject constructor(
                 }
                 .sortedByDescending { it.fraction }
 
+            // Net worth (base currency) at the end of each of the last 6 months — reconstructed
+            // from transaction history so no snapshot storage is needed.
+            val currentMonthStart = LocalDate(today.year, today.month, 1)
+            val netWorthTrend = (5 downTo 0).map { i ->
+                val mStart = currentMonthStart.minus(i, DateTimeUnit.MONTH)
+                val mEndExclusive = mStart.plus(1, DateTimeUnit.MONTH).atStartOfDayIn(zone)
+                val asOf = minOf(mEndExclusive, Clock.System.now())
+                accountRepository.balancesAsOf(asOf.toEpochMilliseconds()).sumOf { row ->
+                    fx.convert(Money(row.balanceMinor, CurrencyCode(row.currencyCode)), CurrencyCode(base))?.minor ?: 0L
+                }
+            }
+
             DashboardUiState(
                 baseCurrency = base,
                 totalBalanceMinor = totalMinor,
@@ -184,6 +200,7 @@ class DashboardViewModel @Inject constructor(
                 monthIncomeMinor = monthInc,
                 expenseByCategory = slices,
                 budgets = budgets,
+                netWorthTrend = netWorthTrend,
                 recent = recent,
                 accountsById = accountsById,
                 categoriesById = categoriesById

@@ -67,6 +67,31 @@ interface AccountDao {
         """
     )
     fun observeBalances(): Flow<List<AccountBalanceRow>>
+
+    /**
+     * Per-account balance counting only transactions up to [asOfMs] (inclusive), restricted to
+     * accounts included in the total. Used to reconstruct historical net worth for the trend.
+     */
+    @Query(
+        """
+        SELECT a.id AS accountId,
+               a.currency_code AS currencyCode,
+               a.initial_balance_minor + COALESCE((
+                   SELECT SUM(
+                       CASE
+                           WHEN t.type = 'INCOME' THEN t.account_amount_minor
+                           WHEN t.type = 'EXPENSE' THEN -t.account_amount_minor
+                           WHEN t.type = 'TRANSFER' THEN t.account_amount_minor
+                           ELSE 0
+                       END
+                   ) FROM transactions t
+                   WHERE t.account_id = a.id AND t.occurred_at <= :asOfMs
+               ), 0) AS balanceMinor
+        FROM accounts a
+        WHERE a.include_in_total = 1
+        """
+    )
+    suspend fun balancesAsOf(asOfMs: Long): List<AccountBalanceRow>
 }
 
 data class AccountBalanceRow(

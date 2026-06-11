@@ -13,6 +13,7 @@ import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.util.MainDispatcherRule
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
@@ -368,6 +369,24 @@ class DashboardViewModelTest {
             val state = awaitItem()
             assertEquals(1, state.recent.size)
             assertEquals(1L, state.recent.first().id)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // ── Net worth trend ──────────────────────────────────────────────────────
+
+    @Test
+    fun `net worth trend has six points reflecting balances`() = runTest {
+        setupDefaultMocks()
+        every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
+        coEvery { accountRepository.balancesAsOf(any()) } returns listOf(
+            AccountBalanceRow(1L, "USD", 5_000L)
+        )
+        val vm = createViewModel()
+        vm.uiState.test {
+            val state = awaitItem()
+            assertEquals(6, state.netWorthTrend.size)
+            assertTrue(state.netWorthTrend.all { it == 5_000L }) // USD->USD, no FX
             cancelAndIgnoreRemainingEvents()
         }
     }
