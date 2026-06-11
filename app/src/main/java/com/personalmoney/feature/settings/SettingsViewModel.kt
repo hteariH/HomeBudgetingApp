@@ -1,8 +1,10 @@
 package com.personalmoney.feature.settings
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.personalmoney.R
 import com.personalmoney.core.data.ThemeMode
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.repository.CurrencyRepository
@@ -10,6 +12,7 @@ import com.personalmoney.core.database.entity.CurrencyEntity
 import com.personalmoney.feature.settings.backup.BackupManager
 import com.personalmoney.feature.settings.backup.BackupPreview
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +34,7 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val preferences: UserPreferences,
     currencyRepository: CurrencyRepository,
     private val backupManager: BackupManager
@@ -77,8 +81,8 @@ class SettingsViewModel @Inject constructor(
     fun exportTo(uri: Uri, onDone: (String) -> Unit) {
         viewModelScope.launch {
             val result = backupManager.exportTo(uri)
-            result.onSuccess { count -> onDone("Exported $count transactions") }
-                .onFailure { e -> onDone(e.message ?: "Export failed") }
+            result.onSuccess { count -> onDone(appContext.getString(R.string.settings_export_done, count)) }
+                .onFailure { onDone(appContext.getString(R.string.settings_export_failed)) }
         }
     }
 
@@ -90,7 +94,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             backupManager.peek(uri)
                 .onSuccess { preview -> _importRequest.value = ImportRequest(uri, preview) }
-                .onFailure { e -> onError(e.message ?: "Cannot read backup file") }
+                .onFailure { onError(appContext.getString(R.string.settings_backup_read_failed)) }
         }
     }
 
@@ -102,8 +106,8 @@ class SettingsViewModel @Inject constructor(
         _importRequest.value = null
         viewModelScope.launch {
             backupManager.importFrom(request.uri)
-                .onSuccess { p -> onDone("Imported ${p.transactions} transactions") }
-                .onFailure { e -> onDone(e.message ?: "Import failed") }
+                .onSuccess { p -> onDone(appContext.getString(R.string.settings_import_done, p.transactions)) }
+                .onFailure { onDone(appContext.getString(R.string.settings_import_failed)) }
         }
     }
 }

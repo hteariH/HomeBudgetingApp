@@ -77,6 +77,8 @@
     <string name="transfer_rate">Курс</string>
     <string name="transfer_fee">Комісія</string>
     <string name="transfer_same_account">Рахунки мають відрізнятися</string>
+    <string name="transfer_invalid_source">Введіть коректну суму списання</string>
+    <string name="transfer_invalid_destination">Введіть коректну суму зарахування</string>
 
     <string name="subscriptions_title">Підписки</string>
     <string name="subscriptions_new">Нова підписка</string>
@@ -107,6 +109,11 @@
     <string name="settings_import_confirm_title">Відновити з резервної копії?</string>
     <string name="settings_import_confirm_message">Усі поточні дані буде замінено даними з копії: %1$d рахунків, %2$d категорій, %3$d транзакцій, %4$d підписок. Скасувати буде неможливо.</string>
     <string name="settings_import_replace">Замінити</string>
+    <string name="settings_export_done">Експортовано транзакцій: %1$d</string>
+    <string name="settings_import_done">Імпортовано транзакцій: %1$d</string>
+    <string name="settings_export_failed">Не вдалося експортувати</string>
+    <string name="settings_import_failed">Не вдалося імпортувати</string>
+    <string name="settings_backup_read_failed">Не вдалося прочитати файл резервної копії</string>
     <string name="settings_clear">Очистити всі дані</string>
     <string name="settings_about">Про застосунок</string>
     <string name="settings_version">Версія</string>
@@ -141,6 +148,9 @@
     <string name="widget_quick_expense">Швидка витрата</string>
     <string name="widget_balance">Баланс</string>
     <string name="widget_tap_to_add">Натисніть, щоб додати</string>
+    <string name="widget_expense">Витрата</string>
+    <string name="widget_income">Дохід</string>
+    <string name="widget_saved">✓  Збережено!</string>
 
     <string name="lock_title">Застосунок заблоковано</string>
     <string name="lock_subtitle">Підтвердьте особу для доступу до фінансів</string>

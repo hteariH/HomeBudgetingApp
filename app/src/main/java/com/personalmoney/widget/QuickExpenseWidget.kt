@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -35,6 +36,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.personalmoney.R
 import com.personalmoney.core.domain.CategoryType
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
@@ -85,6 +87,7 @@ class QuickExpenseWidget : GlanceAppWidget() {
 
 @Composable
 private fun WidgetBody(prefs: Preferences) {
+    val context = LocalContext.current
     val expression   = prefs[KEY_EXPRESSION] ?: ""
     val selectedCatId = prefs[KEY_CAT_ID]
     val justSaved    = prefs[KEY_JUST_SAVED] ?: false
@@ -106,14 +109,14 @@ private fun WidgetBody(prefs: Preferences) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             TypeButton(
-                label = "Expense",
+                label = context.getString(R.string.widget_expense),
                 isSelected = isExpense,
                 type = "EXPENSE",
                 modifier = GlanceModifier.defaultWeight().fillMaxHeight()
             )
             Spacer(GlanceModifier.width(4.dp))
             TypeButton(
-                label = "Income",
+                label = context.getString(R.string.widget_income),
                 isSelected = !isExpense,
                 type = "INCOME",
                 modifier = GlanceModifier.defaultWeight().fillMaxHeight()
@@ -190,7 +193,7 @@ private fun WidgetBody(prefs: Preferences) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "✓  Saved!",
+                    context.getString(R.string.widget_saved),
                     style = TextStyle(
                         color = GlanceTheme.colors.onPrimaryContainer,
                         fontSize = 22.sp,

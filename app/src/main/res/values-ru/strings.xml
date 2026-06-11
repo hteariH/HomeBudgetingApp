@@ -77,6 +77,8 @@
     <string name="transfer_rate">Курс</string>
     <string name="transfer_fee">Комиссия</string>
     <string name="transfer_same_account">Счета должны отличаться</string>
+    <string name="transfer_invalid_source">Введите корректную сумму списания</string>
+    <string name="transfer_invalid_destination">Введите корректную сумму зачисления</string>
 
     <string name="subscriptions_title">Подписки</string>
     <string name="subscriptions_new">Новая подписка</string>
@@ -107,6 +109,11 @@
     <string name="settings_import_confirm_title">Восстановить из резервной копии?</string>
     <string name="settings_import_confirm_message">Все текущие данные будут заменены данными из копии: %1$d счетов, %2$d категорий, %3$d транзакций, %4$d подписок. Отменить будет нельзя.</string>
     <string name="settings_import_replace">Заменить</string>
+    <string name="settings_export_done">Экспортировано транзакций: %1$d</string>
+    <string name="settings_import_done">Импортировано транзакций: %1$d</string>
+    <string name="settings_export_failed">Не удалось экспортировать</string>
+    <string name="settings_import_failed">Не удалось импортировать</string>
+    <string name="settings_backup_read_failed">Не удалось прочитать файл резервной копии</string>
     <string name="settings_clear">Очистить все данные</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_version">Версия</string>
@@ -141,6 +148,9 @@
     <string name="widget_quick_expense">Быстрый расход</string>
     <string name="widget_balance">Баланс</string>
     <string name="widget_tap_to_add">Нажмите, чтобы добавить</string>
+    <string name="widget_expense">Расход</string>
+    <string name="widget_income">Доход</string>
+    <string name="widget_saved">✓  Сохранено!</string>
 
     <string name="lock_title">Приложение заблокировано</string>
     <string name="lock_subtitle">Подтвердите личность, чтобы получить доступ к финансам</string>

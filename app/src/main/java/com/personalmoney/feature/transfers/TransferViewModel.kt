@@ -1,7 +1,9 @@
 package com.personalmoney.feature.transfers
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.personalmoney.R
 import com.personalmoney.core.calc.Calculator
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.TransactionRepository
@@ -9,6 +11,7 @@ import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +48,7 @@ data class TransferUiState(
 
 @HiltViewModel
 class TransferViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     accountRepository: AccountRepository,
     private val transactionRepository: TransactionRepository
 ) : ViewModel() {
@@ -83,11 +87,11 @@ class TransferViewModel @Inject constructor(
         val toDecimals = currencyDecimals(to.currencyCode)
 
         val amountFromBd = Calculator.evaluate(s.amountFrom, fromDecimals) ?: run {
-            internalState.update { it.copy(error = "Invalid source amount") }; return
+            internalState.update { it.copy(error = appContext.getString(R.string.transfer_invalid_source)) }; return
         }
         val amountToBd = if (s.sameCurrency) amountFromBd
         else Calculator.evaluate(s.amountTo, toDecimals) ?: run {
-            internalState.update { it.copy(error = "Invalid destination amount") }; return
+            internalState.update { it.copy(error = appContext.getString(R.string.transfer_invalid_destination)) }; return
         }
         val feeBd = if (s.feeFrom.isBlank()) BigDecimal.ZERO
         else Calculator.evaluate(s.feeFrom, fromDecimals) ?: BigDecimal.ZERO
