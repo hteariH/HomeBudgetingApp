@@ -110,7 +110,7 @@ fun TransferScreen(
                         }
                     }
                 ) {
-                    Icon(Icons.Filled.SwapVert, contentDescription = null)
+                    Icon(Icons.Filled.SwapVert, contentDescription = stringResource(R.string.a11y_swap_accounts))
                 }
             }
 

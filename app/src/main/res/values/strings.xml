@@ -14,6 +14,16 @@
     <string name="action_back">Back</string>
     <string name="action_duplicate">Duplicate</string>
 
+    <!-- Accessibility -->
+    <string name="a11y_plus">Plus</string>
+    <string name="a11y_minus">Minus</string>
+    <string name="a11y_multiply">Multiply</string>
+    <string name="a11y_divide">Divide</string>
+    <string name="a11y_decimal">Decimal point</string>
+    <string name="a11y_backspace">Backspace</string>
+    <string name="a11y_done">Done</string>
+    <string name="a11y_swap_accounts">Swap accounts</string>
+
     <!-- Dashboard -->
     <string name="dashboard_title">Overview</string>
     <string name="dashboard_total_balance">Total balance</string>

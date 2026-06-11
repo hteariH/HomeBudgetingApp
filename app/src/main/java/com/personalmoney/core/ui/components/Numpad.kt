@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
+import com.personalmoney.R
 
 enum class NumpadKey(val display: String) {
     DIGIT_0("0"), DIGIT_1("1"), DIGIT_2("2"), DIGIT_3("3"), DIGIT_4("4"),
@@ -117,6 +119,17 @@ private fun KeyButton(
     val haptics = LocalHapticFeedback.current
     val isOperator = key in setOf(NumpadKey.PLUS, NumpadKey.MINUS, NumpadKey.MULTIPLY, NumpadKey.DIVIDE)
     val isDone = key == NumpadKey.DONE
+    // Spoken label for screen readers — raw symbols like ⌫/✓/× don't read well.
+    val keyDescription = when (key) {
+        NumpadKey.PLUS -> stringResource(R.string.a11y_plus)
+        NumpadKey.MINUS -> stringResource(R.string.a11y_minus)
+        NumpadKey.MULTIPLY -> stringResource(R.string.a11y_multiply)
+        NumpadKey.DIVIDE -> stringResource(R.string.a11y_divide)
+        NumpadKey.DOT -> stringResource(R.string.a11y_decimal)
+        NumpadKey.BACKSPACE -> stringResource(R.string.a11y_backspace)
+        NumpadKey.DONE -> stringResource(R.string.a11y_done)
+        else -> key.display
+    }
     val container: Color = when {
         isDone -> if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
         isOperator -> MaterialTheme.colorScheme.secondaryContainer
@@ -136,7 +149,7 @@ private fun KeyButton(
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick(key)
             }
-            .semantics { contentDescription = key.display },
+            .semantics { contentDescription = keyDescription },
         color = Color.Transparent
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp)) {

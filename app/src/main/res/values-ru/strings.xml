@@ -13,6 +13,15 @@
     <string name="action_back">Назад</string>
     <string name="action_duplicate">Дублировать</string>
 
+    <string name="a11y_plus">Плюс</string>
+    <string name="a11y_minus">Минус</string>
+    <string name="a11y_multiply">Умножить</string>
+    <string name="a11y_divide">Разделить</string>
+    <string name="a11y_decimal">Десятичная точка</string>
+    <string name="a11y_backspace">Стереть</string>
+    <string name="a11y_done">Готово</string>
+    <string name="a11y_swap_accounts">Поменять счета местами</string>
+
     <string name="dashboard_title">Обзор</string>
     <string name="dashboard_total_balance">Общий капитал</string>
     <string name="dashboard_this_month">В этом месяце</string>
