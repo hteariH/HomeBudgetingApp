@@ -45,10 +45,10 @@ data class AnalyticsUiState(
         (months.maxOfOrNull { maxOf(it.expenses.minor, it.income.minor) } ?: 0L).coerceAtLeast(1L)
 }
 
-private val MONTH_NAMES = listOf(
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-)
+/** Localized short month name (Jan / янв. / січ.) following the active app locale. */
+private fun monthLabel(monthNumber: Int): String =
+    java.time.Month.of(monthNumber)
+        .getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -91,7 +91,7 @@ class AnalyticsViewModel @Inject constructor(
                     }
                 }
                 MonthlyBar(
-                    label = MONTH_NAMES[monthDate.monthNumber - 1],
+                    label = monthLabel(monthDate.monthNumber),
                     expenses = Money(expMinor, CurrencyCode(base)),
                     income = Money(incMinor, CurrencyCode(base)),
                     monthIndex = monthDate.monthNumber - 1

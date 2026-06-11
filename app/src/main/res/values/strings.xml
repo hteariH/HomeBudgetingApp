@@ -76,6 +76,7 @@
     <string name="transactions_yesterday">Yesterday</string>
     <string name="transactions_empty">No transactions match your filters</string>
     <string name="action_clear_filters">Clear filters</string>
+    <string name="transactions_all">All</string>
 
     <!-- Transfers -->
     <string name="transfer_title">Transfer</string>

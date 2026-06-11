@@ -191,7 +191,7 @@ fun TransactionsScreen(
                     FilterChip(
                         selected = state.filter.type == null,
                         onClick = { viewModel.setType(null) },
-                        label = { Text(stringResource(R.string.currencies_all)) }
+                        label = { Text(stringResource(R.string.transactions_all)) }
                     )
                 }
                 item {
