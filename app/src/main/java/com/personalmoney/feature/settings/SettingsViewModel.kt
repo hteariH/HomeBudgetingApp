@@ -8,9 +8,12 @@ import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.repository.CurrencyRepository
 import com.personalmoney.core.database.entity.CurrencyEntity
 import com.personalmoney.feature.settings.backup.BackupManager
+import com.personalmoney.feature.settings.backup.BackupPreview
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -79,11 +82,30 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun importFrom(uri: Uri, onDone: (String) -> Unit) {
+    private val _importRequest = MutableStateFlow<ImportRequest?>(null)
+    val importRequest: StateFlow<ImportRequest?> = _importRequest.asStateFlow()
+
+    /** Read the chosen backup and stage a confirmation; does not modify data yet. */
+    fun requestImport(uri: Uri, onError: (String) -> Unit) {
         viewModelScope.launch {
-            val result = backupManager.importFrom(uri)
-            result.onSuccess { count -> onDone("Imported $count transactions") }
+            backupManager.peek(uri)
+                .onSuccess { preview -> _importRequest.value = ImportRequest(uri, preview) }
+                .onFailure { e -> onError(e.message ?: "Cannot read backup file") }
+        }
+    }
+
+    fun cancelImport() { _importRequest.value = null }
+
+    /** Perform the staged import (replaces all data). */
+    fun confirmImport(onDone: (String) -> Unit) {
+        val request = _importRequest.value ?: return
+        _importRequest.value = null
+        viewModelScope.launch {
+            backupManager.importFrom(request.uri)
+                .onSuccess { p -> onDone("Imported ${p.transactions} transactions") }
                 .onFailure { e -> onDone(e.message ?: "Import failed") }
         }
     }
 }
+
+data class ImportRequest(val uri: Uri, val preview: BackupPreview)

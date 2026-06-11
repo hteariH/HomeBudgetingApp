@@ -34,6 +34,9 @@ interface CurrencyDao {
     @Query("DELETE FROM currencies WHERE code = :code")
     suspend fun deleteByCode(code: String)
 
+    @Query("DELETE FROM currencies")
+    suspend fun deleteAll()
+
     @Query(
         """
         SELECT (

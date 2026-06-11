@@ -23,4 +23,7 @@ interface ExchangeRateDao {
 
     @Query("DELETE FROM exchange_rates WHERE base_code = :base AND quote_code = :quote")
     suspend fun delete(base: String, quote: String)
+
+    @Query("DELETE FROM exchange_rates")
+    suspend fun deleteAll()
 }

@@ -58,6 +58,9 @@ interface TransactionDao {
     @Query("DELETE FROM transactions WHERE transfer_group_id = :groupId")
     suspend fun deleteByTransferGroup(groupId: String)
 
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAll()
+
     @Transaction
     suspend fun insertTransferPair(debit: TransactionEntity, credit: TransactionEntity): Pair<Long, Long> {
         val a = insert(debit)

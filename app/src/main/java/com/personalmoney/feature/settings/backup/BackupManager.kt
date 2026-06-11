@@ -38,19 +38,70 @@ class BackupManager @Inject constructor(
         envelope.transactions.size
     }
 
-    suspend fun importFrom(uri: Uri): Result<Int> = runCatching {
-        val text = context.contentResolver.openInputStream(uri)?.use { input ->
-            input.readBytes().toString(Charsets.UTF_8)
-        } ?: error("Cannot open input")
-        val envelope = json.decodeFromString(BackupEnvelope.serializer(), text)
+    /** Parse a backup file and report its contents without modifying the database. */
+    suspend fun peek(uri: Uri): Result<BackupPreview> = runCatching {
+        readEnvelope(uri).toPreview()
+    }
+
+    /**
+     * Restore from a backup. This REPLACES all current data: the database is wiped and
+     * rebuilt from the file inside a single transaction, so a re-import is idempotent
+     * (no duplicates) and a failure rolls back rather than leaving a half-imported state.
+     */
+    suspend fun importFrom(uri: Uri): Result<BackupPreview> = runCatching {
+        restore(readEnvelope(uri))
+    }
+
+    /**
+     * Wipe and rebuild the database from [envelope] in a single transaction. Extracted from
+     * [importFrom] so it can be tested without a content Uri. Idempotent: running it twice with
+     * the same data leaves identical contents (no duplicate-key failure).
+     */
+    suspend fun restore(envelope: BackupEnvelope): BackupPreview {
         db.withTransaction {
-            db.exchangeRateDao().upsertAll(envelope.exchangeRates.map { it.toEntity() })
+            // Clear existing data — children before parents (FK-safe).
+            db.transactionDao().deleteAll()
+            db.subscriptionDao().deleteAll()
+            db.categoryDao().deleteAll()
+            db.accountDao().deleteAll()
+            db.exchangeRateDao().deleteAll()
+            db.currencyDao().deleteAll()
+            // Restore — parents before children.
             db.currencyDao().insertAll(envelope.currencies.map { it.toEntity() })
+            db.exchangeRateDao().upsertAll(envelope.exchangeRates.map { it.toEntity() })
             envelope.accounts.forEach { db.accountDao().insert(it.toEntity()) }
-            db.categoryDao().insertAll(envelope.categories.map { it.toEntity() })
+            // Top-level categories first so child parent_id references resolve.
+            envelope.categories
+                .sortedBy { it.parentId != null }
+                .forEach { db.categoryDao().insert(it.toEntity()) }
             envelope.transactions.forEach { db.transactionDao().insert(it.toEntity()) }
             envelope.subscriptions.forEach { db.subscriptionDao().insert(it.toEntity()) }
         }
-        envelope.transactions.size
+        return envelope.toPreview()
     }
+
+    private fun readEnvelope(uri: Uri): BackupEnvelope {
+        val text = context.contentResolver.openInputStream(uri)?.use { input ->
+            input.readBytes().toString(Charsets.UTF_8)
+        } ?: error("Cannot open input")
+        return json.decodeFromString(BackupEnvelope.serializer(), text)
+    }
+
+    private fun BackupEnvelope.toPreview() = BackupPreview(
+        accounts = accounts.size,
+        categories = categories.size,
+        transactions = transactions.size,
+        subscriptions = subscriptions.size,
+        currencies = currencies.size,
+        exchangeRates = exchangeRates.size
+    )
 }
+
+data class BackupPreview(
+    val accounts: Int,
+    val categories: Int,
+    val transactions: Int,
+    val subscriptions: Int,
+    val currencies: Int,
+    val exchangeRates: Int
+)

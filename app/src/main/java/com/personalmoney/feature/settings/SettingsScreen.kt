@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -28,6 +29,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -74,8 +76,35 @@ fun SettingsScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            viewModel.importFrom(uri) { msg -> scope.launch { snackbar.showSnackbar(msg) } }
+            viewModel.requestImport(uri) { msg -> scope.launch { snackbar.showSnackbar(msg) } }
         }
+    }
+
+    val importRequest by viewModel.importRequest.collectAsStateWithLifecycle()
+    importRequest?.let { req ->
+        val p = req.preview
+        AlertDialog(
+            onDismissRequest = viewModel::cancelImport,
+            title = { Text(stringResource(R.string.settings_import_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.settings_import_confirm_message,
+                        p.accounts, p.categories, p.transactions, p.subscriptions
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.confirmImport { msg -> scope.launch { snackbar.showSnackbar(msg) } }
+                }) { Text(stringResource(R.string.settings_import_replace)) }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::cancelImport) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
     }
 
     Scaffold(

@@ -41,11 +41,12 @@ data class AccountDto(
 data class CategoryDto(
     val id: Long, val name: String, val type: String,
     val icon: String, val color: Long, val parentId: Long? = null,
-    val archived: Boolean, val sortOrder: Int, val isDefault: Boolean
+    val archived: Boolean, val sortOrder: Int, val isDefault: Boolean,
+    val budgetLimitMinor: Long? = null
 ) {
-    fun toEntity() = CategoryEntity(id, name, CategoryType.valueOf(type), icon, color, parentId, archived, sortOrder, isDefault)
+    fun toEntity() = CategoryEntity(id, name, CategoryType.valueOf(type), icon, color, parentId, archived, sortOrder, isDefault, budgetLimitMinor)
     companion object {
-        fun from(e: CategoryEntity) = CategoryDto(e.id, e.name, e.type.name, e.icon, e.color, e.parentId, e.archived, e.sortOrder, e.isDefault)
+        fun from(e: CategoryEntity) = CategoryDto(e.id, e.name, e.type.name, e.icon, e.color, e.parentId, e.archived, e.sortOrder, e.isDefault, e.budgetLimitMinor)
     }
 }
 

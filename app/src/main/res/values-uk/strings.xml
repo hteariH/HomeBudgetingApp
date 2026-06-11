@@ -101,6 +101,9 @@
     <string name="settings_theme_dark">Темна</string>
     <string name="settings_export">Експорт даних</string>
     <string name="settings_import">Імпорт даних</string>
+    <string name="settings_import_confirm_title">Відновити з резервної копії?</string>
+    <string name="settings_import_confirm_message">Усі поточні дані буде замінено даними з копії: %1$d рахунків, %2$d категорій, %3$d транзакцій, %4$d підписок. Скасувати буде неможливо.</string>
+    <string name="settings_import_replace">Замінити</string>
     <string name="settings_clear">Очистити всі дані</string>
     <string name="settings_about">Про застосунок</string>
     <string name="settings_version">Версія</string>

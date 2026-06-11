@@ -110,6 +110,9 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_export">Export data</string>
     <string name="settings_import">Import data</string>
+    <string name="settings_import_confirm_title">Restore from backup?</string>
+    <string name="settings_import_confirm_message">This replaces all current data with the backup: %1$d accounts, %2$d categories, %3$d transactions, %4$d subscriptions. This can\'t be undone.</string>
+    <string name="settings_import_replace">Replace</string>
     <string name="settings_clear">Clear all data</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version</string>
