@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricPrompt
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.personalmoney.ads.AdsConsentManager
 import com.personalmoney.ads.AdsInitializer
@@ -53,11 +54,12 @@ class MainActivity : AppCompatActivity() {
                 ThemeMode.DARK -> true
             }
             var unlocked by remember { mutableStateOf(false) }
+            var lockError by remember { mutableStateOf<String?>(null) }
             val locked = biometricLockEnabled && !unlocked
 
             LaunchedEffect(biometricLockEnabled) {
                 if (biometricLockEnabled && !unlocked) {
-                    promptUnlock { unlocked = true }
+                    promptUnlock(onSuccess = { unlocked = true }, onError = { lockError = it })
                 } else if (!biometricLockEnabled) {
                     unlocked = true
                 }
@@ -65,7 +67,13 @@ class MainActivity : AppCompatActivity() {
 
             PersonalMoneyTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
                 if (locked) {
-                    LockScreen(onUnlock = { promptUnlock { unlocked = true } })
+                    LockScreen(
+                        error = lockError,
+                        onUnlock = {
+                            lockError = null
+                            promptUnlock(onSuccess = { unlocked = true }, onError = { lockError = it })
+                        }
+                    )
                 } else {
                     PersonalMoneyNavHost(
                         deepLinkIntent = intent,
@@ -76,14 +84,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun promptUnlock(onSuccess: () -> Unit) {
+    private fun promptUnlock(onSuccess: () -> Unit, onError: (String?) -> Unit) {
         BiometricGate.authenticate(
             activity = this,
             title = getString(R.string.lock_prompt_title),
             subtitle = getString(R.string.lock_prompt_subtitle),
             cancelLabel = getString(R.string.action_cancel),
             onSuccess = onSuccess,
-            onFailure = { _, _ -> /* stay on lock screen */ }
+            onFailure = { code, message ->
+                // User dismissals are not errors; surface real failures so the lock screen
+                // can explain why and offer a retry instead of looking unresponsive.
+                val userDismissed = code == BiometricPrompt.ERROR_USER_CANCELED ||
+                    code == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+                    code == BiometricPrompt.ERROR_CANCELED
+                onError(if (userDismissed) null else message.toString())
+            }
         )
     }
 }

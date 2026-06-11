@@ -22,7 +22,8 @@ import com.personalmoney.R
 
 @Composable
 fun LockScreen(
-    onUnlock: () -> Unit
+    onUnlock: () -> Unit,
+    error: String? = null
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -52,6 +53,15 @@ fun LockScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
             )
+            if (!error.isNullOrBlank()) {
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
             Button(onClick = onUnlock) {
                 Text(stringResource(R.string.lock_unlock))
             }
