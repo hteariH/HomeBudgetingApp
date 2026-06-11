@@ -40,6 +40,7 @@
     <string name="dashboard_settings">Настройки</string>
     <string name="dashboard_no_transactions">Пока нет транзакций</string>
     <string name="dashboard_budgets">Бюджеты</string>
+    <string name="dashboard_more_categories">+ ещё %1$d категорий</string>
 
     <string name="quickadd_title_expense">Новый расход</string>
     <string name="quickadd_title_income">Новый доход</string>

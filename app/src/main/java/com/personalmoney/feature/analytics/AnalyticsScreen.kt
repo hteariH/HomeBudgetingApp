@@ -135,8 +135,25 @@ fun AnalyticsScreen(
                 }
             }
 
+            val hasData = state.totalExpenses.minor > 0 || state.totalIncome.minor > 0
+
+            if (!hasData) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Text(
+                        text = stringResource(R.string.chart_no_data),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(24.dp)
+                    )
+                }
+            }
+
             // Monthly bar chart
-            if (state.months.isNotEmpty()) {
+            if (hasData) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -177,7 +194,7 @@ fun AnalyticsScreen(
             }
 
             // Per-month detail list
-            if (state.months.isNotEmpty()) {
+            if (hasData) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),

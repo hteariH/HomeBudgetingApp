@@ -43,6 +43,7 @@
     <string name="dashboard_settings">Settings</string>
     <string name="dashboard_no_transactions">No transactions yet</string>
     <string name="dashboard_budgets">Budgets</string>
+    <string name="dashboard_more_categories">+%1$d more categories</string>
 
     <!-- Quick Add -->
     <string name="quickadd_title_expense">New expense</string>

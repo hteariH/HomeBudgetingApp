@@ -348,6 +348,8 @@ class DashboardViewModelTest {
         vm.uiState.test {
             val state = awaitItem()
             assertTrue(state.expenseByCategory.size <= 6)
+            // 8 categories with spend -> 6 shown, 2 surfaced as "more".
+            assertEquals(2, state.moreExpenseCategories)
             cancelAndIgnoreRemainingEvents()
         }
     }

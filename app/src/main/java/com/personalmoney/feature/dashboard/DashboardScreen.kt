@@ -197,6 +197,14 @@ fun DashboardScreen(
                                 }
                             }
                             CategoryBreakdownChart(slices = slices)
+                            if (state.moreExpenseCategories > 0) {
+                                Spacer(Modifier.size(8.dp))
+                                Text(
+                                    text = stringResource(R.string.dashboard_more_categories, state.moreExpenseCategories),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }

@@ -64,6 +64,7 @@ data class DashboardUiState(
     val monthExpensesMinor: Long = 0L,
     val monthIncomeMinor: Long = 0L,
     val expenseByCategory: List<CategorySlice> = emptyList(),
+    val moreExpenseCategories: Int = 0,
     val budgets: List<BudgetProgress> = emptyList(),
     val netWorthTrend: List<Long> = emptyList(),
     val recent: List<TransactionEntity> = emptyList(),
@@ -151,7 +152,7 @@ class DashboardViewModel @Inject constructor(
                     TransactionType.TRANSFER -> Unit
                 }
             }
-            val slices = expenseByCategoryAcc.entries
+            val allSlices = expenseByCategoryAcc.entries
                 .map { (catId, total) ->
                     val cat = catId?.let { categoriesById[it] }
                     CategorySlice(
@@ -163,7 +164,8 @@ class DashboardViewModel @Inject constructor(
                     )
                 }
                 .sortedByDescending { it.totalMinor }
-                .take(6)
+            val slices = allSlices.take(6)
+            val moreExpenseCategories = (allSlices.size - slices.size).coerceAtLeast(0)
 
             val budgets = categories
                 .filter { !it.archived && it.type == com.personalmoney.core.domain.CategoryType.EXPENSE && it.budgetLimitMinor != null }
@@ -199,6 +201,7 @@ class DashboardViewModel @Inject constructor(
                 monthExpensesMinor = monthExp,
                 monthIncomeMinor = monthInc,
                 expenseByCategory = slices,
+                moreExpenseCategories = moreExpenseCategories,
                 budgets = budgets,
                 netWorthTrend = netWorthTrend,
                 recent = recent,
