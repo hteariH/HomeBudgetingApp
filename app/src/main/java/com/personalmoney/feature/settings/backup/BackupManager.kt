@@ -3,10 +3,14 @@ package com.personalmoney.feature.settings.backup
 import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
+import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.database.AppDatabase
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
+import java.math.BigDecimal
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,6 +41,40 @@ class BackupManager @Inject constructor(
         } ?: error("Cannot open output")
         envelope.transactions.size
     }
+
+    /** Export all transactions as a spreadsheet-friendly CSV to [uri]. Returns the row count. */
+    suspend fun exportCsvTo(uri: Uri): Result<Int> = runCatching {
+        val txs = db.transactionDao().observeRecent(Int.MAX_VALUE).first()
+        val accounts = db.accountDao().observeAll().first().associateBy { it.id }
+        val categories = db.categoryDao().observeAll().first().associateBy { it.id }
+        val zone = TimeZone.currentSystemDefault()
+
+        val sb = StringBuilder()
+        sb.append("Date,Type,Account,Category,Amount,Currency,Note\n")
+        for (t in txs) {
+            val date = t.occurredAt.toLocalDateTime(zone).date.toString()
+            val account = accounts[t.accountId]?.name.orEmpty()
+            val category = t.categoryId?.let { categories[it]?.name }.orEmpty()
+            val decimals = CurrencyRegistry.decimalsOrFallback(t.currencyCode)
+            val amount = BigDecimal(t.accountAmountMinor).movePointLeft(decimals).toPlainString()
+            sb.append(
+                listOf(date, t.type.name, account, category, amount, t.currencyCode, t.note.orEmpty())
+                    .joinToString(",") { csvEscape(it) }
+            )
+            sb.append("\n")
+        }
+        context.contentResolver.openOutputStream(uri, "w")?.use { out ->
+            out.write(sb.toString().toByteArray(Charsets.UTF_8))
+        } ?: error("Cannot open output")
+        txs.size
+    }
+
+    private fun csvEscape(field: String): String =
+        if (field.any { it == ',' || it == '"' || it == '\n' || it == '\r' }) {
+            "\"" + field.replace("\"", "\"\"") + "\""
+        } else {
+            field
+        }
 
     /** Parse a backup file and report its contents without modifying the database. */
     suspend fun peek(uri: Uri): Result<BackupPreview> = runCatching {

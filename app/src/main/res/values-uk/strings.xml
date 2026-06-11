@@ -128,6 +128,8 @@
     <string name="settings_import_replace">Замінити</string>
     <string name="settings_export_done">Експортовано транзакцій: %1$d</string>
     <string name="settings_import_done">Імпортовано транзакцій: %1$d</string>
+    <string name="settings_export_csv">Експорт у CSV</string>
+    <string name="settings_export_csv_done">У CSV експортовано транзакцій: %1$d</string>
     <string name="settings_export_failed">Не вдалося експортувати</string>
     <string name="settings_import_failed">Не вдалося імпортувати</string>
     <string name="settings_backup_read_failed">Не вдалося прочитати файл резервної копії</string>

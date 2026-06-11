@@ -128,6 +128,8 @@
     <string name="settings_import_replace">Заменить</string>
     <string name="settings_export_done">Экспортировано транзакций: %1$d</string>
     <string name="settings_import_done">Импортировано транзакций: %1$d</string>
+    <string name="settings_export_csv">Экспорт в CSV</string>
+    <string name="settings_export_csv_done">В CSV экспортировано транзакций: %1$d</string>
     <string name="settings_export_failed">Не удалось экспортировать</string>
     <string name="settings_import_failed">Не удалось импортировать</string>
     <string name="settings_backup_read_failed">Не удалось прочитать файл резервной копии</string>

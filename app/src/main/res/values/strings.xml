@@ -138,6 +138,8 @@
     <string name="settings_import_replace">Replace</string>
     <string name="settings_export_done">Exported %1$d transactions</string>
     <string name="settings_import_done">Imported %1$d transactions</string>
+    <string name="settings_export_csv">Export to CSV</string>
+    <string name="settings_export_csv_done">Exported %1$d transactions to CSV</string>
     <string name="settings_export_failed">Export failed</string>
     <string name="settings_import_failed">Import failed</string>
     <string name="settings_backup_read_failed">Couldn\'t read the backup file</string>

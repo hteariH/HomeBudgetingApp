@@ -79,6 +79,13 @@ fun SettingsScreen(
             viewModel.requestImport(uri) { msg -> scope.launch { snackbar.showSnackbar(msg) } }
         }
     }
+    val exportCsvLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null) {
+            viewModel.exportCsv(uri) { msg -> scope.launch { snackbar.showSnackbar(msg) } }
+        }
+    }
 
     val importRequest by viewModel.importRequest.collectAsStateWithLifecycle()
     importRequest?.let { req ->
@@ -277,6 +284,10 @@ fun SettingsScreen(
             SettingsItem(
                 title = stringResource(R.string.settings_import),
                 onClick = { importLauncher.launch(arrayOf("application/json")) }
+            )
+            SettingsItem(
+                title = stringResource(R.string.settings_export_csv),
+                onClick = { exportCsvLauncher.launch("personalmoney-transactions.csv") }
             )
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))

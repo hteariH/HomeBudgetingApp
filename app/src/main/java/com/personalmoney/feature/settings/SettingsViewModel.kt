@@ -86,6 +86,14 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun exportCsv(uri: Uri, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            backupManager.exportCsvTo(uri)
+                .onSuccess { count -> onDone(appContext.getString(R.string.settings_export_csv_done, count)) }
+                .onFailure { onDone(appContext.getString(R.string.settings_export_failed)) }
+        }
+    }
+
     private val _importRequest = MutableStateFlow<ImportRequest?>(null)
     val importRequest: StateFlow<ImportRequest?> = _importRequest.asStateFlow()
 
