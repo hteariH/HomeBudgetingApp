@@ -25,6 +25,7 @@
     <string name="dashboard_transactions">Транзакции</string>
     <string name="dashboard_settings">Настройки</string>
     <string name="dashboard_no_transactions">Пока нет транзакций</string>
+    <string name="dashboard_budgets">Бюджеты</string>
 
     <string name="quickadd_title_expense">Новый расход</string>
     <string name="quickadd_title_income">Новый доход</string>
@@ -57,6 +58,8 @@
     <string name="categories_new">Новая категория</string>
     <string name="categories_name">Название</string>
     <string name="categories_in_use">Используется в транзакциях, удалить нельзя. Архивировать?</string>
+    <string name="category_budget">Месячный бюджет</string>
+    <string name="category_budget_hint">Необязательно. Оставьте пустым — без лимита.</string>
 
     <string name="transactions_title">Транзакции</string>
     <string name="transactions_search">Поиск</string>

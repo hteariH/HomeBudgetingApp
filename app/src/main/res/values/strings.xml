@@ -27,6 +27,7 @@
     <string name="dashboard_transactions">Transactions</string>
     <string name="dashboard_settings">Settings</string>
     <string name="dashboard_no_transactions">No transactions yet</string>
+    <string name="dashboard_budgets">Budgets</string>
 
     <!-- Quick Add -->
     <string name="quickadd_title_expense">New expense</string>
@@ -62,6 +63,8 @@
     <string name="categories_new">New category</string>
     <string name="categories_name">Name</string>
     <string name="categories_in_use">Used by transactions, can\'t delete. Archive instead?</string>
+    <string name="category_budget">Monthly budget</string>
+    <string name="category_budget_hint">Optional. Leave empty for no limit.</string>
 
     <!-- Transactions -->
     <string name="transactions_title">Transactions</string>

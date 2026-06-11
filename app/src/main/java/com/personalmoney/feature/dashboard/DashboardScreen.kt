@@ -31,6 +31,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -186,6 +187,31 @@ fun DashboardScreen(
                 }
             }
 
+            // Budgets
+            if (state.budgets.isNotEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = stringResource(R.string.dashboard_budgets),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(Modifier.size(12.dp))
+                            state.budgets.forEachIndexed { i, budget ->
+                                if (i > 0) Spacer(Modifier.size(12.dp))
+                                BudgetRow(budget = budget, baseCurrency = state.baseCurrency)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Quick actions
             item {
                 Row(
@@ -301,6 +327,51 @@ fun DashboardScreen(
 
             item { BannerAd() }
         }
+    }
+}
+
+@Composable
+private fun BudgetRow(budget: BudgetProgress, baseCurrency: String) {
+    val finance = LocalFinanceColors.current
+    val currency = CurrencyCode(baseCurrency)
+    val barColor = if (budget.isOver) finance.expense else MaterialTheme.colorScheme.primary
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            IconCircle(iconKey = budget.icon, color = Color(budget.color), size = 32.dp)
+            Text(
+                text = budget.name,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            MoneyText(
+                money = Money(budget.spentMinor, currency),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = if (budget.isOver) finance.expense else MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = " / ",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            MoneyText(
+                money = Money(budget.limitMinor, currency),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(Modifier.size(6.dp))
+        LinearProgressIndicator(
+            progress = { budget.fraction },
+            modifier = Modifier.fillMaxWidth(),
+            color = barColor,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     }
 }
 

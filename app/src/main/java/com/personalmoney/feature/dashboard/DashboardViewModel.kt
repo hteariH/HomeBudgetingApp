@@ -39,6 +39,20 @@ data class CategorySlice(
     val totalMinor: Long
 )
 
+data class BudgetProgress(
+    val categoryId: Long,
+    val name: String,
+    val icon: String,
+    val color: Long,
+    val spentMinor: Long,
+    val limitMinor: Long
+) {
+    /** 0f..1f for the bar; spend can exceed the limit (handled by [isOver]). */
+    val fraction: Float get() = if (limitMinor <= 0L) 0f
+        else (spentMinor.toDouble() / limitMinor.toDouble()).coerceIn(0.0, 1.0).toFloat()
+    val isOver: Boolean get() = spentMinor > limitMinor
+}
+
 data class DashboardUiState(
     val baseCurrency: String = "USD",
     val totalBalanceMinor: Long = 0L,
@@ -47,6 +61,7 @@ data class DashboardUiState(
     val monthExpensesMinor: Long = 0L,
     val monthIncomeMinor: Long = 0L,
     val expenseByCategory: List<CategorySlice> = emptyList(),
+    val budgets: List<BudgetProgress> = emptyList(),
     val recent: List<TransactionEntity> = emptyList(),
     val accountsById: Map<Long, AccountEntity> = emptyMap(),
     val categoriesById: Map<Long, CategoryEntity> = emptyMap()
@@ -146,6 +161,20 @@ class DashboardViewModel @Inject constructor(
                 .sortedByDescending { it.totalMinor }
                 .take(6)
 
+            val budgets = categories
+                .filter { !it.archived && it.type == com.personalmoney.core.domain.CategoryType.EXPENSE && it.budgetLimitMinor != null }
+                .map { cat ->
+                    BudgetProgress(
+                        categoryId = cat.id,
+                        name = cat.name,
+                        icon = cat.icon,
+                        color = cat.color,
+                        spentMinor = expenseByCategoryAcc[cat.id] ?: 0L,
+                        limitMinor = cat.budgetLimitMinor!!
+                    )
+                }
+                .sortedByDescending { it.fraction }
+
             DashboardUiState(
                 baseCurrency = base,
                 totalBalanceMinor = totalMinor,
@@ -154,6 +183,7 @@ class DashboardViewModel @Inject constructor(
                 monthExpensesMinor = monthExp,
                 monthIncomeMinor = monthInc,
                 expenseByCategory = slices,
+                budgets = budgets,
                 recent = recent,
                 accountsById = accountsById,
                 categoriesById = categoriesById

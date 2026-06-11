@@ -2,6 +2,7 @@ package com.personalmoney.core.di
 
 import android.content.Context
 import androidx.room.Room
+import com.personalmoney.core.database.ALL_MIGRATIONS
 import com.personalmoney.core.database.AppDatabase
 import com.personalmoney.core.database.dao.AccountDao
 import com.personalmoney.core.database.dao.CategoryDao
@@ -24,6 +25,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
+            .addMigrations(*ALL_MIGRATIONS)
             .fallbackToDestructiveMigrationOnDowngrade(true)
             .build()
 

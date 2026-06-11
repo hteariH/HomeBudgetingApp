@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -38,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -107,6 +109,19 @@ fun CategoryEditScreen(
                         ))
                     }
                 }
+            }
+
+            if (state.showBudget) {
+                OutlinedTextField(
+                    value = state.budgetLimit,
+                    onValueChange = viewModel::setBudgetLimit,
+                    label = { Text(stringResource(R.string.category_budget)) },
+                    suffix = { Text(state.baseCurrency) },
+                    supportingText = { Text(stringResource(R.string.category_budget_hint)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Text(stringResource(R.string.accounts_icon), style = MaterialTheme.typography.titleSmall)

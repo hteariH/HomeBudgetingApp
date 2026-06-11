@@ -372,6 +372,69 @@ class DashboardViewModelTest {
         }
     }
 
+    // ── Budgets ──────────────────────────────────────────────────────────────
+
+    @Test
+    fun `budgeted expense category produces budget progress with spent and limit`() = runTest {
+        setupDefaultMocks()
+        val budgetedCat = testCategory.copy(budgetLimitMinor = 10_000L) // $100 budget
+        every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
+        every { categoryRepository.observeAll() } returns flowOf(listOf(budgetedCat))
+        val expense = TransactionEntity(
+            id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = 100L,
+            amountMinor = 2_500L, currencyCode = "USD", accountAmountMinor = 2_500L,
+            occurredAt = now, createdAt = now
+        )
+        every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(expense))
+
+        val vm = createViewModel()
+        vm.uiState.test {
+            val state = awaitItem()
+            assertEquals(1, state.budgets.size)
+            val b = state.budgets.first()
+            assertEquals(100L, b.categoryId)
+            assertEquals(2_500L, b.spentMinor)
+            assertEquals(10_000L, b.limitMinor)
+            assertTrue(!b.isOver)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `budget marked over when spend exceeds limit`() = runTest {
+        setupDefaultMocks()
+        val budgetedCat = testCategory.copy(budgetLimitMinor = 1_000L)
+        every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
+        every { categoryRepository.observeAll() } returns flowOf(listOf(budgetedCat))
+        val expense = TransactionEntity(
+            id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = 100L,
+            amountMinor = 5_000L, currencyCode = "USD", accountAmountMinor = 5_000L,
+            occurredAt = now, createdAt = now
+        )
+        every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(expense))
+
+        val vm = createViewModel()
+        vm.uiState.test {
+            val state = awaitItem()
+            assertEquals(1, state.budgets.size)
+            assertTrue(state.budgets.first().isOver)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `categories without a budget produce no budget rows`() = runTest {
+        setupDefaultMocks()
+        every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
+        every { categoryRepository.observeAll() } returns flowOf(listOf(testCategory)) // no budget set
+        val vm = createViewModel()
+        vm.uiState.test {
+            val state = awaitItem()
+            assertTrue(state.budgets.isEmpty())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     @Test
     fun `accounts and categories maps populated in state`() = runTest {
         setupDefaultMocks()

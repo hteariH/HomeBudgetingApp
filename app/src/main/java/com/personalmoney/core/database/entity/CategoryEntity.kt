@@ -28,5 +28,7 @@ data class CategoryEntity(
     @ColumnInfo(name = "parent_id") val parentId: Long? = null,
     val archived: Boolean = false,
     @ColumnInfo(name = "sort_order") val sortOrder: Int = 0,
-    @ColumnInfo(name = "is_default") val isDefault: Boolean = false
+    @ColumnInfo(name = "is_default") val isDefault: Boolean = false,
+    // Optional monthly spending limit in BASE-currency minor units (expense categories only).
+    @ColumnInfo(name = "budget_limit_minor") val budgetLimitMinor: Long? = null
 )
