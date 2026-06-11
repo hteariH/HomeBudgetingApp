@@ -349,9 +349,11 @@ private fun ToggleRow(
                 )
             }
         }
+        // Read-only switch — the whole row is the single toggle target (avoids a
+        // duplicate accessibility focus and accidental double toggles).
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
             enabled = enabled
         )
     }

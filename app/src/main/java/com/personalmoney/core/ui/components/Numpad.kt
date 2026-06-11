@@ -98,7 +98,7 @@ fun Numpad(
                         decimalSeparator = decimalSeparator,
                         modifier = Modifier
                             .weight(weight)
-                            .heightIn(min = if (isDone) 56.dp else 56.dp),
+                            .heightIn(min = 56.dp),
                         enabled = !isDone || doneEnabled,
                         onClick = onKey
                     )
