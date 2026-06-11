@@ -143,6 +143,14 @@ fun AccountEditScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            OutlinedTextField(
+                value = state.note,
+                onValueChange = viewModel::setNote,
+                label = { Text(stringResource(R.string.quickadd_note)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Text(stringResource(R.string.accounts_icon), style = MaterialTheme.typography.titleSmall)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
                 items(IconLibrary.pickerSet) { key ->

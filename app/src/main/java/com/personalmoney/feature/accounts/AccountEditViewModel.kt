@@ -31,6 +31,7 @@ data class AccountEditUiState(
     val color: Long = 0xFF3D4499L,
     val includeInTotal: Boolean = true,
     val archived: Boolean = false,
+    val note: String = "",
     val availableCurrencies: List<CurrencyEntity> = emptyList(),
     val transactionCount: Int = 0,
     val saving: Boolean = false,
@@ -85,6 +86,7 @@ class AccountEditViewModel @Inject constructor(
                         color = acc.color,
                         includeInTotal = acc.includeInTotal,
                         archived = acc.archived,
+                        note = acc.note ?: "",
                         transactionCount = txCount
                     )
                 }
@@ -103,6 +105,7 @@ class AccountEditViewModel @Inject constructor(
     fun setColor(color: Long) = internalState.update { it.copy(color = color) }
     fun setIncludeInTotal(value: Boolean) = internalState.update { it.copy(includeInTotal = value) }
     fun setArchived(value: Boolean) = internalState.update { it.copy(archived = value) }
+    fun setNote(value: String) = internalState.update { it.copy(note = value) }
     fun clearError() = internalState.update { it.copy(error = null) }
 
     fun save() {
@@ -125,7 +128,8 @@ class AccountEditViewModel @Inject constructor(
                             icon = st.icon,
                             color = st.color,
                             includeInTotal = st.includeInTotal,
-                            archived = st.archived
+                            archived = st.archived,
+                            note = st.note.takeIf { it.isNotBlank() }
                         )
                     )
                     // Auto-activate currency
@@ -144,7 +148,8 @@ class AccountEditViewModel @Inject constructor(
                             icon = st.icon,
                             color = st.color,
                             includeInTotal = st.includeInTotal,
-                            archived = st.archived
+                            archived = st.archived,
+                            note = st.note.takeIf { it.isNotBlank() }
                         )
                     )
                 }
