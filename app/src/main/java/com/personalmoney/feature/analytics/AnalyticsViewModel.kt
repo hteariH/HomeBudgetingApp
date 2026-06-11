@@ -25,6 +25,7 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
+import kotlin.math.roundToInt
 import javax.inject.Inject
 
 data class MonthlyBar(
@@ -43,6 +44,26 @@ data class AnalyticsUiState(
     // Always at least 1 so charts never divide by zero (empty months or all-zero bars).
     val maxValue: Long get() =
         (months.maxOfOrNull { maxOf(it.expenses.minor, it.income.minor) } ?: 0L).coerceAtLeast(1L)
+
+    // months are ordered oldest -> newest, so the last is the current month.
+    val currentMonth: MonthlyBar? get() = months.lastOrNull()
+    private val previousMonth: MonthlyBar? get() = months.getOrNull(months.size - 2)
+
+    /** Percent change in expenses vs the previous month, or null when not computable. */
+    val expenseChangePercent: Int? get() {
+        val prev = previousMonth?.expenses?.minor ?: return null
+        val curr = currentMonth?.expenses?.minor ?: return null
+        if (prev <= 0L) return null
+        return (((curr - prev).toDouble() / prev) * 100).roundToInt()
+    }
+
+    /** Savings rate for the current month: (income - expenses) / income, as a percent. */
+    val savingsRatePercent: Int? get() {
+        val income = currentMonth?.income?.minor ?: return null
+        val expenses = currentMonth?.expenses?.minor ?: return null
+        if (income <= 0L) return null
+        return (((income - expenses).toDouble() / income) * 100).roundToInt()
+    }
 }
 
 /** Localized short month name (Jan / янв. / січ.) following the active app locale. */

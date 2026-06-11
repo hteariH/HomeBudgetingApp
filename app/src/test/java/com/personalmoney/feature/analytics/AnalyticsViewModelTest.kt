@@ -5,6 +5,8 @@ import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.repository.ExchangeRateRepository
 import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.domain.CurrencyCode
+import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.util.MainDispatcherRule
 import io.mockk.every
@@ -109,6 +111,25 @@ class AnalyticsViewModelTest {
             assertEquals(0L, state.totalIncome.minor)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `expense change percent compares last two months`() = runTest {
+        // Build a state directly: previous month 100.00, current 150.00 -> +50%.
+        val cur = CurrencyCode("USD")
+        val prev = MonthlyBar("M1", Money(10_000L, cur), Money(0L, cur), 0)
+        val now = MonthlyBar("M2", Money(15_000L, cur), Money(20_000L, cur), 1)
+        val state = AnalyticsUiState(months = listOf(prev, now))
+        assertEquals(50, state.expenseChangePercent)
+        // savings rate = (20000 - 15000) / 20000 = 25%
+        assertEquals(25, state.savingsRatePercent)
+    }
+
+    @Test
+    fun `insights are null without enough data`() = runTest {
+        val state = AnalyticsUiState(months = emptyList())
+        org.junit.Assert.assertNull(state.expenseChangePercent)
+        org.junit.Assert.assertNull(state.savingsRatePercent)
     }
 
     @Test

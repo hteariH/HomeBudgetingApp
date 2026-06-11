@@ -95,6 +95,46 @@ fun AnalyticsScreen(
                 )
             }
 
+            // Insights
+            val expenseChange = state.expenseChangePercent
+            val savingsRate = state.savingsRatePercent
+            if (expenseChange != null || savingsRate != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.analytics_insights),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        if (expenseChange != null) {
+                            val text = when {
+                                expenseChange > 0 -> stringResource(R.string.analytics_expense_up, expenseChange)
+                                expenseChange < 0 -> stringResource(R.string.analytics_expense_down, -expenseChange)
+                                else -> stringResource(R.string.analytics_expense_flat)
+                            }
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (expenseChange > 0) finance.expense else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        if (savingsRate != null) {
+                            Text(
+                                text = stringResource(R.string.analytics_savings_rate, savingsRate),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (savingsRate >= 0) finance.income else finance.expense
+                            )
+                        }
+                    }
+                }
+            }
+
             // Monthly bar chart
             if (state.months.isNotEmpty()) {
                 Card(

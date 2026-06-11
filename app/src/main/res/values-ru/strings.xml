@@ -192,6 +192,11 @@
     <string name="analytics_title">Аналитика</string>
     <string name="analytics_by_month">По месяцам</string>
     <string name="analytics_last_months">За последние %1$d мес.</string>
+    <string name="analytics_insights">Сводка</string>
+    <string name="analytics_expense_up">Расходы выросли на %1$d%% к прошлому месяцу</string>
+    <string name="analytics_expense_down">Расходы снизились на %1$d%% к прошлому месяцу</string>
+    <string name="analytics_expense_flat">Расходы не изменились к прошлому месяцу</string>
+    <string name="analytics_savings_rate">Норма сбережений за месяц: %1$d%%</string>
     <string name="period_all">Все</string>
     <string name="period_today">Сегодня</string>
     <string name="period_week">Неделя</string>

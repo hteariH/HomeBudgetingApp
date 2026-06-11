@@ -208,6 +208,11 @@
     <string name="analytics_title">Analytics</string>
     <string name="analytics_by_month">Monthly</string>
     <string name="analytics_last_months">Last %1$d months</string>
+    <string name="analytics_insights">Insights</string>
+    <string name="analytics_expense_up">Spending up %1$d%% vs last month</string>
+    <string name="analytics_expense_down">Spending down %1$d%% vs last month</string>
+    <string name="analytics_expense_flat">Spending unchanged vs last month</string>
+    <string name="analytics_savings_rate">Savings rate this month: %1$d%%</string>
 
     <!-- Period filter -->
     <string name="period_all">All</string>
