@@ -68,6 +68,7 @@
     <string name="transactions_today">Сегодня</string>
     <string name="transactions_yesterday">Вчера</string>
     <string name="transactions_empty">По фильтрам ничего не найдено</string>
+    <string name="action_clear_filters">Сбросить фильтры</string>
 
     <string name="transfer_title">Перевод</string>
     <string name="transfer_from">Со счёта</string>

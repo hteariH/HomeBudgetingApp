@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -79,6 +80,23 @@ fun TransactionsScreen(
                     }
                 },
                 actions = {
+                    val anyFilter = activePeriod != PeriodFilter.ALL ||
+                        state.filter.type != null ||
+                        state.filter.query.isNotBlank() ||
+                        state.filter.accountId != null ||
+                        state.filter.categoryId != null
+                    if (anyFilter) {
+                        IconButton(onClick = {
+                            viewModel.clearFilters()
+                            activePeriod = PeriodFilter.ALL
+                            showSearch = false
+                        }) {
+                            Icon(
+                                Icons.Filled.FilterAltOff,
+                                contentDescription = stringResource(R.string.action_clear_filters)
+                            )
+                        }
+                    }
                     IconButton(onClick = { showSearch = !showSearch }) {
                         Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.transactions_search))
                     }

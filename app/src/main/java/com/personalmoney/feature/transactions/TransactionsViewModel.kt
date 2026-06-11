@@ -8,6 +8,7 @@ import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.domain.TransactionType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,16 +68,32 @@ class TransactionsViewModel @Inject constructor(
             accountRepository.observeAll(),
             categoryRepository.observeAll()
         ) { tx, accounts, categories ->
+            val accountsById = accounts.associateBy { it.id }
+            val categoriesById = categories.associateBy { it.id }
             val q = filter.query.trim().lowercase()
-            val filtered = if (q.isEmpty()) tx else tx.filter { it.note?.lowercase()?.contains(q) == true }
+            val filtered = if (q.isEmpty()) tx else tx.filter { t ->
+                t.note?.lowercase()?.contains(q) == true ||
+                    (t.categoryId?.let { categoriesById[it]?.name }.orEmpty()).lowercase().contains(q) ||
+                    (accountsById[t.accountId]?.name.orEmpty()).lowercase().contains(q) ||
+                    t.currencyCode.lowercase().contains(q) ||
+                    amountMatches(t, q)
+            }
             TransactionsUiState(
                 filter = filter,
                 transactions = filtered,
-                accountsById = accounts.associateBy { it.id },
-                categoriesById = categories.associateBy { it.id }
+                accountsById = accountsById,
+                categoriesById = categoriesById
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TransactionsUiState())
+
+    /** Matches the query against the transaction's amount written in major units (e.g. "15" or "12.50"). */
+    private fun amountMatches(t: TransactionEntity, q: String): Boolean {
+        if (q.none { it.isDigit() }) return false
+        val decimals = CurrencyRegistry.decimalsOrFallback(t.currencyCode)
+        val plain = java.math.BigDecimal(t.accountAmountMinor).movePointLeft(decimals).abs().toPlainString()
+        return plain.contains(q)
+    }
 
     fun setQuery(value: String) { filterFlow.value = filterFlow.value.copy(query = value) }
     fun setType(type: TransactionType?) { filterFlow.value = filterFlow.value.copy(type = type) }

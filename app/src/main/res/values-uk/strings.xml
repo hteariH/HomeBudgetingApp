@@ -68,6 +68,7 @@
     <string name="transactions_today">Сьогодні</string>
     <string name="transactions_yesterday">Вчора</string>
     <string name="transactions_empty">За фільтрами нічого не знайдено</string>
+    <string name="action_clear_filters">Скинути фільтри</string>
 
     <string name="transfer_title">Переказ</string>
     <string name="transfer_from">З рахунку</string>
