@@ -26,3 +26,4 @@ play-publish-key.json
 # Local debugging artifacts (UI automator dumps & emulator screenshots)
 /screen_*.png
 /ui*.xml
+/uo*.xml
