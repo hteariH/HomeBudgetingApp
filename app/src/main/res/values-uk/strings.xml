@@ -92,6 +92,7 @@
     <string name="subscriptions_active">Активна</string>
     <string name="subscriptions_paused">Призупинено</string>
     <string name="subscription_delete_confirm">Видалити цю підписку?</string>
+    <string name="subscriptions_invalid_amount">Введіть коректну суму</string>
     <string name="freq_daily">Щодня</string>
     <string name="freq_weekly">Щотижня</string>
     <string name="freq_monthly">Щомісяця</string>

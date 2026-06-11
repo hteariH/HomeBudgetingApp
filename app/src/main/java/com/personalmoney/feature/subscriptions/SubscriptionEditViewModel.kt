@@ -1,8 +1,10 @@
 package com.personalmoney.feature.subscriptions
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.personalmoney.R
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.CategoryRepository
 import com.personalmoney.core.data.repository.SubscriptionRepository
@@ -12,6 +14,7 @@ import com.personalmoney.core.database.entity.SubscriptionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.SubscriptionFrequency
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +58,7 @@ private fun today(): LocalDate =
 
 @HiltViewModel
 class SubscriptionEditViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val subscriptionRepository: SubscriptionRepository,
     accountRepository: AccountRepository,
@@ -119,7 +123,7 @@ class SubscriptionEditViewModel @Inject constructor(
         val amountMinor = runCatching {
             BigDecimal(s.amount).movePointRight(decimals).setScale(0, RoundingMode.HALF_UP).toLong()
         }.getOrElse {
-            internal.update { it.copy(error = "Invalid amount") }; return
+            internal.update { it.copy(error = appContext.getString(R.string.subscriptions_invalid_amount)) }; return
         }
         internal.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {

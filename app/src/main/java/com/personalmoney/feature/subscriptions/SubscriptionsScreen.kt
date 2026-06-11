@@ -43,6 +43,9 @@ import com.personalmoney.core.domain.SubscriptionFrequency
 import com.personalmoney.core.ui.components.EmptyState
 import com.personalmoney.core.ui.components.IconCircle
 import com.personalmoney.core.ui.components.MoneyText
+import kotlinx.datetime.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,7 +157,7 @@ private fun SubscriptionRow(
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Text(
-                    "${frequencyLabel(sub.frequency, sub.interval)} · ${sub.nextChargeDate}",
+                    "${frequencyLabel(sub.frequency, sub.interval)} · ${formatSubListDate(sub.nextChargeDate)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -169,6 +172,11 @@ private fun SubscriptionRow(
         }
     }
 }
+
+private val subListDateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
+
+private fun formatSubListDate(date: LocalDate): String =
+    subListDateFormatter.format(java.time.LocalDate.of(date.year, date.monthNumber, date.dayOfMonth))
 
 @Composable
 private fun frequencyLabel(frequency: SubscriptionFrequency, interval: Int): String {

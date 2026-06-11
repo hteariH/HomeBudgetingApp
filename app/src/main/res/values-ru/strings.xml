@@ -92,6 +92,7 @@
     <string name="subscriptions_active">Активна</string>
     <string name="subscriptions_paused">Приостановлена</string>
     <string name="subscription_delete_confirm">Удалить эту подписку?</string>
+    <string name="subscriptions_invalid_amount">Введите корректную сумму</string>
     <string name="freq_daily">Ежедневно</string>
     <string name="freq_weekly">Еженедельно</string>
     <string name="freq_monthly">Ежемесячно</string>

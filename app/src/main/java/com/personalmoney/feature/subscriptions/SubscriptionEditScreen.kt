@@ -21,6 +21,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -40,6 +42,14 @@ import com.personalmoney.R
 import com.personalmoney.core.domain.SubscriptionFrequency
 import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
+import kotlinx.datetime.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private val subDateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
+
+private fun formatSubDate(date: LocalDate): String =
+    subDateFormatter.format(java.time.LocalDate.of(date.year, date.monthNumber, date.dayOfMonth))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,10 +59,17 @@ fun SubscriptionEditScreen(
     viewModel: SubscriptionEditViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
     var showDatePicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) { if (state.saved) onSaved() }
+    LaunchedEffect(state.error) {
+        state.error?.let { msg ->
+            snackbar.showSnackbar(msg)
+            viewModel.clearError()
+        }
+    }
 
     if (showDeleteConfirm) {
         ConfirmDialog(
@@ -89,7 +106,8 @@ fun SubscriptionEditScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         Column(
             modifier = Modifier.padding(padding).padding(16.dp),
@@ -129,7 +147,7 @@ fun SubscriptionEditScreen(
                 }
             }
 
-            Text("${stringResource(R.string.subscriptions_next_charge)}: ${state.nextChargeDate}", style = MaterialTheme.typography.bodyMedium)
+            Text("${stringResource(R.string.subscriptions_next_charge)}: ${formatSubDate(state.nextChargeDate)}", style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = { showDatePicker = true }) { Text(stringResource(R.string.action_edit)) }
 
             if (state.accounts.size > 1) {

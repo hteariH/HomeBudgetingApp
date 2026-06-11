@@ -100,6 +100,7 @@
     <string name="subscriptions_active">Active</string>
     <string name="subscriptions_paused">Paused</string>
     <string name="subscription_delete_confirm">Delete this subscription?</string>
+    <string name="subscriptions_invalid_amount">Enter a valid amount</string>
     <string name="freq_daily">Daily</string>
     <string name="freq_weekly">Weekly</string>
     <string name="freq_monthly">Monthly</string>
