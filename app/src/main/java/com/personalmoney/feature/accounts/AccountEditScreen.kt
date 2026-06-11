@@ -182,9 +182,14 @@ fun AccountEditScreen(
         }
 
         if (showDeleteConfirm) {
+            val message = if (state.transactionCount > 0) {
+                stringResource(R.string.accounts_delete_warning, state.name, state.transactionCount)
+            } else {
+                stringResource(R.string.accounts_name) + ": " + state.name
+            }
             ConfirmDialog(
                 title = stringResource(R.string.action_delete),
-                message = stringResource(R.string.accounts_name) + ": " + state.name,
+                message = message,
                 confirmLabel = stringResource(R.string.action_delete),
                 dismissLabel = stringResource(R.string.action_cancel),
                 destructive = true,

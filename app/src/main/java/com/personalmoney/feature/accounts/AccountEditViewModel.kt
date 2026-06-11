@@ -32,6 +32,7 @@ data class AccountEditUiState(
     val includeInTotal: Boolean = true,
     val archived: Boolean = false,
     val availableCurrencies: List<CurrencyEntity> = emptyList(),
+    val transactionCount: Int = 0,
     val saving: Boolean = false,
     val saved: Boolean = false,
     val error: String? = null
@@ -73,6 +74,7 @@ class AccountEditViewModel @Inject constructor(
             if (accountId != null) {
                 accountRepository.findById(accountId)?.let { acc ->
                     val decimals = currencyDecimals(acc.currencyCode)
+                    val txCount = accountRepository.transactionCount(acc.id)
                     internalState.value = AccountEditUiState(
                         id = acc.id,
                         name = acc.name,
@@ -82,7 +84,8 @@ class AccountEditViewModel @Inject constructor(
                         icon = acc.icon,
                         color = acc.color,
                         includeInTotal = acc.includeInTotal,
-                        archived = acc.archived
+                        archived = acc.archived,
+                        transactionCount = txCount
                     )
                 }
             } else {
@@ -156,7 +159,13 @@ class AccountEditViewModel @Inject constructor(
     fun delete() {
         val id = internalState.value.id ?: return
         viewModelScope.launch {
-            runCatching { accountRepository.delete(id) }
+            runCatching {
+                accountRepository.delete(id)
+                // Clear the stored default if it pointed at the deleted account.
+                if (userPreferences.defaultAccountId.first() == id) {
+                    userPreferences.setDefaultAccount(null)
+                }
+            }
                 .onSuccess { internalState.update { it.copy(saved = true) } }
                 .onFailure { e -> internalState.update { it.copy(error = e.message) } }
         }

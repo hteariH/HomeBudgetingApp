@@ -56,6 +56,7 @@
     <string name="accounts_total">Total</string>
     <string name="accounts_archived">Archived</string>
     <string name="accounts_empty">No accounts yet. Add one to start tracking.</string>
+    <string name="accounts_delete_warning">Delete \"%1$s\"? Its %2$d transactions will also be permanently deleted.</string>
 
     <!-- Categories -->
     <string name="categories_title">Categories</string>

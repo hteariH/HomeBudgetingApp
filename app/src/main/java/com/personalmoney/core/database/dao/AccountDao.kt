@@ -40,6 +40,9 @@ interface AccountDao {
     @Query("DELETE FROM accounts")
     suspend fun deleteAll()
 
+    @Query("SELECT COUNT(*) FROM transactions WHERE account_id = :id")
+    suspend fun transactionCount(id: Long): Int
+
     @Query("SELECT COUNT(*) FROM accounts WHERE archived = 0")
     fun observeActiveCount(): Flow<Int>
 

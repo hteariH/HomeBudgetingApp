@@ -19,6 +19,7 @@ class AccountRepository @Inject constructor(
     suspend fun balancesAsOf(asOfMs: Long): List<AccountBalanceRow> = dao.balancesAsOf(asOfMs)
 
     suspend fun findById(id: Long): AccountEntity? = dao.findById(id)
+    suspend fun transactionCount(id: Long): Int = dao.transactionCount(id)
 
     suspend fun create(account: AccountEntity): Long = dao.insert(account)
     suspend fun update(account: AccountEntity) = dao.update(account)

@@ -52,6 +52,7 @@
     <string name="accounts_total">Итого</string>
     <string name="accounts_archived">В архиве</string>
     <string name="accounts_empty">Счетов пока нет. Создайте первый, чтобы начать.</string>
+    <string name="accounts_delete_warning">Удалить «%1$s»? Вместе с ним будут безвозвратно удалены транзакции: %2$d.</string>
 
     <string name="categories_title">Категории</string>
     <string name="categories_expense">Расходы</string>
