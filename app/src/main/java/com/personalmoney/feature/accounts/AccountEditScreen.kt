@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.R
+import com.personalmoney.core.database.entity.CurrencyEntity
 import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.core.ui.components.IconCircle
 import com.personalmoney.core.ui.icons.IconLibrary
@@ -130,7 +131,7 @@ fun AccountEditScreen(
 
             CurrencyDropdown(
                 selected = state.currencyCode,
-                currencies = state.availableCurrencies.map { it.code },
+                currencies = state.availableCurrencies,
                 onPick = viewModel::setCurrency
             )
 
@@ -213,16 +214,17 @@ fun AccountEditScreen(
 @Composable
 private fun CurrencyDropdown(
     selected: String,
-    currencies: List<String>,
+    currencies: List<CurrencyEntity>,
     onPick: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val selectedName = currencies.firstOrNull { it.code == selected }?.name
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it }
     ) {
         OutlinedTextField(
-            value = selected,
+            value = if (selectedName != null) "$selected · $selectedName" else selected,
             onValueChange = { },
             readOnly = true,
             label = { Text(stringResource(R.string.accounts_currency)) },
@@ -235,10 +237,10 @@ private fun CurrencyDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            currencies.forEach { code ->
+            currencies.forEach { currency ->
                 DropdownMenuItem(
-                    text = { Text(code) },
-                    onClick = { onPick(code); expanded = false }
+                    text = { Text("${currency.code} · ${currency.name}") },
+                    onClick = { onPick(currency.code); expanded = false }
                 )
             }
         }

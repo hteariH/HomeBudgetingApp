@@ -87,7 +87,7 @@ fun CurrencyEditScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (state.isEditing) state.code
+                        if (state.isEditing) state.name.ifBlank { state.code }
                         else stringResource(R.string.currencies_new)
                     )
                 },
