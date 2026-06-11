@@ -4,8 +4,8 @@ import android.view.View
 import android.widget.FrameLayout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +31,9 @@ fun BannerAd(
     }
     LaunchedEffect(Unit) {
         adView.loadAd(AdRequest.Builder().build())
+    }
+    DisposableEffect(Unit) {
+        onDispose { adView.destroy() }
     }
     AndroidView(
         factory = { ctx ->

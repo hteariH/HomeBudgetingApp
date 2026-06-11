@@ -302,7 +302,7 @@ fun SettingsScreen(
 
             SettingsItem(
                 title = stringResource(R.string.settings_about),
-                subtitle = stringResource(R.string.settings_version) + " 0.1.0",
+                subtitle = stringResource(R.string.settings_version) + " " + BuildConfig.VERSION_NAME,
                 onClick = { }
             )
         }
