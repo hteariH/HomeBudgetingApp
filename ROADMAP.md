@@ -10,6 +10,28 @@ _Generated 2026-06-11 from a full multi-agent audit of the codebase (11 domain a
 
 ---
 
+## ✅ Status (updated 2026-06-11)
+
+**Top 10 — all done.** Each shipped with regression tests + a green build; commits on `master`:
+1. Privacy policy URL + filled template — `0fab8bb`
+2. Money-correctness trio (FX ÷0, overflow clamp, date-converter crash) — `ba02e4b`
+3. Category budgets (DB migration v1→v2, edit UI, dashboard progress) — `e30a459`
+4. Safe backup import (atomic replace + preview + confirm) — `facf724`
+5. Category/Subscription delete confirmations + transactionId crash fix — `7e8db2d`
+6. Net worth trend sparkline — `32c6fbb`
+7. Biometric failure feedback on lock screen — `e34b661`
+8. Expanded transaction search + Clear filters — `9c05ffd`
+9. Localized backup/transfer/widget strings — `0641bbe`
+10. Quick-repeat (duplicate transaction) — `05e0bfd`
+
+Also fixed a pre-existing red unit-test baseline (`b73d7d0`). Test count grew from
+~108 to ~130 (unit) + an instrumented backup test.
+
+**Next:** working through the themes below — correctness cleanups, subscription/edit
+bug fixes, and remaining i18n.
+
+---
+
 ## ⭐ Top 10 — best next moves (ranked)
 
 | # | Item | Impact | Effort | Why |
