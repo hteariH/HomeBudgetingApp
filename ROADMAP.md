@@ -24,11 +24,23 @@ _Generated 2026-06-11 from a full multi-agent audit of the codebase (11 domain a
 9. Localized backup/transfer/widget strings — `0641bbe`
 10. Quick-repeat (duplicate transaction) — `05e0bfd`
 
-Also fixed a pre-existing red unit-test baseline (`b73d7d0`). Test count grew from
-~108 to ~130 (unit) + an instrumented backup test.
+Also fixed a pre-existing red unit-test baseline (`b73d7d0`).
 
-**Next:** working through the themes below — correctness cleanups, subscription/edit
-bug fixes, and remaining i18n.
+**Post-Top-10 roadmap progress (continuing):**
+- Theme 5 — subscription save errors surfaced; charge dates formatted (`2eaf2d1`)
+- Theme 6 — analytics month names localized; transactions "All" string (`7f17e7a`)
+- Theme 1 — category usageCount counts subscriptions; precise recurring factors (`4faa639`)
+- Theme 1 — account cascade-delete warning + clear stale default account (`549f2d0`)
+- Theme 9 — accessibility labels for numpad symbol keys + transfer swap (`6003016`)
+- Theme 3 — spending insights card (MoM change, savings rate) (`158ef98`)
+
+Verified-as-already-done or false positives (skipped): currency-deletion guard
+(CurrencyEditViewModel already checks usageCount), language-tag NPE (null-safe),
+TransactionEdit scientific-notation (toPlainString never uses exponents),
+archived-category "leak" (maps are needed to label history).
+
+Test count now ~140 unit + 1 instrumented. Every change gated on testDebugUnitTest
++ assembleDebug.
 
 ---
 
