@@ -27,7 +27,7 @@ val admobBanner = keystoreProps.getProperty("admobBannerUnitId")
 val admobInterstitial = keystoreProps.getProperty("admobInterstitialUnitId")
     ?: "ca-app-pub-3940256099942544/1033173712"
 val privacyPolicyUrl = keystoreProps.getProperty("privacyPolicyUrl")
-    ?: "https://htearih.github.io/AndroidPersonalMoney/privacy"
+    ?: "https://gist.github.com/hteariH/bfd7d6412cc41a227bcc53646655bfc2"
 
 android {
     namespace = "com.personalmoney"

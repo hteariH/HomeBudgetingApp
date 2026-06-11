@@ -114,4 +114,7 @@ Questions, requests, or complaints regarding this policy:
 
 ---
 
-_This document is published as part of the open-source repository for PersonalMoney. The maintainer is responsible for hosting an up-to-date copy at a stable URL that is linked from the Google Play listing and from the App's **Settings → Privacy policy** screen._
+_The canonical, publicly hosted copy of this policy lives at
+<https://gist.github.com/hteariH/bfd7d6412cc41a227bcc53646655bfc2>, linked from the Google Play
+listing and from the App's **Settings → Privacy policy** screen. Keep this gist in sync when the
+policy changes._
