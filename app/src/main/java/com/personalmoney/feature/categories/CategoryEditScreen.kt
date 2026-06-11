@@ -27,13 +27,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,10 +47,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.rememberCoroutineScope
 import com.personalmoney.R
 import com.personalmoney.core.domain.CategoryType
+import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.core.ui.components.IconCircle
 import com.personalmoney.core.ui.icons.IconLibrary
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +63,28 @@ fun CategoryEditScreen(
     viewModel: CategoryEditViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     LaunchedEffect(state.saved) { if (state.saved) onSaved() }
+    LaunchedEffect(state.error) {
+        state.error?.let { msg ->
+            scope.launch { snackbar.showSnackbar(msg) }
+            viewModel.clearError()
+        }
+    }
+
+    if (showDeleteConfirm) {
+        ConfirmDialog(
+            title = stringResource(R.string.action_delete),
+            message = stringResource(R.string.category_delete_confirm),
+            confirmLabel = stringResource(R.string.action_delete),
+            dismissLabel = stringResource(R.string.action_cancel),
+            destructive = true,
+            onConfirm = viewModel::delete,
+            onDismiss = { showDeleteConfirm = false }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -72,7 +100,7 @@ fun CategoryEditScreen(
                 },
                 actions = {
                     if (state.isEditing) {
-                        IconButton(onClick = viewModel::delete) {
+                        IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
                         }
                     }
@@ -81,7 +109,8 @@ fun CategoryEditScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         Column(
             modifier = Modifier.padding(padding).padding(16.dp),

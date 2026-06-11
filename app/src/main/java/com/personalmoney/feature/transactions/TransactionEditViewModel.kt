@@ -71,8 +71,9 @@ class TransactionEditViewModel @Inject constructor(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
+    // A malformed/missing arg must not crash the screen (e.g. a bad deep link).
     private val transactionId: Long =
-        checkNotNull(savedStateHandle.get<String>("transactionId")?.toLongOrNull())
+        savedStateHandle.get<String>("transactionId")?.toLongOrNull() ?: -1L
 
     private val txFlow = transactionRepository.observeById(transactionId).filterNotNull()
 
@@ -151,7 +152,10 @@ class TransactionEditViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     init {
-        viewModelScope.launch {
+        if (transactionId <= 0L) {
+            // Nothing to load — surface an empty, non-crashing state.
+            loadingFlow.value = false
+        } else viewModelScope.launch {
             val tx = txFlow.first()
             originalFlow.value = tx
             typeFlow.value = tx.type

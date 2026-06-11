@@ -65,6 +65,7 @@
     <string name="categories_in_use">Used by transactions, can\'t delete. Archive instead?</string>
     <string name="category_budget">Monthly budget</string>
     <string name="category_budget_hint">Optional. Leave empty for no limit.</string>
+    <string name="category_delete_confirm">Delete this category?</string>
 
     <!-- Transactions -->
     <string name="transactions_title">Transactions</string>
@@ -94,6 +95,7 @@
     <string name="subscriptions_total_year">Per year</string>
     <string name="subscriptions_active">Active</string>
     <string name="subscriptions_paused">Paused</string>
+    <string name="subscription_delete_confirm">Delete this subscription?</string>
     <string name="freq_daily">Daily</string>
     <string name="freq_weekly">Weekly</string>
     <string name="freq_monthly">Monthly</string>

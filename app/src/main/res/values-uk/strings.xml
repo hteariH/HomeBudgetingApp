@@ -60,6 +60,7 @@
     <string name="categories_in_use">Використовується в транзакціях, не можна видалити. Архівувати?</string>
     <string name="category_budget">Місячний бюджет</string>
     <string name="category_budget_hint">Необов\'язково. Залиште порожнім — без ліміту.</string>
+    <string name="category_delete_confirm">Видалити цю категорію?</string>
 
     <string name="transactions_title">Транзакції</string>
     <string name="transactions_search">Пошук</string>
@@ -86,6 +87,7 @@
     <string name="subscriptions_total_year">На рік</string>
     <string name="subscriptions_active">Активна</string>
     <string name="subscriptions_paused">Призупинено</string>
+    <string name="subscription_delete_confirm">Видалити цю підписку?</string>
     <string name="freq_daily">Щодня</string>
     <string name="freq_weekly">Щотижня</string>
     <string name="freq_monthly">Щомісяця</string>

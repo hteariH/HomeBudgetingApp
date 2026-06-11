@@ -108,6 +108,25 @@ class TransactionEditViewModelTest {
     // ── Loading ──────────────────────────────────────────────────────────────
 
     @Test
+    fun `invalid transactionId does not crash and ends loading`() = runTest {
+        setupDefaultMocks()
+        val vm = TransactionEditViewModel(
+            savedStateHandle = SavedStateHandle(mapOf("transactionId" to "not-a-number")),
+            transactionRepository = transactionRepository,
+            accountRepository = accountRepository,
+            categoryRepository = categoryRepository,
+            userPreferences = userPreferences
+        )
+        vm.uiState.test {
+            var state = awaitItem()
+            while (state.loading) state = awaitItem()
+            assertFalse(state.loading)
+            assertNull(state.original)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `loads transaction and sets expression from amount`() = runTest {
         val vm = createViewModel()
         vm.uiState.test {

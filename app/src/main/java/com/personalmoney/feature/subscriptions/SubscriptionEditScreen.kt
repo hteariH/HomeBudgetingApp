@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.R
 import com.personalmoney.core.domain.SubscriptionFrequency
+import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,8 +50,21 @@ fun SubscriptionEditScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) { if (state.saved) onSaved() }
+
+    if (showDeleteConfirm) {
+        ConfirmDialog(
+            title = stringResource(R.string.action_delete),
+            message = stringResource(R.string.subscription_delete_confirm),
+            confirmLabel = stringResource(R.string.action_delete),
+            dismissLabel = stringResource(R.string.action_cancel),
+            destructive = true,
+            onConfirm = viewModel::delete,
+            onDismiss = { showDeleteConfirm = false }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -66,7 +80,7 @@ fun SubscriptionEditScreen(
                 },
                 actions = {
                     if (state.isEditing) {
-                        IconButton(onClick = viewModel::delete) {
+                        IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
                         }
                     }
