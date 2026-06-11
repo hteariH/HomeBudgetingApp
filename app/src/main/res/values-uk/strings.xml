@@ -11,6 +11,7 @@
     <string name="action_close">Закрити</string>
     <string name="action_done">Готово</string>
     <string name="action_back">Назад</string>
+    <string name="action_duplicate">Дублювати</string>
 
     <string name="dashboard_title">Огляд</string>
     <string name="dashboard_total_balance">Загальний капітал</string>

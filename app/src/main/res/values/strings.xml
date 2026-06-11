@@ -12,6 +12,7 @@
     <string name="action_close">Close</string>
     <string name="action_done">Done</string>
     <string name="action_back">Back</string>
+    <string name="action_duplicate">Duplicate</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">Overview</string>

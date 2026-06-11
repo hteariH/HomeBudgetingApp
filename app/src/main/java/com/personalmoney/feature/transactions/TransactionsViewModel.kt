@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -111,6 +112,17 @@ class TransactionsViewModel @Inject constructor(
             } else {
                 transactionRepository.delete(transaction.id)
             }
+        }
+    }
+
+    /** Quick-repeat: insert a copy of a transaction dated now. Transfers are not duplicated. */
+    fun duplicate(transaction: TransactionEntity) {
+        if (transaction.transferGroupId != null) return
+        viewModelScope.launch {
+            val now = Clock.System.now()
+            transactionRepository.insert(
+                transaction.copy(id = 0L, occurredAt = now, createdAt = now, subscriptionId = null)
+            )
         }
     }
 }

@@ -3,6 +3,7 @@ package com.personalmoney.feature.transactions
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -223,7 +226,12 @@ fun TransactionsScreen(
             if (state.transactions.isEmpty()) {
                 EmptyState(title = stringResource(R.string.transactions_empty))
             } else {
-                TransactionList(state = state, onEdit = onEdit, onDelete = viewModel::delete)
+                TransactionList(
+                    state = state,
+                    onEdit = onEdit,
+                    onDelete = viewModel::delete,
+                    onDuplicate = viewModel::duplicate
+                )
             }
             BannerAd()
         }
@@ -237,7 +245,8 @@ private val dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.get
 private fun TransactionList(
     state: TransactionsUiState,
     onEdit: (Long) -> Unit,
-    onDelete: (TransactionEntity) -> Unit
+    onDelete: (TransactionEntity) -> Unit,
+    onDuplicate: (TransactionEntity) -> Unit
 ) {
     var deleteTarget by remember { mutableStateOf<TransactionEntity?>(null) }
 
@@ -298,7 +307,8 @@ private fun TransactionList(
                     categoryIcon = tx.categoryId?.let { state.categoriesById[it]?.icon } ?: "more_horiz",
                     categoryColor = tx.categoryId?.let { state.categoriesById[it]?.color } ?: 0xFF94A3B8L,
                     onClick = { onEdit(tx.id) },
-                    onLongPress = { deleteTarget = tx }
+                    onDuplicate = { onDuplicate(tx) },
+                    onDelete = { deleteTarget = tx }
                 )
             }
         }
@@ -317,38 +327,54 @@ private fun TransactionRow(
     categoryIcon: String,
     categoryColor: Long,
     onClick: () -> Unit,
-    onLongPress: () -> Unit
+    onDuplicate: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongPress)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        IconCircle(iconKey = categoryIcon, color = Color(categoryColor), size = 36.dp)
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = categoryName ?: accountName, style = MaterialTheme.typography.titleSmall)
-            if (!tx.note.isNullOrBlank()) {
-                Text(
-                    text = tx.note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                Text(
-                    text = accountName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            IconCircle(iconKey = categoryIcon, color = Color(categoryColor), size = 36.dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = categoryName ?: accountName, style = MaterialTheme.typography.titleSmall)
+                if (!tx.note.isNullOrBlank()) {
+                    Text(
+                        text = tx.note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        text = accountName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            MoneyText(
+                money = Money(tx.accountAmountMinor, CurrencyCode(tx.currencyCode)),
+                type = tx.type,
+                showSign = true,
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            if (tx.transferGroupId == null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_duplicate)) },
+                    onClick = { menuOpen = false; onDuplicate() }
                 )
             }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_delete)) },
+                onClick = { menuOpen = false; onDelete() }
+            )
         }
-        MoneyText(
-            money = Money(tx.accountAmountMinor, CurrencyCode(tx.currencyCode)),
-            type = tx.type,
-            showSign = true,
-            style = MaterialTheme.typography.titleMedium
-        )
     }
 }

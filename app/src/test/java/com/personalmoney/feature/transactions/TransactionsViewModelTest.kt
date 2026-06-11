@@ -10,6 +10,7 @@ import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.util.MainDispatcherRule
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
@@ -82,6 +83,20 @@ class TransactionsViewModelTest {
             assertEquals(2, s.transactions.size) // both on "Credit Card"
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test fun `duplicate inserts a copy with a new id`() = runTest {
+        val vm = vm()
+        vm.duplicate(txCoffee)
+        coVerify {
+            txRepo.insert(match { it.id == 0L && it.categoryId == 10L && it.accountAmountMinor == 1500L })
+        }
+    }
+
+    @Test fun `duplicate ignores transfers`() = runTest {
+        val vm = vm()
+        vm.duplicate(txCoffee.copy(transferGroupId = "g1"))
+        coVerify(exactly = 0) { txRepo.insert(any()) }
     }
 
     @Test fun `clearFilters resets query and shows all`() = runTest {
