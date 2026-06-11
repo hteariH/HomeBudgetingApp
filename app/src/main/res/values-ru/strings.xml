@@ -21,6 +21,10 @@
     <string name="a11y_backspace">Стереть</string>
     <string name="a11y_done">Готово</string>
     <string name="a11y_swap_accounts">Поменять счета местами</string>
+    <string name="a11y_increase">Увеличить</string>
+    <string name="a11y_decrease">Уменьшить</string>
+
+    <string name="subscriptions_interval">Повторять каждые</string>
 
     <string name="dashboard_title">Обзор</string>
     <string name="dashboard_total_balance">Общий капитал</string>

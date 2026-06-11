@@ -3,6 +3,7 @@ package com.personalmoney.feature.subscriptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -10,7 +11,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -32,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -144,6 +148,28 @@ fun SubscriptionEditScreen(
                         onClick = { viewModel.setFrequency(freq) },
                         shape = SegmentedButtonDefaults.itemShape(i, freqs.size)
                     ) { Text(stringResource(label)) }
+                }
+            }
+
+            // Repeat interval ("every N <frequency>")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.subscriptions_interval),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = { viewModel.setInterval(state.interval - 1) },
+                    enabled = state.interval > 1
+                ) {
+                    Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.a11y_decrease))
+                }
+                Text(
+                    text = state.interval.toString(),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                IconButton(onClick = { viewModel.setInterval(state.interval + 1) }) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.a11y_increase))
                 }
             }
 

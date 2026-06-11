@@ -23,6 +23,10 @@
     <string name="a11y_backspace">Backspace</string>
     <string name="a11y_done">Done</string>
     <string name="a11y_swap_accounts">Swap accounts</string>
+    <string name="a11y_increase">Increase</string>
+    <string name="a11y_decrease">Decrease</string>
+
+    <string name="subscriptions_interval">Repeat every</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">Overview</string>
