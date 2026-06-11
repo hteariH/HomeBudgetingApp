@@ -13,7 +13,8 @@ class Converters {
     @TypeConverter fun epochMsToInstant(value: Long?): Instant? = value?.let { Instant.fromEpochMilliseconds(it) }
 
     @TypeConverter fun localDateToString(value: LocalDate?): String? = value?.toString()
-    @TypeConverter fun stringToLocalDate(value: String?): LocalDate? = value?.let { LocalDate.parse(it) }
+    @TypeConverter fun stringToLocalDate(value: String?): LocalDate? =
+        value?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
 
     @TypeConverter fun transactionTypeToString(value: TransactionType?): String? = value?.name
     @TypeConverter fun stringToTransactionType(value: String?): TransactionType? =

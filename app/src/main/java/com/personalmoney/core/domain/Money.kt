@@ -16,6 +16,22 @@ value class CurrencyCode(val value: String) {
     override fun toString(): String = value
 }
 
+private val MIN_MINOR = BigDecimal(Long.MIN_VALUE)
+private val MAX_MINOR = BigDecimal(Long.MAX_VALUE)
+
+/**
+ * Rounds to an integer and saturates to the [Long] range. Without this, a value past
+ * Long.MAX_VALUE would silently wrap and flip the sign of an amount — corrupting balances.
+ */
+private fun BigDecimal.toClampedMinor(): Long {
+    val rounded = setScale(0, RoundingMode.HALF_UP)
+    return when {
+        rounded > MAX_MINOR -> Long.MAX_VALUE
+        rounded < MIN_MINOR -> Long.MIN_VALUE
+        else -> rounded.toLong()
+    }
+}
+
 data class Money(
     val minor: Long,
     val currency: CurrencyCode
@@ -38,19 +54,18 @@ data class Money(
         return copy(minor = minor - other.minor)
     }
 
-    operator fun unaryMinus(): Money = copy(minor = -minor)
+    operator fun unaryMinus(): Money =
+        copy(minor = if (minor == Long.MIN_VALUE) Long.MAX_VALUE else -minor)
 
-    operator fun times(factor: BigDecimal): Money {
-        val result = BigDecimal(minor).multiply(factor).setScale(0, RoundingMode.HALF_UP).toLong()
-        return copy(minor = result)
-    }
+    operator fun times(factor: BigDecimal): Money =
+        copy(minor = BigDecimal(minor).multiply(factor).toClampedMinor())
 
     companion object {
         fun zero(currency: CurrencyCode) = Money(0L, currency)
 
         fun fromDecimal(value: BigDecimal, currency: CurrencyCode): Money {
             val decimals = CurrencyRegistry.decimalsOrFallback(currency.value)
-            val minor = value.movePointRight(decimals).setScale(0, RoundingMode.HALF_UP).toLong()
+            val minor = value.movePointRight(decimals).toClampedMinor()
             return Money(minor, currency)
         }
 

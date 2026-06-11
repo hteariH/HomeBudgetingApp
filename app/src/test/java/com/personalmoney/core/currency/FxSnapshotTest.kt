@@ -50,6 +50,23 @@ class FxSnapshotTest {
         assertNull(fx.rate("XXX", "EUR"))
     }
 
+    @Test fun `zero stored rate is ignored, not inverted to infinity`() {
+        val fx = FxSnapshot.from(listOf(rate("USD", "EUR", 0.0)))
+        assertNull(fx.rate("USD", "EUR")) // direct 0 rejected
+        assertNull(fx.rate("EUR", "USD")) // inverse would be 1/0 = Infinity → rejected
+    }
+
+    @Test fun `non-finite stored rate is ignored`() {
+        val fx = FxSnapshot.from(listOf(rate("USD", "EUR", Double.NaN)))
+        assertNull(fx.rate("USD", "EUR"))
+        assertNull(fx.rate("EUR", "USD"))
+    }
+
+    @Test fun `negative stored rate is ignored`() {
+        val fx = FxSnapshot.from(listOf(rate("USD", "EUR", -0.9)))
+        assertNull(fx.rate("USD", "EUR"))
+    }
+
     @Test fun `convert respects target decimals`() {
         val fx = FxSnapshot.from(listOf(rate("USD", "JPY", 150.0)))
         // 1 USD = 150 JPY (0 decimals)
