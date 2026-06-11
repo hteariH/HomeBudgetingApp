@@ -41,7 +41,14 @@ interface CategoryDao {
     @Query("DELETE FROM categories")
     suspend fun deleteAll()
 
-    @Query("SELECT COUNT(*) FROM transactions WHERE category_id = :id")
+    @Query(
+        """
+        SELECT (
+            (SELECT COUNT(*) FROM transactions WHERE category_id = :id) +
+            (SELECT COUNT(*) FROM subscriptions WHERE category_id = :id)
+        )
+        """
+    )
     suspend fun usageCount(id: Long): Int
 
     @Query(

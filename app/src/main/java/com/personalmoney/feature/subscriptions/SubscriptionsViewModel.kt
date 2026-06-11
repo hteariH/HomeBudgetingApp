@@ -48,8 +48,9 @@ class SubscriptionsViewModel @Inject constructor(
             val decimals = runCatching { java.util.Currency.getInstance(s.currencyCode).defaultFractionDigits }.getOrDefault(2)
             val major = BigDecimal(s.amountMinor).movePointLeft(decimals)
             val monthlyFactor = when (s.frequency) {
-                SubscriptionFrequency.DAILY -> BigDecimal(30).divide(BigDecimal(s.interval.coerceAtLeast(1)), 6, RoundingMode.HALF_UP)
-                SubscriptionFrequency.WEEKLY -> BigDecimal("4.345").divide(BigDecimal(s.interval.coerceAtLeast(1)), 6, RoundingMode.HALF_UP)
+                // Average days/weeks per month over a 365.25-day year (30.4375 and 4.348214).
+                SubscriptionFrequency.DAILY -> BigDecimal("30.4375").divide(BigDecimal(s.interval.coerceAtLeast(1)), 6, RoundingMode.HALF_UP)
+                SubscriptionFrequency.WEEKLY -> BigDecimal("4.348214").divide(BigDecimal(s.interval.coerceAtLeast(1)), 6, RoundingMode.HALF_UP)
                 SubscriptionFrequency.MONTHLY -> BigDecimal.ONE.divide(BigDecimal(s.interval.coerceAtLeast(1)), 6, RoundingMode.HALF_UP)
                 SubscriptionFrequency.YEARLY -> BigDecimal.ONE.divide(BigDecimal(12).multiply(BigDecimal(s.interval.coerceAtLeast(1))), 6, RoundingMode.HALF_UP)
             }
