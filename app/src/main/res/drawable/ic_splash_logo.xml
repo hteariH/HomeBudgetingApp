@@ -4,10 +4,20 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- card peeking out the top -->
+    <path
+        android:fillColor="#C7D2FE"
+        android:pathData="M48,33 H64 a4,4 0 0 1 4,4 V45 H44 V37 a4,4 0 0 1 4,-4 Z" />
+    <!-- wallet body -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,18 C34,18 18,34 18,54 C18,74 34,90 54,90 C74,90 90,74 90,54 C90,34 74,18 54,18 Z M54,30 C67.25,30 78,40.75 78,54 C78,67.25 67.25,78 54,78 C40.75,78 30,67.25 30,54 C30,40.75 40.75,30 54,30 Z" />
+        android:pathData="M38,42 H72 a8,8 0 0 1 8,8 V66 a8,8 0 0 1 -8,8 H38 a8,8 0 0 1 -8,-8 V50 a8,8 0 0 1 8,-8 Z" />
+    <!-- clasp pocket -->
+    <path
+        android:fillColor="#4338CA"
+        android:pathData="M64,52 H74 a3,3 0 0 1 3,3 V61 a3,3 0 0 1 -3,3 H64 a3,3 0 0 1 -3,-3 V55 a3,3 0 0 1 3,-3 Z" />
+    <!-- clasp button -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M50,38 L58,38 L58,46 L66,46 L66,54 L58,54 L58,62 L58,72 L50,72 L50,62 L50,54 L42,54 L42,46 L50,46 Z" />
+        android:pathData="M67,55 a3,3 0 1 0 0,6 a3,3 0 1 0 0,-6 Z" />
 </vector>
