@@ -16,10 +16,12 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -33,6 +35,7 @@ import androidx.navigation.navDeepLink
 import com.personalmoney.R
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.feature.accounts.AccountEditScreen
+import com.personalmoney.feature.accounts.AccountPickerScreen
 import com.personalmoney.feature.accounts.AccountsScreen
 import com.personalmoney.feature.analytics.AnalyticsScreen
 import com.personalmoney.feature.categories.CategoriesScreen
@@ -43,6 +46,7 @@ import com.personalmoney.feature.dashboard.DashboardScreen
 import com.personalmoney.feature.more.MoreScreen
 import com.personalmoney.feature.onboarding.OnboardingScreen
 import com.personalmoney.feature.quickadd.QuickAddScreen
+import com.personalmoney.feature.quickadd.QuickAddViewModel
 import com.personalmoney.feature.settings.SettingsScreen
 import com.personalmoney.feature.subscriptions.SubscriptionEditScreen
 import com.personalmoney.feature.subscriptions.SubscriptionsScreen
@@ -157,11 +161,28 @@ fun PersonalMoneyNavHost(
                 val type = backStackEntry.arguments?.getString("type") ?: "EXPENSE"
                 val categoryParam = backStackEntry.arguments?.getString("categoryId").orEmpty()
                 val categoryId = categoryParam.toLongOrNull()
+
+                val quickAddViewModel: QuickAddViewModel = hiltViewModel()
+                // Receive the account chosen on the full-screen picker.
+                val pickedAccountId by backStackEntry.savedStateHandle
+                    .getStateFlow(Routes.RESULT_PICKED_ACCOUNT_ID, -1L)
+                    .collectAsStateWithLifecycle()
+                LaunchedEffect(pickedAccountId) {
+                    if (pickedAccountId != -1L) {
+                        quickAddViewModel.selectAccountById(pickedAccountId)
+                        backStackEntry.savedStateHandle[Routes.RESULT_PICKED_ACCOUNT_ID] = -1L
+                    }
+                }
+
                 QuickAddScreen(
                     initialType = type,
                     initialCategoryId = categoryId,
                     onClose = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() }
+                    onSaved = { navController.popBackStack() },
+                    onPickAccount = { currentId ->
+                        navController.navigate(Routes.accountPicker(currentId))
+                    },
+                    viewModel = quickAddViewModel
                 )
             }
 
@@ -298,6 +319,27 @@ fun PersonalMoneyNavHost(
 
             composable(Routes.ANALYTICS) {
                 AnalyticsScreen(onBack = null)
+            }
+
+            composable(
+                route = Routes.ACCOUNT_PICKER,
+                arguments = listOf(
+                    navArgument("selectedId") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                        nullable = false
+                    }
+                )
+            ) {
+                AccountPickerScreen(
+                    onPick = { id ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set(
+                            Routes.RESULT_PICKED_ACCOUNT_ID, id
+                        )
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

@@ -51,7 +51,6 @@ import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.AmountDisplay
 import com.personalmoney.core.ui.components.CategoryChip
 import com.personalmoney.core.ui.components.Numpad
-import com.personalmoney.feature.quickadd.components.AccountPickerSheet
 import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
 import com.personalmoney.feature.quickadd.components.NoCategoriesHint
 import com.personalmoney.feature.quickadd.components.SelectedAccountBar
@@ -65,6 +64,7 @@ fun QuickAddScreen(
     initialCategoryId: Long?,
     onClose: () -> Unit,
     onSaved: () -> Unit,
+    onPickAccount: (Long?) -> Unit,
     viewModel: QuickAddViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -72,7 +72,6 @@ fun QuickAddScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var showAccountSheet by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showNoteInput by remember { mutableStateOf(false) }
 
@@ -146,10 +145,10 @@ fun QuickAddScreen(
                 }
             }
 
-            // Account selector
+            // Account selector — opens a dedicated full-screen picker
             SelectedAccountBar(
                 account = state.selectedAccount,
-                onClick = { showAccountSheet = true }
+                onClick = { onPickAccount(state.selectedAccount?.id) }
             )
 
             // Amount display
@@ -197,18 +196,6 @@ fun QuickAddScreen(
                 doneEnabled = state.canSave,
                 decimalSeparator = ".",
                 phoneLayout = numpadPhoneLayout
-            )
-        }
-
-        if (showAccountSheet) {
-            AccountPickerSheet(
-                accounts = state.accounts,
-                selectedId = state.selectedAccount?.id,
-                onPick = {
-                    viewModel.selectAccount(it)
-                    showAccountSheet = false
-                },
-                onDismiss = { showAccountSheet = false }
             )
         }
 

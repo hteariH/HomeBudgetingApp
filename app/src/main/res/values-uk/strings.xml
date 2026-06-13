@@ -63,6 +63,7 @@
     <string name="quickadd_calc_error">Невірний вираз</string>
 
     <string name="accounts_title">Рахунки</string>
+    <string name="account_picker_title">Виберіть рахунок</string>
     <string name="accounts_new">Новий рахунок</string>
     <string name="accounts_name">Назва</string>
     <string name="accounts_currency">Валюта</string>

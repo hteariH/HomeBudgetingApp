@@ -19,6 +19,10 @@ object Routes {
     const val ONBOARDING = "onboarding"
     const val ANALYTICS = "analytics"
     const val MORE = "more"
+    const val ACCOUNT_PICKER = "account/picker?selectedId={selectedId}"
+
+    /** Key used to return the picked account id to the previous screen's SavedStateHandle. */
+    const val RESULT_PICKED_ACCOUNT_ID = "picked_account_id"
 
     fun quickAdd(type: String = "EXPENSE", categoryId: Long? = null): String {
         val params = buildList {
@@ -36,4 +40,7 @@ object Routes {
         "subscription/edit" + (id?.let { "?subscriptionId=$it" } ?: "")
     fun currencyEdit(code: String? = null) =
         "currency/edit" + (code?.let { "?code=$it" } ?: "")
+
+    fun accountPicker(selectedId: Long? = null) =
+        "account/picker" + (selectedId?.let { "?selectedId=$it" } ?: "")
 }

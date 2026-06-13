@@ -63,6 +63,7 @@
     <string name="quickadd_calc_error">Неверное выражение</string>
 
     <string name="accounts_title">Счета</string>
+    <string name="account_picker_title">Выберите счёт</string>
     <string name="accounts_new">Новый счёт</string>
     <string name="accounts_name">Название</string>
     <string name="accounts_currency">Валюта</string>

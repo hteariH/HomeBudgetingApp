@@ -216,6 +216,10 @@ class QuickAddViewModel @Inject constructor(
         selectedAccountIdFlow.value = account.id
     }
 
+    fun selectAccountById(id: Long) {
+        selectedAccountIdFlow.value = id
+    }
+
     fun selectCategory(category: CategoryEntity) {
         selectedCategoryIdFlow.value = category.id
     }
