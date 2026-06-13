@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
@@ -167,11 +170,11 @@ fun QuickAddScreen(
     ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(padding),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Expense / Income / Transfer toggle
+            // Expense / Income / Transfer toggle — pinned at the top
             SingleChoiceSegmentedButtonRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -204,6 +207,15 @@ fun QuickAddScreen(
                 }
             }
 
+            // Scrollable middle region so the numpad (and its Done key) always stays pinned
+            // on-screen — even when transfer mode adds the cross-currency amount chips.
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
             if (mode == EntryMode.TRANSFER) {
                 TransferAccountsBlock(
                     fromAccount = transferState.fromAccount,
@@ -258,6 +270,15 @@ fun QuickAddScreen(
                     previewResult = focusPreview,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
+
+                if (!transferState.sameCurrency && transferState.rate.isNotBlank()) {
+                    Text(
+                        text = transferState.rate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
 
                 val focusTargets = buildList {
                     add(TransferAmountField.FROM)
@@ -351,10 +372,11 @@ fun QuickAddScreen(
                     singleLine = true
                 )
             }
+            } // end scrollable middle region
 
-            HorizontalDivider(Modifier.padding(top = 4.dp))
+            HorizontalDivider()
 
-            // Numpad
+            // Numpad — pinned at the bottom so the Done key is always reachable
             val numpadPhoneLayout by viewModel.numpadPhoneLayout.collectAsStateWithLifecycle()
             Numpad(
                 onKey = if (mode == EntryMode.TRANSFER) {

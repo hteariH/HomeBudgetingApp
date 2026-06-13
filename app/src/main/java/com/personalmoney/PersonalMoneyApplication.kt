@@ -32,6 +32,7 @@ class PersonalMoneyApplication : Application(), Configuration.Provider {
         appScope.launch {
             seeder.seedIfEmpty()
             fxScheduler.schedule()
+            fxScheduler.refreshNow()
             subscriptionScheduler.schedule()
         }
         appScope.launch {

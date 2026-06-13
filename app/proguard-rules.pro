@@ -61,7 +61,7 @@
 -keep,allowobfuscation class * extends retrofit2.Converter
 
 # Frankfurter API response DTOs
--keep class com.personalmoney.core.currency.RatesResponse { *; }
+-keep class com.personalmoney.core.currency.FrankfurterRate { *; }
 
 # --- AdMob ---
 -keep class com.google.android.gms.** { *; }

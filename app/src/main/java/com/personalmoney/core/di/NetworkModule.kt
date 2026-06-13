@@ -18,7 +18,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val FRANKFURTER_BASE_URL = "https://api.frankfurter.app/"
+    // v2 host (api.frankfurter.dev) — ~165 currencies incl. UAH; the legacy api.frankfurter.app
+    // only exposes the ~30 ECB currencies and silently omits UAH.
+    private const val FRANKFURTER_BASE_URL = "https://api.frankfurter.dev/"
 
     @Provides @Singleton
     fun provideOkHttp(): OkHttpClient {

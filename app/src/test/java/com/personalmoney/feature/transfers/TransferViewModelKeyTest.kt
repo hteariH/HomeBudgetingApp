@@ -3,9 +3,12 @@ package com.personalmoney.feature.transfers
 import android.content.Context
 import app.cash.turbine.test
 import com.personalmoney.core.data.repository.AccountRepository
+import com.personalmoney.core.data.repository.ExchangeRateRepository
 import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.database.entity.AccountEntity
+import com.personalmoney.core.database.entity.ExchangeRateEntity
 import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.domain.ExchangeRateSource
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.NumpadKey
 import com.personalmoney.util.MainDispatcherRule
@@ -16,7 +19,9 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -33,11 +38,21 @@ class TransferViewModelKeyTest {
 
     private val appContext = mockk<Context>(relaxed = true)
     private val accountRepository = mockk<AccountRepository>(relaxed = true)
+    private val exchangeRateRepository = mockk<ExchangeRateRepository>(relaxed = true)
     private val transactionRepository = mockk<TransactionRepository>(relaxed = true)
 
-    private fun viewModel(accounts: List<AccountEntity> = listOf(cash, card)): TransferViewModel {
+    private fun usdToEur(rate: Double) = ExchangeRateEntity(
+        baseCode = "USD", quoteCode = "EUR", rate = rate,
+        date = LocalDate(2026, 5, 1), source = ExchangeRateSource.MANUAL, updatedAtEpochMs = 0
+    )
+
+    private fun viewModel(
+        accounts: List<AccountEntity> = listOf(cash, card),
+        rates: List<ExchangeRateEntity> = emptyList()
+    ): TransferViewModel {
         every { accountRepository.observeActive() } returns flowOf(accounts)
-        return TransferViewModel(appContext, accountRepository, transactionRepository)
+        every { exchangeRateRepository.observeAll() } returns flowOf(rates)
+        return TransferViewModel(appContext, accountRepository, exchangeRateRepository, transactionRepository)
     }
 
     @Test
@@ -125,7 +140,7 @@ class TransferViewModelKeyTest {
             vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_0)
             vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_0)   // 100
             vm.onKey(TransferAmountField.TO, NumpadKey.DIGIT_9)
-            vm.onKey(TransferAmountField.TO, NumpadKey.DIGIT_0)     // 90
+            vm.onKey(TransferAmountField.TO, NumpadKey.DIGIT_0)     // 90 (manual)
             while (s.amountFrom != "100" || s.amountTo != "90") s = awaitItem()
             assertTrue(s.canSave)
             vm.save()
@@ -136,5 +151,72 @@ class TransferViewModelKeyTest {
         assertEquals("USD", debit.captured.currencyCode)
         assertEquals(9000L, credit.captured.amountMinor)           // +€90.00
         assertEquals("EUR", credit.captured.currencyCode)
+    }
+
+    /** Regression: picking a foreign-currency account must not disable Save before a destination amount. */
+    @Test
+    fun `cross-currency keeps save enabled after only the source amount`() = runTest {
+        val vm = viewModel(listOf(cash, euro))
+        vm.uiState.test {
+            var s = awaitItem()
+            while (s.fromAccount == null || s.toAccount == null) s = awaitItem()
+            while (s.sameCurrency) s = awaitItem()
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_5)
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_0)   // 50, no destination typed
+            while (s.amountFrom != "50") s = awaitItem()
+            assertFalse(s.sameCurrency)
+            assertTrue("Save must stay enabled in cross-currency before a destination amount", s.canSave)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /** With a stored rate, the destination amount auto-fills and a transfer saves without manual entry. */
+    @Test
+    fun `cross-currency auto-converts the destination at the stored rate`() = runTest {
+        val debit = slot<TransactionEntity>()
+        val credit = slot<TransactionEntity>()
+        coEvery {
+            transactionRepository.insertTransferPair(capture(debit), capture(credit))
+        } returns (1L to 2L)
+
+        val vm = viewModel(listOf(cash, euro), rates = listOf(usdToEur(0.9)))
+        vm.uiState.test {
+            var s = awaitItem()
+            while (s.fromAccount == null || s.toAccount == null) s = awaitItem()
+            while (s.sameCurrency) s = awaitItem()
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_1)
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_0)
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_0)   // 100
+            while (s.amountTo != "90.00") s = awaitItem()           // auto-converted at 0.9
+            assertTrue(s.canSave)
+            vm.save()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals(-10000L, debit.captured.amountMinor)          // -$100.00
+        assertEquals(9000L, credit.captured.amountMinor)           // +€90.00, no manual entry
+        assertEquals("EUR", credit.captured.currencyCode)
+    }
+
+    /** Once the user types a destination amount, later source edits must not overwrite it. */
+    @Test
+    fun `manually editing the destination stops auto-conversion`() = runTest {
+        val vm = viewModel(listOf(cash, euro), rates = listOf(usdToEur(0.9)))
+        vm.uiState.test {
+            var s = awaitItem()
+            while (s.fromAccount == null || s.toAccount == null) s = awaitItem()
+            while (s.sameCurrency) s = awaitItem()
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_1)
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_0)
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_0)   // 100 → auto 90.00
+            while (s.amountTo != "90.00") s = awaitItem()
+            vm.onKey(TransferAmountField.TO, NumpadKey.DIGIT_8)
+            vm.onKey(TransferAmountField.TO, NumpadKey.DIGIT_5)     // user types 85
+            while (s.amountTo != "85") s = awaitItem()
+            vm.onKey(TransferAmountField.FROM, NumpadKey.DIGIT_0)   // source now 1000
+            while (s.amountFrom != "1000") s = awaitItem()
+            assertEquals("85", s.amountTo)                          // destination untouched
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }

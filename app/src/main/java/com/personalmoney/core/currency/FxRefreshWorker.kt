@@ -30,20 +30,19 @@ class FxRefreshWorker @AssistedInject constructor(
         val symbols = active.map { it.code }.filter { it != base }
         if (symbols.isEmpty()) return Result.success()
 
-        val response = api.latest(base = base, symbols = symbols.joinToString(","))
-        val date = LocalDate.parse(response.date)
+        val response = api.rates(base = base, quotes = symbols.joinToString(","))
         val now = System.currentTimeMillis()
-        val entries = response.rates.map { (quote, rate) ->
+        val entries = response.map { r ->
             ExchangeRateEntity(
-                baseCode = response.base,
-                quoteCode = quote,
-                rate = rate,
-                date = date,
+                baseCode = r.base,
+                quoteCode = r.quote,
+                rate = r.rate,
+                date = LocalDate.parse(r.date),
                 source = ExchangeRateSource.FRANKFURTER,
                 updatedAtEpochMs = now
             )
         }
-        exchangeRates.upsertAll(entries)
+        if (entries.isNotEmpty()) exchangeRates.upsertAll(entries)
         userPreferences.setFxLastRefresh(now)
         Result.success()
     }.getOrElse {
@@ -52,5 +51,6 @@ class FxRefreshWorker @AssistedInject constructor(
 
     companion object {
         const val UNIQUE_NAME = "fx_refresh"
+        const val ONE_TIME_NAME = "fx_refresh_once"
     }
 }
