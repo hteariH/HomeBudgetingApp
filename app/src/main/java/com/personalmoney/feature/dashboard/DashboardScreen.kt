@@ -2,7 +2,6 @@ package com.personalmoney.feature.dashboard
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,27 +11,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CompareArrows
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Subscriptions
-import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -48,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -75,32 +60,14 @@ import kotlinx.datetime.toLocalDateTime
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    onAddExpense: () -> Unit,
-    onAddIncome: () -> Unit,
-    onOpenTransactions: () -> Unit,
-    onOpenAccounts: () -> Unit,
-    onOpenCategories: () -> Unit,
-    onOpenSubscriptions: () -> Unit,
-    onOpenTransfer: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenAnalytics: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val finance = LocalFinanceColors.current
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_title)) },
-                actions = {
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.dashboard_settings)
-                        )
-                    }
-                }
+                title = { Text(stringResource(R.string.dashboard_title)) }
             )
         }
     ) { padding ->
@@ -235,88 +202,6 @@ fun DashboardScreen(
                 }
             }
 
-            // Quick actions
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    QuickActionButton(
-                        label = stringResource(R.string.dashboard_add_expense),
-                        icon = Icons.Filled.Remove,
-                        color = finance.expense,
-                        onClick = onAddExpense,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickActionButton(
-                        label = stringResource(R.string.dashboard_add_income),
-                        icon = Icons.Filled.Add,
-                        color = finance.income,
-                        onClick = onAddIncome,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickActionButton(
-                        label = stringResource(R.string.dashboard_transfer),
-                        icon = Icons.Filled.CompareArrows,
-                        color = finance.transfer,
-                        onClick = onOpenTransfer,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            // Navigation 2×2 grid — more breathing room for long labels
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        NavTile(
-                            label = stringResource(R.string.dashboard_accounts),
-                            icon = Icons.Filled.Wallet,
-                            onClick = onOpenAccounts,
-                            modifier = Modifier.weight(1f)
-                        )
-                        NavTile(
-                            label = stringResource(R.string.dashboard_categories),
-                            icon = Icons.Filled.Category,
-                            onClick = onOpenCategories,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        NavTile(
-                            label = stringResource(R.string.dashboard_subscriptions),
-                            icon = Icons.Filled.Subscriptions,
-                            onClick = onOpenSubscriptions,
-                            modifier = Modifier.weight(1f)
-                        )
-                        NavTile(
-                            label = stringResource(R.string.dashboard_transactions),
-                            icon = Icons.AutoMirrored.Filled.List,
-                            onClick = onOpenTransactions,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        NavTile(
-                            label = stringResource(R.string.analytics_title),
-                            icon = Icons.Filled.BarChart,
-                            onClick = onOpenAnalytics,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(Modifier.weight(1f))
-                    }
-                }
-            }
-
             // Recent transactions
             item {
                 Text(
@@ -446,84 +331,6 @@ private fun StatCard(
                 money = money,
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                 type = type
-            )
-        }
-    }
-}
-
-@Composable
-private fun QuickActionButton(
-    label: String,
-    icon: ImageVector,
-    color: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(vertical = 14.dp, horizontal = 6.dp)
-                .fillMaxWidth()
-                .heightIn(min = 84.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(color.copy(alpha = 0.15f), RoundedCornerShape(20.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(imageVector = icon, contentDescription = null, tint = color)
-            }
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 14.sp),
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-}
-
-@Composable
-private fun NavTile(
-    label: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 14.dp)
-                .fillMaxWidth()
-                .heightIn(min = 52.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
             )
         }
     }

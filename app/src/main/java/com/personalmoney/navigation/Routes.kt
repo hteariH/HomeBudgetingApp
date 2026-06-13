@@ -18,6 +18,7 @@ object Routes {
     const val CURRENCY_EDIT = "currency/edit?code={code}"
     const val ONBOARDING = "onboarding"
     const val ANALYTICS = "analytics"
+    const val MORE = "more"
 
     fun quickAdd(type: String = "EXPENSE", categoryId: Long? = null): String {
         val params = buildList {

@@ -50,7 +50,7 @@ import com.personalmoney.core.ui.theme.LocalFinanceColors
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: AnalyticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -61,8 +61,10 @@ fun AnalyticsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.analytics_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        }
                     }
                 }
             )

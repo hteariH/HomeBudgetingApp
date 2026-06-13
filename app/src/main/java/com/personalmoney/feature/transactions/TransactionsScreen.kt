@@ -65,7 +65,7 @@ private enum class PeriodFilter { ALL, TODAY, WEEK, MONTH, YEAR }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     onEdit: (Long) -> Unit = {},
     viewModel: TransactionsViewModel = hiltViewModel()
 ) {
@@ -78,8 +78,10 @@ fun TransactionsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.transactions_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        }
                     }
                 },
                 actions = {
