@@ -5,11 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.R
 import com.personalmoney.core.calc.Calculator
+import com.personalmoney.core.calc.ExpressionInput
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.core.ui.components.NumpadKey
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +27,9 @@ import java.math.RoundingMode
 import java.util.Currency
 import java.util.UUID
 import javax.inject.Inject
+
+/** Which transfer amount field the numpad currently edits. */
+enum class TransferAmountField { FROM, TO, FEE }
 
 data class TransferUiState(
     val accounts: List<AccountEntity> = emptyList(),
@@ -77,6 +82,29 @@ class TransferViewModel @Inject constructor(
     fun setFee(value: String) = internalState.update { it.copy(feeFrom = value) }
     fun setNote(value: String) = internalState.update { it.copy(note = value) }
     fun clearError() = internalState.update { it.copy(error = null) }
+
+    /** Routes a numpad key into the currently-focused transfer amount field. */
+    fun onKey(field: TransferAmountField, key: NumpadKey) {
+        when (key) {
+            NumpadKey.DONE -> save()
+            NumpadKey.BACKSPACE -> updateField(field) { it.dropLast(1) }
+            else -> updateField(field) { current ->
+                // Fee starts at "0"; treat a lone "0" as empty so the first keypress replaces it.
+                val base = if (field == TransferAmountField.FEE && current == "0") "" else current
+                ExpressionInput.append(base, key)
+            }
+        }
+    }
+
+    private fun updateField(field: TransferAmountField, transform: (String) -> String) {
+        internalState.update {
+            when (field) {
+                TransferAmountField.FROM -> it.copy(amountFrom = transform(it.amountFrom))
+                TransferAmountField.TO -> it.copy(amountTo = transform(it.amountTo))
+                TransferAmountField.FEE -> it.copy(feeFrom = transform(it.feeFrom))
+            }
+        }
+    }
 
     fun save() {
         val s = uiState.value

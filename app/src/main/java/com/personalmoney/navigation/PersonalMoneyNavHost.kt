@@ -132,7 +132,7 @@ fun PersonalMoneyNavHost(
 
             composable(Routes.MORE) {
                 MoreScreen(
-                    onOpenTransfer = { navController.navigate(Routes.TRANSFER) },
+                    onOpenTransfer = { navController.navigate(Routes.quickAdd("TRANSFER")) },
                     onOpenAccounts = { navController.navigate(Routes.ACCOUNTS) },
                     onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
                     onOpenSubscriptions = { navController.navigate(Routes.SUBSCRIPTIONS) },

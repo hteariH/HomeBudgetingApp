@@ -103,6 +103,8 @@
 
     <!-- Transfers -->
     <string name="transfer_title">Transfer</string>
+    <string name="transfer_mode">Transfer</string>
+    <string name="transfer_add_fee">+ Fee</string>
     <string name="transfer_from">From account</string>
     <string name="transfer_to">To account</string>
     <string name="transfer_amount">Amount</string>

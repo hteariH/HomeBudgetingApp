@@ -95,6 +95,8 @@
     <string name="transactions_all">Все</string>
 
     <string name="transfer_title">Перевод</string>
+    <string name="transfer_mode">Перевод</string>
+    <string name="transfer_add_fee">+ Комиссия</string>
     <string name="transfer_from">Со счёта</string>
     <string name="transfer_to">На счёт</string>
     <string name="transfer_amount">Сумма</string>
