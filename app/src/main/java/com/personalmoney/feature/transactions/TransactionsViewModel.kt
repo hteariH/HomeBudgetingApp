@@ -41,7 +41,9 @@ data class TransactionsUiState(
     val filter: TransactionsFilter = TransactionsFilter(),
     val transactions: List<TransactionEntity> = emptyList(),
     val accountsById: Map<Long, AccountEntity> = emptyMap(),
-    val categoriesById: Map<Long, CategoryEntity> = emptyMap()
+    val categoriesById: Map<Long, CategoryEntity> = emptyMap(),
+    /** For a collapsed transfer row, its partner leg (the other side) when both are in the result. */
+    val transferCounterpartsById: Map<Long, TransactionEntity> = emptyMap()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -76,17 +78,45 @@ class TransactionsViewModel @Inject constructor(
                 t.note?.lowercase()?.contains(q) == true ||
                     (t.categoryId?.let { categoriesById[it]?.name }.orEmpty()).lowercase().contains(q) ||
                     (accountsById[t.accountId]?.name.orEmpty()).lowercase().contains(q) ||
+                    (t.transferCounterpartAccountId?.let { accountsById[it]?.name }.orEmpty()).lowercase().contains(q) ||
                     t.currencyCode.lowercase().contains(q) ||
                     amountMatches(t, q)
             }
+            val collapsed = collapseTransfers(filtered)
+            val transferLegsByGroup = filtered
+                .filter { it.transferGroupId != null }
+                .groupBy { it.transferGroupId!! }
+            val counterpartsById = buildMap {
+                for (t in collapsed) {
+                    val g = t.transferGroupId ?: continue
+                    transferLegsByGroup[g]?.firstOrNull { it.id != t.id }?.let { put(t.id, it) }
+                }
+            }
             TransactionsUiState(
                 filter = filter,
-                transactions = filtered,
+                transactions = collapsed,
                 accountsById = accountsById,
-                categoriesById = categoriesById
+                categoriesById = categoriesById,
+                transferCounterpartsById = counterpartsById
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TransactionsUiState())
+
+    /**
+     * A transfer is stored as two rows (a negative debit on the source account and a positive credit
+     * on the destination). Show it once: drop the credit leg whenever its debit partner is also in the
+     * list, so each transfer renders as a single "from -> to" row. If only one leg survives the account
+     * filter (e.g. filtering by the destination account), that leg is kept.
+     */
+    private fun collapseTransfers(list: List<TransactionEntity>): List<TransactionEntity> {
+        val groupsWithDebit = list.asSequence()
+            .filter { it.transferGroupId != null && it.amountMinor < 0 }
+            .mapNotNull { it.transferGroupId }
+            .toHashSet()
+        return list.filterNot { t ->
+            t.transferGroupId != null && t.amountMinor > 0 && t.transferGroupId in groupsWithDebit
+        }
+    }
 
     /** Matches the query against the transaction's amount written in major units (e.g. "15" or "12.50"). */
     private fun amountMatches(t: TransactionEntity, q: String): Boolean {

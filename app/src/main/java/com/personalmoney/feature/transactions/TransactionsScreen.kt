@@ -1,6 +1,7 @@
 package com.personalmoney.feature.transactions
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -37,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -225,6 +229,43 @@ fun TransactionsScreen(
                 }
             }
 
+            // Account filter chips (shown only when there's more than one account to choose between)
+            val accountFilters = state.accountsById.values
+                .filter { !it.archived }
+                .sortedWith(compareBy({ it.sortOrder }, { it.name }))
+            if (accountFilters.size > 1) {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    item {
+                        FilterChip(
+                            selected = state.filter.accountId == null,
+                            onClick = { viewModel.setAccount(null) },
+                            label = { Text(stringResource(R.string.transactions_all)) }
+                        )
+                    }
+                    items(accountFilters, key = { it.id }) { account ->
+                        FilterChip(
+                            selected = state.filter.accountId == account.id,
+                            onClick = {
+                                viewModel.setAccount(if (state.filter.accountId == account.id) null else account.id)
+                            },
+                            leadingIcon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(account.color))
+                                )
+                            },
+                            label = { Text(account.name) }
+                        )
+                    }
+                }
+            }
+
             if (state.transactions.isEmpty()) {
                 EmptyState(title = stringResource(R.string.transactions_empty))
             } else {
@@ -302,11 +343,15 @@ private fun TransactionList(
                 )
             }
             items(items, key = { it.id }) { tx ->
+                val isTransfer = tx.type == TransactionType.TRANSFER
                 TransactionRow(
                     tx = tx,
                     accountName = state.accountsById[tx.accountId]?.name ?: "",
+                    counterpartName = tx.transferCounterpartAccountId?.let { state.accountsById[it]?.name },
+                    counterpartTx = state.transferCounterpartsById[tx.id],
                     categoryName = tx.categoryId?.let { state.categoriesById[it]?.name },
-                    categoryIcon = tx.categoryId?.let { state.categoriesById[it]?.icon } ?: "more_horiz",
+                    categoryIcon = if (isTransfer) "currency_exchange"
+                        else tx.categoryId?.let { state.categoriesById[it]?.icon } ?: "more_horiz",
                     categoryColor = tx.categoryId?.let { state.categoriesById[it]?.color } ?: 0xFF94A3B8L,
                     onClick = { onEdit(tx.id) },
                     onDuplicate = { onDuplicate(tx) },
@@ -325,6 +370,8 @@ private fun LocalDate.toJavaLocalDate(): java.time.LocalDate =
 private fun TransactionRow(
     tx: TransactionEntity,
     accountName: String,
+    counterpartName: String?,
+    counterpartTx: TransactionEntity?,
     categoryName: String?,
     categoryIcon: String,
     categoryColor: Long,
@@ -333,6 +380,20 @@ private fun TransactionRow(
     onDelete: () -> Unit
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    val isTransfer = tx.type == TransactionType.TRANSFER
+    // For a transfer the stored leg is the source when its amount is negative; the counterpart is the
+    // other side. Render directionally as "source -> destination" regardless of which leg survived.
+    val title = if (isTransfer) {
+        val other = counterpartName.orEmpty()
+        if (tx.accountAmountMinor < 0) "$accountName → $other" else "$other → $accountName"
+    } else {
+        categoryName ?: accountName
+    }
+    val subtitle = when {
+        !tx.note.isNullOrBlank() -> tx.note
+        isTransfer -> stringResource(R.string.dashboard_transfer)
+        else -> accountName
+    }
     Box {
         Row(
             modifier = Modifier
@@ -344,27 +405,40 @@ private fun TransactionRow(
         ) {
             IconCircle(iconKey = categoryIcon, color = Color(categoryColor), size = 36.dp)
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = categoryName ?: accountName, style = MaterialTheme.typography.titleSmall)
-                if (!tx.note.isNullOrBlank()) {
-                    Text(
-                        text = tx.note,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                Text(text = title, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            // Cross-currency transfer: show both legs (source over destination). Otherwise a single amount.
+            if (isTransfer && counterpartTx != null && counterpartTx.currencyCode != tx.currencyCode) {
+                val sourceLeg = if (tx.accountAmountMinor < 0) tx else counterpartTx
+                val destLeg = if (tx.accountAmountMinor < 0) counterpartTx else tx
+                Column(horizontalAlignment = Alignment.End) {
+                    MoneyText(
+                        money = Money(kotlin.math.abs(sourceLeg.accountAmountMinor), CurrencyCode(sourceLeg.currencyCode)),
+                        type = TransactionType.TRANSFER,
+                        style = MaterialTheme.typography.titleMedium
                     )
-                } else {
-                    Text(
-                        text = accountName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    MoneyText(
+                        money = Money(kotlin.math.abs(destLeg.accountAmountMinor), CurrencyCode(destLeg.currencyCode)),
+                        type = TransactionType.TRANSFER,
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
+            } else {
+                MoneyText(
+                    money = Money(
+                        if (isTransfer) kotlin.math.abs(tx.accountAmountMinor) else tx.accountAmountMinor,
+                        CurrencyCode(tx.currencyCode)
+                    ),
+                    type = tx.type,
+                    showSign = true,
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
-            MoneyText(
-                money = Money(tx.accountAmountMinor, CurrencyCode(tx.currencyCode)),
-                type = tx.type,
-                showSign = true,
-                style = MaterialTheme.typography.titleMedium
-            )
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             if (tx.transferGroupId == null) {
