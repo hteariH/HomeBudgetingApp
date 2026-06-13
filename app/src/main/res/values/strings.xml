@@ -237,6 +237,11 @@
     <string name="period_month">Month</string>
     <string name="period_year">Year</string>
 
+    <!-- Transaction filters -->
+    <string name="filter_period">Period</string>
+    <string name="filter_type">Type</string>
+    <string name="filter_account">Account</string>
+
     <!-- Transaction edit -->
     <string name="transaction_edit_title">Edit transaction</string>
     <string name="transaction_transfer_readonly">Transfers cannot be edited individually</string>

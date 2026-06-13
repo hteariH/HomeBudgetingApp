@@ -218,6 +218,9 @@
     <string name="period_week">Неделя</string>
     <string name="period_month">Месяц</string>
     <string name="period_year">Год</string>
+    <string name="filter_period">Период</string>
+    <string name="filter_type">Тип</string>
+    <string name="filter_account">Счёт</string>
     <string name="transaction_edit_title">Изменить транзакцию</string>
     <string name="transaction_transfer_readonly">Переводы нельзя редактировать по отдельности</string>
     <string name="transaction_delete_confirm">Удалить эту транзакцию?</string>

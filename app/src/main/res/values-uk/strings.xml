@@ -218,6 +218,9 @@
     <string name="period_week">Тиждень</string>
     <string name="period_month">Місяць</string>
     <string name="period_year">Рік</string>
+    <string name="filter_period">Період</string>
+    <string name="filter_type">Тип</string>
+    <string name="filter_account">Рахунок</string>
     <string name="transaction_edit_title">Змінити транзакцію</string>
     <string name="transaction_transfer_readonly">Перекази не можна редагувати окремо</string>
     <string name="transaction_delete_confirm">Видалити цю транзакцію?</string>

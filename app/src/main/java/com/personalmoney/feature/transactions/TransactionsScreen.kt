@@ -1,34 +1,39 @@
 package com.personalmoney.feature.transactions
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -126,142 +132,116 @@ fun TransactionsScreen(
                 )
             }
 
-            // Period quick-filters
+            // Filters as compact dropdowns in a single row
             val zone = TimeZone.currentSystemDefault()
             val today = Clock.System.now().toLocalDateTime(zone).date
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = activePeriod == PeriodFilter.ALL,
-                        onClick = {
-                            activePeriod = PeriodFilter.ALL
-                            viewModel.setDateRange(null, null)
-                        },
-                        label = { Text(stringResource(R.string.period_all)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = activePeriod == PeriodFilter.TODAY,
-                        onClick = {
-                            activePeriod = PeriodFilter.TODAY
-                            viewModel.setDateRange(today, today)
-                        },
-                        label = { Text(stringResource(R.string.period_today)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = activePeriod == PeriodFilter.WEEK,
-                        onClick = {
-                            activePeriod = PeriodFilter.WEEK
-                            val weekStart = LocalDate.fromEpochDays(today.toEpochDays() - today.dayOfWeek.ordinal)
-                            viewModel.setDateRange(weekStart, today)
-                        },
-                        label = { Text(stringResource(R.string.period_week)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = activePeriod == PeriodFilter.MONTH,
-                        onClick = {
-                            activePeriod = PeriodFilter.MONTH
-                            viewModel.setDateRange(LocalDate(today.year, today.month, 1), today)
-                        },
-                        label = { Text(stringResource(R.string.period_month)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = activePeriod == PeriodFilter.YEAR,
-                        onClick = {
-                            activePeriod = PeriodFilter.YEAR
-                            viewModel.setDateRange(LocalDate(today.year, 1, 1), today)
-                        },
-                        label = { Text(stringResource(R.string.period_year)) }
-                    )
-                }
-            }
-
-            // Type filter chips
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = state.filter.type == null,
-                        onClick = { viewModel.setType(null) },
-                        label = { Text(stringResource(R.string.transactions_all)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = state.filter.type == TransactionType.EXPENSE,
-                        onClick = {
-                            viewModel.setType(if (state.filter.type == TransactionType.EXPENSE) null else TransactionType.EXPENSE)
-                        },
-                        label = { Text(stringResource(R.string.dashboard_add_expense)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = state.filter.type == TransactionType.INCOME,
-                        onClick = {
-                            viewModel.setType(if (state.filter.type == TransactionType.INCOME) null else TransactionType.INCOME)
-                        },
-                        label = { Text(stringResource(R.string.dashboard_add_income)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = state.filter.type == TransactionType.TRANSFER,
-                        onClick = {
-                            viewModel.setType(if (state.filter.type == TransactionType.TRANSFER) null else TransactionType.TRANSFER)
-                        },
-                        label = { Text(stringResource(R.string.dashboard_transfer)) }
-                    )
-                }
-            }
-
-            // Account filter chips (shown only when there's more than one account to choose between)
             val accountFilters = state.accountsById.values
                 .filter { !it.archived }
                 .sortedWith(compareBy({ it.sortOrder }, { it.name }))
-            if (accountFilters.size > 1) {
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-                ) {
-                    item {
-                        FilterChip(
-                            selected = state.filter.accountId == null,
-                            onClick = { viewModel.setAccount(null) },
-                            label = { Text(stringResource(R.string.transactions_all)) }
-                        )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val periodLabel = when (activePeriod) {
+                    PeriodFilter.ALL -> stringResource(R.string.filter_period)
+                    PeriodFilter.TODAY -> stringResource(R.string.period_today)
+                    PeriodFilter.WEEK -> stringResource(R.string.period_week)
+                    PeriodFilter.MONTH -> stringResource(R.string.period_month)
+                    PeriodFilter.YEAR -> stringResource(R.string.period_year)
+                }
+                FilterDropdown(
+                    label = periodLabel,
+                    active = activePeriod != PeriodFilter.ALL,
+                    modifier = Modifier.weight(1f)
+                ) { dismiss ->
+                    val pick: (PeriodFilter, LocalDate?, LocalDate?) -> Unit = { p, from, to ->
+                        activePeriod = p
+                        viewModel.setDateRange(from, to)
+                        dismiss()
                     }
-                    items(accountFilters, key = { it.id }) { account ->
-                        FilterChip(
-                            selected = state.filter.accountId == account.id,
-                            onClick = {
-                                viewModel.setAccount(if (state.filter.accountId == account.id) null else account.id)
-                            },
-                            leadingIcon = {
-                                Box(
-                                    modifier = Modifier
-                                        .size(12.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(account.color))
-                                )
-                            },
-                            label = { Text(account.name) }
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.period_all)) },
+                        onClick = { pick(PeriodFilter.ALL, null, null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.period_today)) },
+                        onClick = { pick(PeriodFilter.TODAY, today, today) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.period_week)) },
+                        onClick = {
+                            val weekStart = LocalDate.fromEpochDays(today.toEpochDays() - today.dayOfWeek.ordinal)
+                            pick(PeriodFilter.WEEK, weekStart, today)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.period_month)) },
+                        onClick = { pick(PeriodFilter.MONTH, LocalDate(today.year, today.month, 1), today) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.period_year)) },
+                        onClick = { pick(PeriodFilter.YEAR, LocalDate(today.year, 1, 1), today) }
+                    )
+                }
+
+                val typeLabel = when (state.filter.type) {
+                    null -> stringResource(R.string.filter_type)
+                    TransactionType.EXPENSE -> stringResource(R.string.dashboard_add_expense)
+                    TransactionType.INCOME -> stringResource(R.string.dashboard_add_income)
+                    TransactionType.TRANSFER -> stringResource(R.string.dashboard_transfer)
+                }
+                FilterDropdown(
+                    label = typeLabel,
+                    active = state.filter.type != null,
+                    modifier = Modifier.weight(1f)
+                ) { dismiss ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.transactions_all)) },
+                        onClick = { viewModel.setType(null); dismiss() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.dashboard_add_expense)) },
+                        onClick = { viewModel.setType(TransactionType.EXPENSE); dismiss() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.dashboard_add_income)) },
+                        onClick = { viewModel.setType(TransactionType.INCOME); dismiss() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.dashboard_transfer)) },
+                        onClick = { viewModel.setType(TransactionType.TRANSFER); dismiss() }
+                    )
+                }
+
+                if (accountFilters.size > 1) {
+                    val accountLabel = accountFilters.firstOrNull { it.id == state.filter.accountId }?.name
+                        ?: stringResource(R.string.filter_account)
+                    FilterDropdown(
+                        label = accountLabel,
+                        active = state.filter.accountId != null,
+                        modifier = Modifier.weight(1f)
+                    ) { dismiss ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.transactions_all)) },
+                            onClick = { viewModel.setAccount(null); dismiss() }
                         )
+                        accountFilters.forEach { account ->
+                            DropdownMenuItem(
+                                text = { Text(account.name) },
+                                leadingIcon = {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(account.color))
+                                    )
+                                },
+                                onClick = { viewModel.setAccount(account.id); dismiss() }
+                            )
+                        }
                     }
                 }
             }
@@ -451,6 +431,49 @@ private fun TransactionRow(
                 text = { Text(stringResource(R.string.action_delete)) },
                 onClick = { menuOpen = false; onDelete() }
             )
+        }
+    }
+}
+
+/**
+ * A compact filter selector: a bordered (or filled, when [active]) pill showing the current value
+ * and a dropdown arrow; tapping opens a [DropdownMenu] built by [menuContent]. The lambda receives a
+ * `dismiss` callback to close the menu after a selection.
+ */
+@Composable
+private fun FilterDropdown(
+    label: String,
+    active: Boolean,
+    modifier: Modifier = Modifier,
+    menuContent: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Surface(
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(8.dp),
+            color = if (active) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+            contentColor = if (active) MaterialTheme.colorScheme.onSecondaryContainer
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            border = if (active) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier.fillMaxWidth().height(40.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxHeight().padding(start = 12.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            menuContent { expanded = false }
         }
     }
 }
