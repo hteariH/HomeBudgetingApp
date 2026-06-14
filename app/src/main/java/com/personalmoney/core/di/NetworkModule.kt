@@ -2,6 +2,8 @@ package com.personalmoney.core.di
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.personalmoney.core.currency.FrankfurterApi
+import com.personalmoney.core.homemoney.HomeMoneyApi
+import com.personalmoney.core.homemoney.HomeMoneyConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,5 +49,17 @@ object NetworkModule {
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
             .create(FrankfurterApi::class.java)
+    }
+
+    @Provides @Singleton
+    fun provideHomeMoneyApi(okHttp: OkHttpClient, json: Json): HomeMoneyApi {
+        // ASMX returns "application/json; charset=utf-8"; the converter matches on application/json.
+        val contentType = "application/json".toMediaType()
+        return Retrofit.Builder()
+            .baseUrl(HomeMoneyConfig.BASE_URL)
+            .client(okHttp)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+            .create(HomeMoneyApi::class.java)
     }
 }

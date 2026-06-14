@@ -2,8 +2,10 @@ package com.personalmoney.core.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.withTransaction
 import com.personalmoney.core.database.ALL_MIGRATIONS
 import com.personalmoney.core.database.AppDatabase
+import com.personalmoney.core.database.Transactor
 import com.personalmoney.core.database.dao.AccountDao
 import com.personalmoney.core.database.dao.CategoryDao
 import com.personalmoney.core.database.dao.CurrencyDao
@@ -28,6 +30,13 @@ object DatabaseModule {
             .addMigrations(*ALL_MIGRATIONS)
             .fallbackToDestructiveMigrationOnDowngrade(true)
             .build()
+
+    @Provides
+    @Singleton
+    fun provideTransactor(db: AppDatabase): Transactor = object : Transactor {
+        override suspend fun <R> transaction(block: suspend () -> R): R =
+            db.withTransaction { block() }
+    }
 
     @Provides fun provideAccountDao(db: AppDatabase): AccountDao = db.accountDao()
     @Provides fun provideCategoryDao(db: AppDatabase): CategoryDao = db.categoryDao()

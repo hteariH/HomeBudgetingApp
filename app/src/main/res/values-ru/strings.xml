@@ -143,6 +143,26 @@
     <string name="settings_export_failed">Не удалось экспортировать</string>
     <string name="settings_import_failed">Не удалось импортировать</string>
     <string name="settings_backup_read_failed">Не удалось прочитать файл резервной копии</string>
+
+    <!-- Импорт из HomeMoney -->
+    <string name="settings_import_homemoney">Импорт из HomeMoney</string>
+    <string name="settings_import_homemoney_subtitle">Счета и остатки с homemoney.ua</string>
+    <string name="homemoney_import_title">Импорт из HomeMoney</string>
+    <string name="homemoney_intro">Войдите с логином homemoney.ua, чтобы импортировать счета и их текущие остатки. Пароль отправляется только в HomeMoney для получения токена доступа.</string>
+    <string name="homemoney_username">Логин (email)</string>
+    <string name="homemoney_password">Пароль</string>
+    <string name="homemoney_connect">Подключиться</string>
+    <string name="homemoney_found">Найдено счетов: %1$d</string>
+    <string name="homemoney_select_all">Выбрать все</string>
+    <string name="homemoney_deselect_all">Снять все</string>
+    <string name="homemoney_already_exists">Уже добавлен</string>
+    <string name="homemoney_import_button">Импортировать (%1$d)</string>
+    <string name="homemoney_no_accounts">Счета не найдены</string>
+    <string name="homemoney_done">Импортировано счетов: %1$d</string>
+    <string name="homemoney_done_button">Готово</string>
+    <string name="homemoney_signed_in_as">Вход выполнен: %1$s</string>
+    <string name="homemoney_error_generic">Не удалось подключиться к HomeMoney</string>
+    <string name="homemoney_error_network">Ошибка сети. Проверьте подключение и повторите.</string>
     <string name="settings_clear">Очистить все данные</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_version">Версия</string>

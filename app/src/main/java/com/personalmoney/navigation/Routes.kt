@@ -14,6 +14,7 @@ object Routes {
     const val SUBSCRIPTIONS = "subscriptions"
     const val SUBSCRIPTION_EDIT = "subscription/edit?subscriptionId={subscriptionId}"
     const val SETTINGS = "settings"
+    const val IMPORT_HOMEMONEY = "import/homemoney"
     const val CURRENCIES = "currencies"
     const val CURRENCY_EDIT = "currency/edit?code={code}"
     const val ONBOARDING = "onboarding"

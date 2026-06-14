@@ -43,6 +43,7 @@ import com.personalmoney.feature.categories.CategoryEditScreen
 import com.personalmoney.feature.currencies.CurrenciesScreen
 import com.personalmoney.feature.currencies.CurrencyEditScreen
 import com.personalmoney.feature.dashboard.DashboardScreen
+import com.personalmoney.feature.homemoney.HomeMoneyImportScreen
 import com.personalmoney.feature.more.MoreScreen
 import com.personalmoney.feature.onboarding.OnboardingScreen
 import com.personalmoney.feature.quickadd.QuickAddScreen
@@ -291,7 +292,14 @@ fun PersonalMoneyNavHost(
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenCurrencies = { navController.navigate(Routes.CURRENCIES) }
+                    onOpenCurrencies = { navController.navigate(Routes.CURRENCIES) },
+                    onOpenHomeMoneyImport = { navController.navigate(Routes.IMPORT_HOMEMONEY) }
+                )
+            }
+            composable(Routes.IMPORT_HOMEMONEY) {
+                HomeMoneyImportScreen(
+                    onBack = { navController.popBackStack() },
+                    onDone = { navController.popBackStack() }
                 )
             }
             composable(Routes.CURRENCIES) {

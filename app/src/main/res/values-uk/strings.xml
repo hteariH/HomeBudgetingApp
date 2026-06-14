@@ -143,6 +143,26 @@
     <string name="settings_export_failed">Не вдалося експортувати</string>
     <string name="settings_import_failed">Не вдалося імпортувати</string>
     <string name="settings_backup_read_failed">Не вдалося прочитати файл резервної копії</string>
+
+    <!-- Імпорт з HomeMoney -->
+    <string name="settings_import_homemoney">Імпорт з HomeMoney</string>
+    <string name="settings_import_homemoney_subtitle">Рахунки та залишки з homemoney.ua</string>
+    <string name="homemoney_import_title">Імпорт з HomeMoney</string>
+    <string name="homemoney_intro">Увійдіть із логіном homemoney.ua, щоб імпортувати рахунки та їхні поточні залишки. Пароль надсилається лише до HomeMoney для отримання токена доступу.</string>
+    <string name="homemoney_username">Логін (email)</string>
+    <string name="homemoney_password">Пароль</string>
+    <string name="homemoney_connect">Підключитися</string>
+    <string name="homemoney_found">Знайдено рахунків: %1$d</string>
+    <string name="homemoney_select_all">Вибрати всі</string>
+    <string name="homemoney_deselect_all">Зняти всі</string>
+    <string name="homemoney_already_exists">Уже додано</string>
+    <string name="homemoney_import_button">Імпортувати (%1$d)</string>
+    <string name="homemoney_no_accounts">Рахунків не знайдено</string>
+    <string name="homemoney_done">Імпортовано рахунків: %1$d</string>
+    <string name="homemoney_done_button">Готово</string>
+    <string name="homemoney_signed_in_as">Вхід виконано: %1$s</string>
+    <string name="homemoney_error_generic">Не вдалося підключитися до HomeMoney</string>
+    <string name="homemoney_error_network">Помилка мережі. Перевірте підключення та спробуйте ще раз.</string>
     <string name="settings_clear">Очистити всі дані</string>
     <string name="settings_about">Про застосунок</string>
     <string name="settings_version">Версія</string>
