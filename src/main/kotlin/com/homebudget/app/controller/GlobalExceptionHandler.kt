@@ -39,6 +39,23 @@ class GlobalExceptionHandler {
         )
     }
 
+    /**
+     * The bank refused the credentials. That is the user's problem to fix, not a server
+     * fault, so it must not be a 500 - the client shows this message verbatim.
+     */
+    @ExceptionHandler(com.homebudget.app.bank.BankAuthException::class)
+    fun handleBankAuth(ex: com.homebudget.app.bank.BankAuthException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(
+            ErrorResponse(status = 422, error = "Bank Rejected Credentials", message = ex.message)
+        )
+
+    /** The bank is reachable but unhappy - rate limit, outage, bad date range. */
+    @ExceptionHandler(com.homebudget.app.bank.BankRequestException::class)
+    fun handleBankRequest(ex: com.homebudget.app.bank.BankRequestException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(
+            ErrorResponse(status = 502, error = "Bank Unavailable", message = ex.message)
+        )
+
     @ExceptionHandler(Exception::class)
     fun handleGeneric(ex: Exception): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(

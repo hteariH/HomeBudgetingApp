@@ -13,18 +13,27 @@ import org.springframework.web.bind.annotation.*
 class CategoryController(private val service: CategoryService) {
 
     @GetMapping
-    fun getAll(@RequestParam type: CategoryType?) = service.findAll(type).map { it.toResponse() }
+    fun getAll(
+        @RequestParam type: CategoryType?,
+        @RequestParam(defaultValue = "true") includeArchived: Boolean
+    ): List<CategoryResponse> {
+        val decimals = service.baseDecimals()
+        return service.findAll(type, includeArchived)
+            .sortedWith(compareBy({ it.archived }, { it.sortOrder }, { it.id }))
+            .map { it.toResponse(decimals) }
+    }
 
     @GetMapping("/{id}")
-    fun getById(@PathVariable id: Long) = service.findById(id).toResponse()
+    fun getById(@PathVariable id: Long) = service.findById(id).toResponse(service.baseDecimals())
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun create(@Valid @RequestBody req: CreateCategoryRequest) = service.create(req).toResponse()
+    fun create(@Valid @RequestBody req: CreateCategoryRequest) =
+        service.create(req).toResponse(service.baseDecimals())
 
     @PutMapping("/{id}")
     fun update(@PathVariable id: Long, @Valid @RequestBody req: UpdateCategoryRequest) =
-        service.update(id, req).toResponse()
+        service.update(id, req).toResponse(service.baseDecimals())
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

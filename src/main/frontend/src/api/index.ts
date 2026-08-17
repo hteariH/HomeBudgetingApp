@@ -1,8 +1,9 @@
 import {
-    Account, Category, CategoryType, CreateAccountRequest, CreateCategoryRequest,
+    Account, BankConnection, BankProvider, CsvMapping, CsvPreview, CsvRow,
+    ImportResult, PendingImport, RemoteAccount,
+    Category, CategoryType, TransactionType, CreateAccountRequest, CreateCategoryRequest,
     CreateCurrencyRequest, CreateTransactionRequest, CreateTransferRequest,
-    Currency, MonobankClientInfo, MonobankConfirmItem, MonobankImportResult,
-    MonobankPreviewResponse, PagedResponse, Transaction, Transfer,
+    Currency, PagedResponse, Transaction, Transfer,
     UpdateAccountRequest, UpdateCategoryRequest, UpdateCurrencyRequest
 } from '../types';
 
@@ -40,6 +41,18 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 export const authApi = {
     login: (data: any) => request<any>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
     register: (data: any) => request<any>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+
+    verifyEmail: (token: string) =>
+        request<{ message: string }>('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) }),
+
+    /** Always resolves, even for an unknown address - see the note on the server. */
+    forgotPassword: (email: string) =>
+        request<{ message: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+
+    resetPassword: (token: string, newPassword: string) =>
+        request<{ message: string }>('/auth/reset-password', {
+            method: 'POST', body: JSON.stringify({ token, newPassword }),
+        }),
 };
 
 // ─── Users ──────────────────────────────────────────────────────────────────
@@ -76,7 +89,7 @@ export const categoryApi = {
 // ─── Transactions ─────────────────────────────────────────────────────────────
 export const transactionApi = {
     getAll: (params?: {
-        accountId?: number; categoryId?: number; type?: 'INCOME' | 'EXPENSE';
+        accountId?: number; categoryId?: number; type?: TransactionType;
         dateFrom?: string; dateTo?: string; page?: number; size?: number;
     }) => {
         const q = new URLSearchParams();
@@ -94,24 +107,75 @@ export const transactionApi = {
     delete: (id: number) => request<void>(`/transactions/${id}`, { method: 'DELETE' }),
 };
 
-// ─── Monobank ──────────────────────────────────────────────────────
-const monobankBase = '/monobank';
-export const monobankApi = {
-    getClientInfo: (token: string) =>
-        request<MonobankClientInfo>(`${monobankBase}/client-info?token=${encodeURIComponent(token)}`),
-    linkAccount: (accountId: number, token: string, monobankAccountId: string) =>
-        request<void>(`${monobankBase}/accounts/${accountId}/link`, { method: 'POST', body: JSON.stringify({ token, monobankAccountId }) }),
-    unlinkAccount: (accountId: number) =>
-        request<void>(`${monobankBase}/accounts/${accountId}/link`, { method: 'DELETE' }),
-    preview: (accountId: number, dateFrom: number, dateTo: number) =>
-        request<MonobankPreviewResponse>(`${monobankBase}/preview`, { method: 'POST', body: JSON.stringify({ accountId, dateFrom, dateTo }) }),
-    confirmImport: (accountId: number, dateFrom: number, dateTo: number, items: MonobankConfirmItem[]) =>
-        request<MonobankImportResult>(`${monobankBase}/confirm`, { method: 'POST', body: JSON.stringify({ accountId, dateFrom, dateTo, items }) }),
-};
 
 // ─── Transfers ────────────────────────────────────────────────────────────────
 export const transferApi = {
     getAll: (page = 0, size = 10) => request<PagedResponse<Transfer>>(`/transfers?page=${page}&size=${size}`),
     create: (data: CreateTransferRequest) => request<Transfer>('/transfers', { method: 'POST', body: JSON.stringify(data) }),
     delete: (id: number) => request<void>(`/transfers/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Banks ──────────────────────────────────────────────────────────────────
+// One set of endpoints for every provider; the provider is just a value.
+export const bankApi = {
+    providers: () => request<BankProvider[]>('/bank/providers'),
+    connections: () => request<BankConnection[]>('/bank/connections'),
+    // Credentials are verified against the bank before anything is stored.
+    connect: (provider: string, credentials: Record<string, string>) =>
+        request<BankConnection>('/bank/connections', {
+            method: 'POST', body: JSON.stringify({ provider, credentials }),
+        }),
+    verify: (id: number) => request<BankConnection>(`/bank/connections/${id}/verify`, { method: 'POST' }),
+    updateCredentials: (id: number, credentials: Record<string, string>) =>
+        request<BankConnection>(`/bank/connections/${id}/credentials`, {
+            method: 'PUT', body: JSON.stringify({ credentials }),
+        }),
+    disconnect: (id: number) => request<void>(`/bank/connections/${id}`, { method: 'DELETE' }),
+    remoteAccounts: (id: number) => request<RemoteAccount[]>(`/bank/connections/${id}/accounts`),
+    link: (id: number, accountId: number, externalAccountId: string) =>
+        request<Account>(`/bank/connections/${id}/accounts/${accountId}/link`, {
+            method: 'POST', body: JSON.stringify({ externalAccountId }),
+        }),
+    unlink: (accountId: number) => request<Account>(`/bank/accounts/${accountId}/link`, { method: 'DELETE' }),
+    preview: (accountId: number, dateFrom: string, dateTo: string) =>
+        request<PendingImport[]>('/bank/import/preview', {
+            method: 'POST', body: JSON.stringify({ accountId, dateFrom, dateTo }),
+        }),
+    confirm: (accountId: number, dateFrom: string, dateTo: string, categories: Record<string, number | null>) =>
+        request<ImportResult>('/bank/import/confirm', {
+            method: 'POST', body: JSON.stringify({ accountId, dateFrom, dateTo, categories }),
+        }),
+};
+
+// ─── CSV import ─────────────────────────────────────────────────────────────
+export const csvImportApi = {
+    /**
+     * Uploads the file for parsing. Content-Type is deliberately not set: the browser
+     * has to add it itself so the multipart boundary is included.
+     */
+    preview: async (file: File, accountId: number, mapping?: Partial<CsvMapping>): Promise<CsvPreview> => {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('accountId', String(accountId));
+        Object.entries(mapping ?? {}).forEach(([k, v]) => {
+            if (v) form.append(k, String(v));
+        });
+
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/import/csv/preview', {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: form,
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ message: res.statusText }));
+            throw new Error(err.message || res.statusText);
+        }
+        return res.json();
+    },
+
+    confirm: (accountId: number, rows: CsvRow[], categories: Record<string, number | null>) =>
+        request<ImportResult>('/import/csv/confirm', {
+            method: 'POST', body: JSON.stringify({ accountId, rows, categories }),
+        }),
 };

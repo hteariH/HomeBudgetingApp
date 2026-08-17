@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { accountApi, transferApi } from '../api';
 import { Account, Transfer } from '../types';
 import { ArrowLeftRight, Trash2, Plus, X } from 'lucide-react';
+import { formatAmount } from '../money';
 
-const fmt = (n: number, sym = '') =>
-    `${sym}${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 
 const Transfers: React.FC = () => {
     const [transfers, setTransfers] = useState<Transfer[]>([]);
@@ -143,14 +143,14 @@ const Transfers: React.FC = () => {
                                         </td>
                                         <td>
                                             <div className="flex flex-col font-semibold" style={{ fontSize: 13 }}>
-                                                <span className="text-red">-{t.fromAccount.currency.symbol}{fmt(t.fromAmount)}</span>
-                                                {t.toAccount && <span className="text-green">+{t.toAccount.currency.symbol}{fmt(t.toAmount)}</span>}
+                                                <span className="text-red">-{t.fromAccount.currency.symbol}{formatAmount(t.fromAmount, t.fromAccount.currency)}</span>
+                                                {t.toAccount && <span className="text-green">+{t.toAccount.currency.symbol}{formatAmount(t.toAmount, t.toAccount.currency)}</span>}
                                             </div>
                                         </td>
                                         <td>
                                             {t.fromAccount.currency.id !== t.toAccount.currency.id ? (
                                                 <span className="badge badge-transfer" style={{ background: 'var(--bg-hover)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-                                                    1 {t.fromAccount.currency.code} = {t.exchangeRate.toFixed(4)} {t.toAccount.currency.code}
+                                                    1 {t.fromAccount.currency.code} = {Number(t.exchangeRate).toFixed(4)} {t.toAccount.currency.code}
                                                 </span>
                                             ) : (
                                                 <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-muted)' }}>1:1</span>
@@ -193,7 +193,7 @@ const Transfers: React.FC = () => {
                                     >
                                         <option value="">Select Account</option>
                                         {accounts.map(a => (
-                                            <option key={a.id} value={a.id}>{a.name} ({fmt(a.balance, a.currency.symbol)} {a.currency.code})</option>
+                                            <option key={a.id} value={a.id}>{a.name} ({a.currency.symbol}{formatAmount(a.balance, a.currency)} {a.currency.code})</option>
                                         ))}
                                     </select>
                                 </div>
@@ -206,7 +206,7 @@ const Transfers: React.FC = () => {
                                     >
                                         <option value="">Select Account</option>
                                         {accounts.map(a => (
-                                            <option key={a.id} value={a.id}>{a.name} ({fmt(a.balance, a.currency.symbol)} {a.currency.code})</option>
+                                            <option key={a.id} value={a.id}>{a.name} ({a.currency.symbol}{formatAmount(a.balance, a.currency)} {a.currency.code})</option>
                                         ))}
                                     </select>
                                 </div>

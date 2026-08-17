@@ -1,6 +1,8 @@
 package com.homebudget.app.domain
 
 import jakarta.persistence.*
+import org.hibernate.annotations.SQLRestriction
+import java.time.Instant
 import java.time.LocalDateTime
 
 enum class CategoryType {
@@ -9,10 +11,14 @@ enum class CategoryType {
 
 @Entity
 @Table(name = "categories")
+@SQLRestriction("deleted = false")
 data class Category(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
+
+    @Column(nullable = false, length = 36, updatable = false)
+    override val uuid: String = Syncable.newUuid(),
 
     @Column(nullable = false)
     var name: String,
@@ -34,12 +40,39 @@ data class Category(
     @Column
     var description: String? = null,
 
+    /** Sub-categories. Self-referencing, one level deep in practice. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    var parent: Category? = null,
+
+    @Column(nullable = false)
+    var archived: Boolean = false,
+
+    @Column(name = "sort_order", nullable = false)
+    var sortOrder: Int = 0,
+
+    @Column(name = "is_default", nullable = false)
+    var isDefault: Boolean = false,
+
+    /**
+     * Optional monthly spending limit in the user's base currency, minor units.
+     * Expense categories only.
+     */
+    @Column(name = "budget_limit_minor")
+    var budgetLimitMinor: Long? = null,
+
     /** MCC codes (Merchant Category Codes) learned from Monobank imports */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "category_mcc_codes", joinColumns = [JoinColumn(name = "category_id")])
     @Column(name = "mcc_code")
     var mccCodes: MutableSet<Int> = mutableSetOf(),
 
+    @Column(nullable = false, updatable = false)
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @Column(name = "updated_at", nullable = false)
+    override var updatedAt: Instant = Instant.now(),
+
     @Column(nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now()
-)
+    override var deleted: Boolean = false
+) : Syncable

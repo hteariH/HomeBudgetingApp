@@ -5,7 +5,15 @@ import {
     AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { Wallet, TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react';
+import { formatAmount } from '../money';
 
+
+/** A transfer leg is already signed; see the note in Transactions.tsx. */
+const isCredit = (t: Transaction) =>
+    t.type === 'INCOME' || (t.type === 'TRANSFER' && Number(t.amount) >= 0);
+
+// Per-currency formatting lives in ../money. This local helper is only for
+// aggregates that are not tied to a single currency (totals, chart axes).
 const fmt = (n: number, sym = '') =>
     `${sym}${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -44,7 +52,9 @@ const Dashboard: React.FC = () => {
     // Category breakdown for current month
     const categoryMap: Record<string, number> = {};
     monthTxns.filter(t => t.type === 'EXPENSE').forEach(t => {
-        categoryMap[t.category.name] = (categoryMap[t.category.name] || 0) + Number(t.amount);
+        // Transfers have no category, and neither does history whose category was deleted.
+        const label = t.category?.name ?? 'Uncategorised';
+        categoryMap[label] = (categoryMap[label] || 0) + Number(t.amount);
     });
     const pieData = Object.entries(categoryMap).map(([name, value]) => ({ name, value }));
     const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#8B5CF6', '#EC4899', '#14B8A6'];
@@ -196,7 +206,7 @@ const Dashboard: React.FC = () => {
                                         </div>
                                     </div>
                                     <p style={{ fontSize: 15, fontWeight: 700, color: Number(a.balance) < 0 ? 'var(--red)' : 'var(--text-primary)' }}>
-                                        {a.currency.symbol}{fmt(Number(a.balance))}
+                                        {a.currency.symbol}{formatAmount(Number(a.balance), a.currency)}
                                     </p>
                                 </div>
                             ))}
@@ -214,11 +224,11 @@ const Dashboard: React.FC = () => {
                             {recent.map(t => (
                                 <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
                                     <div>
-                                        <p style={{ fontSize: 14, fontWeight: 500 }}>{t.category.name}</p>
+                                        <p style={{ fontSize: 14, fontWeight: 500 }}>{t.category?.name ?? 'Uncategorised'}</p>
                                         <p className="text-muted text-sm">{t.account.name} · {t.date}</p>
                                     </div>
-                                    <p style={{ fontSize: 14, fontWeight: 700, color: t.type === 'INCOME' ? 'var(--green)' : 'var(--red)' }}>
-                                        {t.type === 'INCOME' ? '+' : '-'}{t.account.currency.symbol}{fmt(Number(t.amount))}
+                                    <p style={{ fontSize: 14, fontWeight: 700, color: isCredit(t) ? 'var(--green)' : 'var(--red)' }}>
+                                        {isCredit(t) ? '+' : '-'}{t.account.currency.symbol}{formatAmount(Math.abs(Number(t.amount)), t.account.currency)}
                                     </p>
                                 </div>
                             ))}

@@ -22,7 +22,7 @@ const Currencies: React.FC = () => {
     };
     const openEdit = (c: Currency) => {
         setEditing(c);
-        setForm({ code: c.code, name: c.name, symbol: c.symbol, exchangeRateToBase: c.exchangeRateToBase, isBase: c.isBase });
+        setForm({ code: c.code, name: c.name, symbol: c.symbol, exchangeRateToBase: Number(c.exchangeRateToBase), isBase: c.isBase });
         setError(''); setShowModal(true);
     };
 

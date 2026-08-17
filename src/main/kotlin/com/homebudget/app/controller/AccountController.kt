@@ -12,18 +12,32 @@ import org.springframework.web.bind.annotation.*
 class AccountController(private val service: AccountService) {
 
     @GetMapping
-    fun getAll() = service.findAll().map { it.toResponse() }
+    fun getAll(): List<AccountResponse> {
+        // One balance query for the whole list rather than one per account.
+        val balances = service.balances()
+        return service.findAll()
+            .sortedWith(compareBy({ it.archived }, { it.sortOrder }, { it.id }))
+            .map { it.toResponse(balances[it.id] ?: 0L) }
+    }
 
     @GetMapping("/{id}")
-    fun getById(@PathVariable id: Long) = service.findById(id).toResponse()
+    fun getById(@PathVariable id: Long): AccountResponse {
+        val account = service.findById(id)
+        return account.toResponse(service.balanceOf(id))
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun create(@Valid @RequestBody req: CreateAccountRequest) = service.create(req).toResponse()
+    fun create(@Valid @RequestBody req: CreateAccountRequest): AccountResponse {
+        val account = service.create(req)
+        return account.toResponse(service.balanceOf(account.id))
+    }
 
     @PutMapping("/{id}")
-    fun update(@PathVariable id: Long, @Valid @RequestBody req: UpdateAccountRequest) =
-        service.update(id, req).toResponse()
+    fun update(@PathVariable id: Long, @Valid @RequestBody req: UpdateAccountRequest): AccountResponse {
+        val account = service.update(id, req)
+        return account.toResponse(service.balanceOf(account.id))
+    }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

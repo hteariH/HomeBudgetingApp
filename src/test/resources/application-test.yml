@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    # Fresh in-memory DB per test run, built by Flyway from V1 onwards.
+    url: jdbc:h2:mem:homebudget-test;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      # The point of the test suite: entities must match what the migrations build.
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # No default-schema here on purpose: DATABASE_TO_LOWER=TRUE makes H2's default
+    # schema `public`, so pinning it to `PUBLIC` fails with "Schema not found".
+
+app:
+  jwt:
+    secret: test-secret-key-with-at-least-32-characters-for-hs256
+    expirationMs: 86400000
+
+logging:
+  level:
+    com.homebudget: INFO

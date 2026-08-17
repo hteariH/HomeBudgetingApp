@@ -2,10 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { accountApi, currencyApi } from '../api';
 import { Account, AccountType, Currency, CreateAccountRequest, UpdateAccountRequest } from '../types';
 import { Plus, Edit2, Trash2, X, Wallet } from 'lucide-react';
+import { formatAmount } from '../money';
 
 const ACCOUNT_TYPES: AccountType[] = ['CHECKING', 'SAVINGS', 'CASH', 'CREDIT', 'INVESTMENT'];
 const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6B7280'];
 
+
+// Per-currency formatting lives in ../money. This local helper is only for
+// aggregates that are not tied to a single currency (totals, chart axes).
 const fmt = (n: number, sym = '') =>
     `${sym}${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -34,7 +38,7 @@ const Accounts: React.FC = () => {
     };
     const openEdit = (a: Account) => {
         setEditing(a);
-        setForm({ name: a.name, type: a.type, initialBalance: a.balance, currencyId: a.currency.id, description: a.description ?? '', color: a.color });
+        setForm({ name: a.name, type: a.type, initialBalance: Number(a.initialBalance), currencyId: a.currency.id, description: a.description ?? '', color: a.color });
         setError(''); setShowModal(true);
     };
 
@@ -104,7 +108,7 @@ const Accounts: React.FC = () => {
                                 </div>
                             </div>
                             <p style={{ fontSize: 24, fontWeight: 800, color: Number(a.balance) < 0 ? 'var(--red)' : 'var(--text-primary)' }}>
-                                {a.currency.symbol}{fmt(Number(a.balance))}
+                                {a.currency.symbol}{formatAmount(Number(a.balance), a.currency)}
                             </p>
                             {a.description && <p className="text-muted text-sm" style={{ marginTop: 8 }}>{a.description}</p>}
                         </div>

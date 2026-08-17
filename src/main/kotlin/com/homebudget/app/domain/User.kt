@@ -30,6 +30,14 @@ data class User(
     @Column(nullable = false)
     var role: Role = Role.USER,
 
+    /**
+     * Whether the address has been proven. Login is deliberately *not* gated on this -
+     * a broken SMTP setup would otherwise lock every new user out - but password reset
+     * is, since resetting to an unproven address hands the account to whoever owns it.
+     */
+    @Column(name = "email_verified", nullable = false)
+    var emailVerified: Boolean = false,
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "base_currency_id")
     var baseCurrency: Currency? = null,

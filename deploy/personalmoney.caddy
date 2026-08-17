@@ -1,0 +1,25 @@
+# Edge site config for PersonalMoney. Deployed to /opt/edge/conf.d/personalmoney.caddy.
+# The app container joins the `edge` network with alias `personalmoney-app` and serves the
+# API and the React SPA itself, so a single reverse_proxy target is enough. Caddy obtains
+# and renews the Let's Encrypt cert for this hostname automatically.
+personalmoney.app {
+	encode zstd gzip
+
+	# The real client address. Without it every request looks like it came from the
+	# proxy, and the login rate limiter would throttle all users as one.
+	reverse_proxy personalmoney-app:8085 {
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+www.personalmoney.app {
+	redir https://personalmoney.app{uri} permanent
+}

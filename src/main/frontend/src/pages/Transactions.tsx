@@ -4,8 +4,19 @@ import {
     Account, Category, CreateTransactionRequest, PagedResponse, Transaction, TransactionType
 } from '../types';
 import { Plus, Trash2, Edit2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatAmount } from '../money';
 
-const fmt = (n: number) => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/**
+ * A transfer leg already carries its sign - negative on the account the money leaves,
+ * positive on the one it arrives in. Forcing a minus onto everything that is not
+ * INCOME showed money arriving as a loss.
+ */
+const isCredit = (t: Transaction) =>
+    t.type === 'INCOME' || (t.type === 'TRANSFER' && Number(t.amount) >= 0);
+
+const signOf = (t: Transaction) => (isCredit(t) ? '+' : '-');
+
 const today = () => new Date().toISOString().slice(0, 10);
 
 const Transactions: React.FC = () => {
@@ -57,7 +68,7 @@ const Transactions: React.FC = () => {
     };
     const openEdit = (t: Transaction) => {
         setEditing(t);
-        setForm({ accountId: t.account.id, categoryId: t.category.id, amount: t.amount, type: t.type, date: t.date, description: t.description });
+        setForm({ accountId: t.account.id, categoryId: t.category?.id ?? 0, amount: Number(t.amount), type: t.type, date: t.date, description: t.description });
         setError(''); setShowModal(true);
     };
 
@@ -146,16 +157,16 @@ const Transactions: React.FC = () => {
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: t.category.color }} />
-                                                {t.category.name}
+                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: t.category?.color ?? '#9CA3AF' }} />
+                                                {t.category?.name ?? 'Uncategorised'}
                                             </div>
                                         </td>
                                         <td style={{ color: 'var(--text-muted)' }}>{t.description || '—'}</td>
                                         <td>
                                             <span className={`badge badge-${t.type.toLowerCase()}`}>{t.type}</span>
                                         </td>
-                                        <td style={{ textAlign: 'right', fontWeight: 700, color: t.type === 'INCOME' ? 'var(--green)' : 'var(--red)' }}>
-                                            {t.type === 'INCOME' ? '+' : '-'}{t.account.currency.symbol}{fmt(Number(t.amount))}
+                                        <td style={{ textAlign: 'right', fontWeight: 700, color: isCredit(t) ? 'var(--green)' : 'var(--red)' }}>
+                                            {signOf(t)}{t.account.currency.symbol}{formatAmount(Math.abs(Number(t.amount)), t.account.currency)}
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>

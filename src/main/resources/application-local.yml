@@ -1,7 +1,8 @@
 spring:
   datasource:
-#    url: jdbc:h2:mem:homebudgetdb;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
-    url: jdbc:h2:file:/home/mamoru/homebudgetdb;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    # Project-relative so the profile works on any machine.
+    # Use jdbc:h2:mem:homebudgetdb;... instead if you want a throwaway DB each run.
+    url: jdbc:h2:file:./data/homebudgetdb;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -12,13 +13,46 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: update
+      # Flyway owns the schema; Hibernate only checks that the entities match it.
+      ddl-auto: validate
     show-sql: true
   flyway:
-    enabled: false
+    enabled: true
     locations: classpath:db/migration
+    # Local only: a checksum mismatch rebuilds the DB from scratch instead of failing.
     clean-on-validation-error: true
-    default-schema: PUBLIC
+    # No default-schema on purpose: DATABASE_TO_LOWER=TRUE makes H2's default schema
+    # `public`, so pinning it to `PUBLIC` fails with "Schema not found".
   sql:
     init:
       mode: never
+
+  # Off unless MAIL_PASSWORD is supplied. Set it (plus APP_MAIL_LOG_ONLY=false) to send
+  # for real from a developer machine - useful once, to prove the provider and the
+  # domain are actually set up, without deploying anything.
+  mail:
+    host: ${MAIL_HOST:smtp.resend.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:resend}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8085}
+  mail:
+    from: ${APP_MAIL_FROM:noreply@personalmoney.app}
+    # Default: write the link to the log instead of sending, so the flow can be walked
+    # through with no mail server at all.
+    log-only: ${APP_MAIL_LOG_ONLY:true}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

@@ -1,25 +1,46 @@
 package com.homebudget.app.service
 
 import com.homebudget.app.domain.Account
+import com.homebudget.app.domain.MinorUnits
 import com.homebudget.app.dto.CreateAccountRequest
 import com.homebudget.app.dto.UpdateAccountRequest
 import com.homebudget.app.repository.AccountRepository
-import org.springframework.data.repository.findByIdOrNull
+import com.homebudget.app.repository.SubscriptionRepository
+import com.homebudget.app.repository.TransactionRepository
+import com.homebudget.app.security.SecurityUtils
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Service
 @Transactional
 class AccountService(
     private val accountRepo: AccountRepository,
     private val currencyService: CurrencyService,
-    private val securityUtils: com.homebudget.app.security.SecurityUtils
+    private val transactionRepo: TransactionRepository,
+    private val subscriptionRepo: SubscriptionRepository,
+    private val securityUtils: SecurityUtils
 ) {
     fun findAll(): List<Account> = accountRepo.findAllByUser(securityUtils.getCurrentUser())
 
     fun findById(id: Long): Account = accountRepo.findByIdAndUser(id, securityUtils.getCurrentUser())
         ?: throw NoSuchElementException("Account not found: $id")
+
+    /**
+     * Current balance per account id, in minor units, summed from the ledger.
+     *
+     * There is deliberately no `adjustBalance` counterpart. The balance used to be a
+     * stored column that every write nudged by a delta; replaying a write - which an
+     * offline client's outbox does by design - applied the delta twice and the figure
+     * drifted with nothing to detect it. Deriving it makes writes idempotent.
+     */
+    @Transactional(readOnly = true)
+    fun balances(): Map<Long, Long> =
+        accountRepo.balancesOf(securityUtils.getCurrentUser())
+            .associate { it.accountId to it.balanceMinor }
+
+    @Transactional(readOnly = true)
+    fun balanceOf(accountId: Long): Long = balances()[accountId] ?: 0L
 
     fun create(req: CreateAccountRequest): Account {
         val user = securityUtils.getCurrentUser()
@@ -28,11 +49,14 @@ class AccountService(
             Account(
                 name = req.name,
                 type = req.type,
-                balance = req.initialBalance,
+                initialBalanceMinor = MinorUnits.toMinor(req.initialBalance, currency.decimals),
                 user = user,
                 currency = currency,
                 description = req.description,
-                color = req.color
+                icon = req.icon,
+                color = req.color,
+                sortOrder = req.sortOrder,
+                includeInTotal = req.includeInTotal
             )
         )
     }
@@ -42,20 +66,34 @@ class AccountService(
         req.name?.let { account.name = it }
         req.type?.let { account.type = it }
         req.description?.let { account.description = it }
+        req.icon?.let { account.icon = it }
         req.color?.let { account.color = it }
-        account.updatedAt = LocalDateTime.now()
+        req.archived?.let { account.archived = it }
+        req.sortOrder?.let { account.sortOrder = it }
+        req.includeInTotal?.let { account.includeInTotal = it }
+        // Editing the opening balance shifts the whole history, which is exactly what
+        // a user correcting a starting figure expects.
+        req.initialBalance?.let {
+            account.initialBalanceMinor = MinorUnits.toMinor(it, account.currency.decimals)
+        }
+        account.updatedAt = Instant.now()
         return accountRepo.save(account)
     }
 
+    /**
+     * Tombstones the account and everything hanging off it.
+     *
+     * A hard delete is invisible to a client that was offline when it happened - it
+     * would simply push the rows back on next sync. The FK cascade cannot help either,
+     * because a soft delete is an UPDATE, so dependants are walked explicitly.
+     */
     fun delete(id: Long) {
         val account = findById(id)
-        accountRepo.delete(account)
-    }
-
-    fun adjustBalance(id: Long, delta: java.math.BigDecimal) {
-        val account = findById(id)
-        account.balance = account.balance.add(delta)
-        account.updatedAt = LocalDateTime.now()
+        val now = Instant.now()
+        transactionRepo.tombstoneByAccount(account.id, now)
+        subscriptionRepo.tombstoneByAccount(account.id, now)
+        account.deleted = true
+        account.updatedAt = now
         accountRepo.save(account)
     }
 }

@@ -1,20 +1,38 @@
 package com.homebudget.app.domain
 
 import jakarta.persistence.*
+import org.hibernate.annotations.SQLRestriction
 import java.math.BigDecimal
-import java.time.LocalDate
+import java.time.Instant
 import java.time.LocalDateTime
 
 enum class TransactionType {
-    INCOME, EXPENSE
+    INCOME, EXPENSE, TRANSFER
 }
 
+/**
+ * A single ledger row.
+ *
+ * A transfer is *two* of these sharing a [transferGroupId]: a negative debit on the
+ * source account and a positive credit on the destination. One entity type keeps the
+ * sync protocol and the balance query simple, and cross-currency transfers fall out
+ * for free because each row carries its own [accountAmountMinor].
+ *
+ * Sign convention, mirrored from the Android client's balance query:
+ * - INCOME: [accountAmountMinor] is a positive magnitude, added
+ * - EXPENSE: [accountAmountMinor] is a positive magnitude, subtracted
+ * - TRANSFER: [accountAmountMinor] is already signed, added as-is
+ */
 @Entity
 @Table(name = "transactions")
+@SQLRestriction("deleted = false")
 data class Transaction(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
+
+    @Column(nullable = false, length = 36, updatable = false)
+    override val uuid: String = Syncable.newUuid(),
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -24,27 +42,59 @@ data class Transaction(
     @JoinColumn(name = "account_id", nullable = false)
     var account: Account,
 
+    /** Null for transfer rows, and for history whose category was deleted. */
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "category_id", nullable = false)
-    var category: Category,
+    @JoinColumn(name = "category_id")
+    var category: Category? = null,
 
-    @Column(nullable = false, precision = 18, scale = 2)
-    var amount: BigDecimal,
+    /** Amount as entered, in [currencyCode], in minor units. */
+    @Column(name = "amount_minor", nullable = false)
+    var amountMinor: Long,
+
+    @Column(name = "currency_code", nullable = false, length = 10)
+    var currencyCode: String,
+
+    /** The same amount in the account's currency; equal to [amountMinor] unless cross-currency. */
+    @Column(name = "account_amount_minor", nullable = false)
+    var accountAmountMinor: Long,
+
+    @Column(name = "fx_rate_to_account", nullable = false, precision = 24, scale = 10)
+    var fxRateToAccount: BigDecimal = BigDecimal.ONE,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var type: TransactionType,
 
-    @Column(nullable = false)
-    var date: LocalDate,
+    /** An instant rather than a date: same-day entries are ordered by time. */
+    @Column(name = "occurred_at", nullable = false)
+    var occurredAt: Instant,
 
     @Column
     var description: String? = null,
-    @Column
-    var monobankId: String? = null,
-    @Column(nullable = false)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id")
+    var subscription: Subscription? = null,
+
+    @Column(name = "transfer_group_id", length = 36)
+    var transferGroupId: String? = null,
+
+    @Column(name = "transfer_counterpart_account_id")
+    var transferCounterpartAccountId: Long? = null,
+
+    @Column(name = "transfer_fee_minor")
+    var transferFeeMinor: Long? = null,
+
+    /** The bank's own id for this operation, so an import cannot bring it in twice. */
+    @Column(name = "external_id", length = 100)
+    var externalId: String? = null,
+
+    @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
+    @Column(name = "updated_at", nullable = false)
+    override var updatedAt: Instant = Instant.now(),
+
     @Column(nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-)
+    override var deleted: Boolean = false
+) : Syncable

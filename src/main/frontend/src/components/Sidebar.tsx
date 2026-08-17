@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
     LayoutDashboard, Wallet, Tag,
-    Receipt, Globe, TrendingUp, ArrowLeftRight, Download
+    Receipt, Globe, TrendingUp, ArrowLeftRight, Building2
 } from 'lucide-react';
 
 const navItems = [
@@ -12,7 +12,7 @@ const navItems = [
     { to: '/transfers', icon: ArrowLeftRight, label: 'Transfers' },
     { to: '/categories', icon: Tag, label: 'Categories' },
     { to: '/currencies', icon: Globe, label: 'Currencies' },
-    { to: '/import', icon: Download, label: 'Import' },
+    { to: '/banks', icon: Building2, label: 'Banks' },
 ];
 
 const Sidebar: React.FC = () => (

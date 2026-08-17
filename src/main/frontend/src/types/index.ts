@@ -1,3 +1,8 @@
+// NOTE: money fields are decimal **strings**, not numbers.
+// The server serialises every BigDecimal as a string so amounts never pass through a
+// double, and so trailing zeros survive (which is how a 0-decimal currency like JPY is
+// distinguishable from a 2-decimal one). Coerce with Number() before arithmetic.
+
 // ─── Domain Types ─────────────────────────────────────────────────────────────
 
 export interface Currency {
@@ -5,7 +10,10 @@ export interface Currency {
     code: string;
     name: string;
     symbol: string;
-    exchangeRateToBase: number;
+    /** Digits after the decimal point. Format against this - not every currency has 2. */
+    decimals: number;
+    sortOrder: number;
+    exchangeRateToBase: string;
     isBase: boolean;
     createdAt: string;
 }
@@ -14,82 +22,66 @@ export type AccountType = 'CHECKING' | 'SAVINGS' | 'CASH' | 'CREDIT' | 'INVESTME
 
 export interface Account {
     id: number;
+    /** Sync identity, shared with the mobile client. Server ids are not portable. */
+    uuid: string;
     name: string;
     type: AccountType;
-    balance: number;
+    /** Current balance, summed from the ledger by the server. Not a stored column. */
+    balance: string;
+    /** Opening balance - this is the editable one. */
+    initialBalance: string;
     currency: Currency;
     description?: string;
+    icon: string;
     color: string;
-    monobankAccountId?: string;
-    isMonobankLinked: boolean;
+    archived: boolean;
+    sortOrder: number;
+    includeInTotal: boolean;
+    bankConnectionId?: number | null;
+    externalAccountId?: string | null;
     createdAt: string;
     updatedAt: string;
-}
-
-export interface MonobankAccountInfo {
-    id: string;
-    currencyCode: number;
-    balance: number;
-    creditLimit: number;
-    type: string;
-    maskedPan: string[];
-}
-
-export interface MonobankClientInfo {
-    clientId: string;
-    name: string;
-    accounts: MonobankAccountInfo[];
-}
-
-export interface MonobankImportResult {
-    imported: number;
-    skipped: number;
-}
-
-export interface MonobankPendingTransaction {
-    monobankId: string;
-    date: string;
-    description: string;
-    amount: number;
-    type: TransactionType;
-    mcc: number;
-    alreadyExists: boolean;
-    existingTransactionId?: number;
-    suggestedCategoryId?: number;
-}
-
-export interface MonobankPreviewResponse {
-    transactions: MonobankPendingTransaction[];
-}
-
-export interface MonobankConfirmItem {
-    monobankId: string;
-    categoryId: number;
 }
 
 export type CategoryType = 'INCOME' | 'EXPENSE';
 
 export interface Category {
     id: number;
+    uuid: string;
     name: string;
     type: CategoryType;
     icon: string;
     color: string;
     description?: string;
+    parentId?: number | null;
+    archived: boolean;
+    sortOrder: number;
+    isDefault: boolean;
+    /** Monthly limit in the user's base currency, or null for no budget. */
+    budgetLimit?: string | null;
     mccCodes: number[];
     createdAt: string;
 }
 
-export type TransactionType = 'INCOME' | 'EXPENSE';
+// TRANSFER rows are the two legs of a transfer; they carry no category.
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 
 export interface Transaction {
     id: number;
+    uuid: string;
     account: Account;
-    category: Category;
-    amount: number;
+    /** Null for transfer legs, and for history whose category was deleted. */
+    category: Category | null;
+    amount: string;
+    currencyCode: string;
+    accountAmount: string;
     type: TransactionType;
+    /** Derived from occurredAt; kept for date-only views. */
     date: string;
+    occurredAt: string;
     description?: string;
+    transferGroupId?: string | null;
+    subscriptionId?: number | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -154,12 +146,15 @@ export interface CreateCurrencyRequest {
 
 export interface Transfer {
     id: number;
+    transferGroupId: string;
     fromAccount: Account;
     toAccount: Account;
-    fromAmount: number;
-    toAmount: number;
-    exchangeRate: number;
+    fromAmount: string;
+    toAmount: string;
+    fee?: string | null;
+    exchangeRate: string;
     date: string;
+    occurredAt: string;
     description?: string;
     createdAt: string;
 }
@@ -177,4 +172,103 @@ export interface UpdateCurrencyRequest {
     name?: string;
     symbol?: string;
     exchangeRateToBase?: number;
+}
+
+
+// ─── Bank integrations ──────────────────────────────────────────────────────
+// Nothing here names a specific bank. A provider describes its own connect form, so
+// adding one is a server-side change only.
+
+export type CredentialFieldType = 'SECRET' | 'TEXT';
+
+export interface CredentialField {
+    name: string;
+    label: string;
+    type: CredentialFieldType;
+    placeholder?: string | null;
+    helpText?: string | null;
+    required: boolean;
+}
+
+export interface BankProvider {
+    id: string;
+    displayName: string;
+    helpUrl?: string | null;
+    credentialFields: CredentialField[];
+}
+
+export type BankConnectionStatus = 'ACTIVE' | 'INVALID';
+
+export interface BankConnection {
+    id: number;
+    provider: string;
+    providerDisplayName: string;
+    label?: string | null;
+    status: BankConnectionStatus;
+    lastVerifiedAt?: string | null;
+    linkedAccountIds: number[];
+    createdAt: string;
+}
+
+export interface RemoteAccount {
+    externalId: string;
+    displayName: string;
+    currencyCode: string;
+    balanceMinor: number;
+    type?: string | null;
+    linkedAccountId?: number | null;
+}
+
+export interface PendingImport {
+    externalId: string;
+    occurredAt: string;
+    date: string;
+    description: string;
+    amountMinor: number;
+    type: TransactionType;
+    mcc: number;
+    alreadyImported: boolean;
+    suggestedCategoryId?: number | null;
+}
+
+export interface ImportResult {
+    imported: number;
+    skipped: number;
+}
+
+// ─── CSV statement import ───────────────────────────────────────────────────
+
+export interface CsvMapping {
+    date: string;
+    description: string;
+    amount?: string | null;
+    debit?: string | null;
+    credit?: string | null;
+    currency?: string | null;
+    externalId?: string | null;
+    dateFormat?: string | null;
+}
+
+export interface CsvRow {
+    externalId: string;
+    occurredAt: string;
+    date: string;
+    description: string;
+    /** Hundredths, as the file reported them. */
+    amountMinor: number;
+    currencyCode?: string | null;
+    type: TransactionType;
+    alreadyImported: boolean;
+    suggestedCategoryId?: number | null;
+}
+
+export interface CsvPreview {
+    headers: string[];
+    /** What the server detected. Send it back corrected if it guessed wrong. */
+    mapping: CsvMapping;
+    rows: CsvRow[];
+    /** Lines that could not be read - shown rather than silently dropped. */
+    skipped: string[];
+    /** Currencies in the file that differ from the target account's. */
+    currencyMismatch: string[];
 }

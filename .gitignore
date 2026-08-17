@@ -42,3 +42,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Local H2 database (local profile)
+data/
+*.mv.db
+*.trace.db

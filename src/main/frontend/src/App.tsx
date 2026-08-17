@@ -8,7 +8,10 @@ import Categories from './pages/Categories';
 import Transactions from './pages/Transactions';
 import Transfers from './pages/Transfers';
 import Currencies from './pages/Currencies';
-import MonobankImport from './pages/MonobankImport';
+import Banks from './pages/Banks';
+import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Header from './components/Header';
@@ -23,6 +26,9 @@ const App: React.FC = () => (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/*"
         element={
@@ -39,7 +45,7 @@ const App: React.FC = () => (
                     <Route path="/transfers" element={<Transfers />} />
                     <Route path="/categories" element={<Categories />} />
                     <Route path="/currencies" element={<Currencies />} />
-                    <Route path="/import" element={<MonobankImport />} />
+                    <Route path="/banks" element={<Banks />} />
                   </Routes>
                 </main>
               </div>

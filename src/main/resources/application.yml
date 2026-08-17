@@ -7,12 +7,28 @@ spring:
       write-dates-as-timestamps: false
   jpa:
     open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          # Instants are written and read as UTC regardless of the host's timezone.
+          # Sync ordering compares these across clients, so an offset would silently
+          # reorder edits.
+          time_zone: UTC
 
 server:
   port: 8085
   error:
     include-message: always
     include-binding-errors: always
+
+# The OpenAPI document is the contract shared with the Android and React clients.
+# Off by default so a public deployment does not publish its own API surface;
+# the local profile turns it back on for generating the spec.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 
 logging:
   level:
