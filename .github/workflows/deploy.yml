@@ -123,15 +123,18 @@ jobs:
               echo "Missing /opt/homebudget/.env - copy it from .env.example and chmod 600" >&2
               exit 1
             fi
-            export DOCKER_IMAGE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):latest
+            DOCKER_IMAGE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):latest
 
-            echo "${{ secrets.GITHUB_TOKEN }}" | sudo -E docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # The shared edge network is created once on the VPS; tolerate it existing.
             sudo docker network create edge 2>/dev/null || true
 
-            sudo -E docker compose pull
-            sudo -E docker compose up -d --remove-orphans
+            # `sudo env VAR=...` rather than `sudo -E`: this host's sudoers refuses to
+            # preserve the environment, so -E is silently dropped and compose sees no
+            # image. Everything else compose needs comes from .env, which it reads itself.
+            sudo env DOCKER_IMAGE="$DOCKER_IMAGE" docker compose pull
+            sudo env DOCKER_IMAGE="$DOCKER_IMAGE" docker compose up -d --remove-orphans
 
             # Refresh the shared edge proxy so the site config takes effect.
             sudo docker exec edge-caddy caddy reload --config /etc/caddy/Caddyfile
