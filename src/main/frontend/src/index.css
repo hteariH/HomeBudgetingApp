@@ -1,27 +1,55 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
 
-/* ─── Design Tokens ────────────────────────────────────────────────────── */
+/* ─── Design Tokens ────────────────────────────────────────────────────── *
+ * Every colour is stored twice: once as bare RGB channels, which is the only
+ * form Tailwind's `<alpha-value>` placeholder can build an rgb() out of, and
+ * once as a ready-to-use colour for the plain CSS below and for inline styles.
+ * Editing a colour means editing the -rgb channel line only.
+ * ----------------------------------------------------------------------- */
 :root {
-  --bg-base:      #0D0F14;
-  --bg-surface:   #161A23;
-  --bg-card:      #1E2330;
-  --bg-hover:     #252B3B;
-  --border:       #2D3448;
-  --border-light: #3A4260;
+  --bg-base-rgb:      13 15 20;
+  --bg-surface-rgb:   22 26 35;
+  --bg-card-rgb:      30 35 48;
+  --bg-hover-rgb:     37 43 59;
+  --border-rgb:       45 52 72;
+  --border-light-rgb: 58 66 96;
 
-  --text-primary:   #F0F2F8;
-  --text-secondary: #8B93B0;
-  --text-muted:     #555D7C;
+  --text-primary-rgb:   240 242 248;
+  --text-secondary-rgb: 139 147 176;
+  --text-muted-rgb:     85 93 124;
 
-  --accent:       #6366F1;
-  --accent-light: #818CF8;
-  --accent-dark:  #4F46E5;
-  --accent-glow:  rgba(99,102,241,0.25);
+  --accent-rgb:       99 102 241;
+  --accent-light-rgb: 129 140 248;
+  --accent-dark-rgb:  79 70 229;
 
-  --green:  #10B981;
-  --red:    #EF4444;
-  --yellow: #F59E0B;
-  --cyan:   #06B6D4;
+  --green-rgb:  16 185 129;
+  --red-rgb:    239 68 68;
+  --yellow-rgb: 245 158 11;
+  --cyan-rgb:   6 182 212;
+  --purple-rgb: 168 85 247;
+
+  --bg-base:      rgb(var(--bg-base-rgb));
+  --bg-surface:   rgb(var(--bg-surface-rgb));
+  --bg-card:      rgb(var(--bg-card-rgb));
+  --bg-hover:     rgb(var(--bg-hover-rgb));
+  --border:       rgb(var(--border-rgb));
+  --border-light: rgb(var(--border-light-rgb));
+
+  --text-primary:   rgb(var(--text-primary-rgb));
+  --text-secondary: rgb(var(--text-secondary-rgb));
+  --text-muted:     rgb(var(--text-muted-rgb));
+
+  --accent:       rgb(var(--accent-rgb));
+  --accent-light: rgb(var(--accent-light-rgb));
+  --accent-dark:  rgb(var(--accent-dark-rgb));
+  --accent-glow:  rgb(var(--accent-rgb) / 0.25);
+
+  --green:  rgb(var(--green-rgb));
+  --red:    rgb(var(--red-rgb));
+  --yellow: rgb(var(--yellow-rgb));
+  --cyan:   rgb(var(--cyan-rgb));
+  --purple: rgb(var(--purple-rgb));
 
   --radius-sm: 6px;
   --radius:    10px;
@@ -36,41 +64,52 @@
   --header-height: 64px;
 
   --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  color-scheme: dark;
 }
 
 /* ─── Light Mode Tokens ────────────────────────────────────────────────── */
 [data-theme="light"] {
-  --bg-base:      #F8FAFC;
-  --bg-surface:   #FFFFFF;
-  --bg-card:      #FFFFFF;
-  --bg-hover:     #F1F5F9;
-  --border:       #E2E8F0;
-  --border-light: #CBD5E1;
+  --bg-base-rgb:      248 250 252;
+  --bg-surface-rgb:   255 255 255;
+  --bg-card-rgb:      255 255 255;
+  --bg-hover-rgb:     241 245 249;
+  --border-rgb:       226 232 240;
+  --border-light-rgb: 203 213 225;
 
-  --text-primary:   #0F172A;
-  --text-secondary: #475569;
-  --text-muted:     #64748B;
+  --text-primary-rgb:   15 23 42;
+  --text-secondary-rgb: 71 85 105;
+  --text-muted-rgb:     100 116 139;
 
-  --accent-glow:  rgba(99,102,241,0.15);
+  --accent-glow: rgb(var(--accent-rgb) / 0.15);
 
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
   --shadow:    0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+
+  color-scheme: light;
 }
 
 /* ─── Reset ───────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; }
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 a { text-decoration: none; color: inherit; }
-button { font-family: inherit; cursor: pointer; border: none; background: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 input, select, textarea { font-family: inherit; }
+
+/* Preflight drops the native focus ring; put a token-coloured one back so the
+   app stays keyboard-navigable. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* ─── Scrollbar ───────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -93,8 +132,9 @@ input, select, textarea { font-family: inherit; }
   flex-direction: column;
   position: fixed;
   top: 0; left: 0; bottom: 0;
-  z-index: 100;
+  z-index: 120;
   overflow-y: auto;
+  transition: transform var(--transition);
 }
 
 .sidebar-logo {
@@ -110,7 +150,7 @@ input, select, textarea { font-family: inherit; }
   background: linear-gradient(135deg, var(--accent), var(--cyan));
   border-radius: var(--radius-sm);
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
+  flex-shrink: 0;
 }
 
 .sidebar-logo-text {
@@ -151,6 +191,24 @@ input, select, textarea { font-family: inherit; }
 .nav-link.active { background: var(--accent-glow); color: var(--accent-light); }
 .nav-link svg { flex-shrink: 0; }
 
+/* Drawer behaviour: off-canvas below the breakpoint, permanent above it. */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  z-index: 110;
+  border: none;
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); box-shadow: var(--shadow-lg); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-backdrop { display: block; }
+}
+/* The two drawer buttons are styled further down, after .btn - see the note there. */
+
 /* ─── Main Content ────────────────────────────────────────────────────── */
 .main-content {
   margin-left: var(--sidebar-width);
@@ -158,27 +216,71 @@ input, select, textarea { font-family: inherit; }
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
+}
+
+/* Must come after the rule above, not with the rest of the drawer styles: both
+   selectors have the same specificity, so whichever is written last wins and the
+   gutter would survive on mobile - pushing the whole page off-screen. */
+@media (max-width: 900px) {
+  .main-content { margin-left: 0; }
 }
 
 /* ─── Header ──────────────────────────────────────────────────────────── */
 .header {
-  height: var(--header-height);
-  background: var(--bg-surface);
+  min-height: var(--header-height);
+  background: rgb(var(--bg-surface-rgb) / 0.85);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding: 0 28px;
   position: sticky;
   top: 0;
   z-index: 50;
 }
 
-.header-title { font-size: 18px; font-weight: 600; }
+.header-title { font-size: 18px; font-weight: 600; line-height: 1.3; }
 .header-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px 5px 6px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+}
+.user-chip-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.user-chip-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .header { padding: 0 16px; }
+  .user-chip-name { display: none; }
+  .user-chip { padding: 5px; }
+  /* Every page renders its own heading immediately below, so at this width the
+     header title only competes for room and ends up truncated to a few letters. */
+  .header-title { display: none; }
+}
 
 /* ─── Page ────────────────────────────────────────────────────────────── */
 .page { padding: 28px; animation: fadeIn 0.2s ease; }
+@media (max-width: 640px) { .page { padding: 18px 16px; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ─── Cards ───────────────────────────────────────────────────────────── */
@@ -208,8 +310,10 @@ input, select, textarea { font-family: inherit; }
   background: linear-gradient(135deg, var(--accent-glow), transparent);
   opacity: 0;
   transition: opacity var(--transition);
+  pointer-events: none;
 }
 .stat-card:hover::after { opacity: 1; }
+.stat-card > * { position: relative; z-index: 1; }
 
 .stat-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
 .stat-value { font-size: 26px; font-weight: 700; margin-top: 6px; }
@@ -220,12 +324,14 @@ input, select, textarea { font-family: inherit; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 @media (max-width: 1200px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 900px)  { .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; } }
+@media (max-width: 900px)  { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 640px)  { .grid-4 { grid-template-columns: 1fr; } }
 
 /* ─── Buttons ─────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   padding: 9px 18px;
   border-radius: var(--radius-sm);
@@ -234,36 +340,52 @@ input, select, textarea { font-family: inherit; }
   transition: all var(--transition);
   white-space: nowrap;
 }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-primary {
   background: var(--accent);
   color: #fff;
 }
-.btn-primary:hover { background: var(--accent-light); box-shadow: 0 0 16px var(--accent-glow); }
+.btn-primary:hover:not(:disabled) { background: var(--accent-light); box-shadow: 0 0 16px var(--accent-glow); }
 
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border);
 }
-.btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-light); }
+.btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-light); }
 
 .btn-danger { background: var(--red); color: #fff; }
-.btn-danger:hover { background: #dc2626; }
+.btn-danger:hover:not(:disabled) { background: #dc2626; }
 
 .btn-secondary {
   background: var(--bg-hover);
   color: var(--text-primary);
   border: 1px solid var(--border-light);
 }
-.btn-secondary:hover { background: var(--border); border-color: var(--accent); color: var(--accent-light); }
+.btn-secondary:hover:not(:disabled) { background: var(--border); border-color: var(--accent); color: var(--accent-light); }
 
 .btn-warning { background: var(--yellow); color: #000; }
-.btn-warning:hover { opacity: 0.85; }
+.btn-warning:hover:not(:disabled) { opacity: 0.85; }
 
 .btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-lg { padding: 13px 26px; font-size: 15px; }
 .btn-icon { padding: 8px; border-radius: var(--radius-sm); }
 
+/* ─── Drawer Controls ─────────────────────────────────────────────────── *
+ * The menu toggle and the drawer's close button. Declared after .btn because they
+ * also carry it: at equal specificity the later rule wins, so a `display: none`
+ * written earlier loses to .btn's inline-flex and the toggle appears on desktop.
+ *
+ * They share the sidebar's 900px breakpoint rather than a Tailwind one, which would
+ * leave them wrong between 768px and 900px.
+ * ----------------------------------------------------------------------- */
+.nav-toggle, .nav-close { display: none; }
+.nav-close { margin-left: auto; }
+
+@media (max-width: 900px) {
+  .nav-toggle, .nav-close { display: inline-flex; }
+}
 
 /* ─── Form Controls ───────────────────────────────────────────────────── */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -286,11 +408,23 @@ input, select, textarea { font-family: inherit; }
 .form-control::placeholder { color: var(--text-muted); }
 select.form-control { cursor: pointer; }
 
+/* Leaves room for the leading icon in the auth forms. */
+.form-control-icon { padding-left: 38px; }
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
 /* ─── Table ───────────────────────────────────────────────────────────── */
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 thead tr { border-bottom: 1px solid var(--border); }
-th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
 td { padding: 12px 14px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr { transition: background var(--transition); }
@@ -306,9 +440,22 @@ tbody tr:hover { background: var(--bg-hover); }
   font-size: 11px;
   font-weight: 600;
 }
-.badge-income  { background: rgba(16,185,129,0.15);  color: var(--green); }
-.badge-expense { background: rgba(239, 68, 68, 0.15); color: var(--red);   }
-.badge-transfer{ background: rgba(99,102,241,0.15);  color: var(--accent-light); }
+.badge-income  { background: rgb(var(--green-rgb) / 0.15); color: var(--green); }
+.badge-expense { background: rgb(var(--red-rgb) / 0.15);   color: var(--red);   }
+.badge-transfer{ background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-light); }
+
+/* ─── Alert ───────────────────────────────────────────────────────────── */
+.alert-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgb(var(--red-rgb) / 0.1);
+  border: 1px solid rgb(var(--red-rgb) / 0.25);
+  color: var(--red);
+  font-size: 13px;
+}
 
 /* ─── Modal ───────────────────────────────────────────────────────────── */
 .modal-overlay {
@@ -321,6 +468,7 @@ tbody tr:hover { background: var(--bg-hover); }
   justify-content: center;
   padding: 16px;
   animation: fadeIn 0.15s ease;
+  overflow-y: auto;
 }
 
 .modal {
@@ -332,6 +480,7 @@ tbody tr:hover { background: var(--bg-hover); }
   max-width: 480px;
   box-shadow: var(--shadow-lg);
   animation: slideUp 0.2s ease;
+  margin: auto;
 }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
@@ -380,31 +529,60 @@ tbody tr:hover { background: var(--bg-hover); }
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
+.spinner-sm {
+  width: 16px; height: 16px;
+  border-width: 2px;
+  border-color: rgba(255,255,255,0.3);
+  border-top-color: #fff;
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ─── Utilities ───────────────────────────────────────────────────────── */
-.flex         { display: flex; }
-.flex-col     { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.gap-2  { gap: 8px; }
-.gap-3  { gap: 12px; }
-.gap-4  { gap: 16px; }
-.gap-6  { gap: 24px; }
-.mt-4   { margin-top: 16px; }
-.mt-6   { margin-top: 24px; }
-.w-full { width: 100%; }
+/* ─── Semantic Text Colours ───────────────────────────────────────────── *
+ * Kept as plain CSS because they resolve through the theme tokens. The
+ * layout/spacing utilities that used to live here were removed once Tailwind
+ * was enabled - it generates identical ones.
+ * ----------------------------------------------------------------------- */
 .text-green  { color: var(--green); }
 .text-red    { color: var(--red); }
 .text-accent { color: var(--accent-light); }
 .text-muted  { color: var(--text-muted); }
-.text-sm { font-size: 13px; }
-.font-semibold { font-weight: 600; }
-.font-bold     { font-weight: 700; }
 
 /* ─── Section Header ──────────────────────────────────────────────────── */
 .section-header {
   display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 }
 .section-title { font-size: 16px; font-weight: 700; }
+
+/* ─── Language Switcher ───────────────────────────────────────────────── */
+.lang-switcher { position: relative; }
+.lang-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 168px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 300;
+  animation: slideUp 0.15s ease;
+}
+.lang-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: left;
+}
+.lang-option:hover { background: var(--bg-hover); color: var(--text-primary); }
+.lang-option.active { color: var(--accent-light); background: var(--accent-glow); }
+
+@tailwind utilities;

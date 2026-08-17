@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api';
 import AuthShell from './AuthShell';
-import { CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Lock, LinkIcon } from 'lucide-react';
+import { useT } from '../i18n';
 
 const MIN_LENGTH = 10;
 
@@ -15,6 +16,7 @@ const MIN_LENGTH = 10;
  * the account until the whole flow is repeated.
  */
 const ResetPassword: React.FC = () => {
+    const t = useT();
     const [params] = useSearchParams();
     const navigate = useNavigate();
     const token = params.get('token');
@@ -41,7 +43,7 @@ const ResetPassword: React.FC = () => {
             // forward - send them there rather than leaving a dead end.
             setTimeout(() => navigate('/login'), 2500);
         } catch (e: any) {
-            setError(e.message || 'This link is not valid.');
+            setError(e.message || t('reset.failed'));
         } finally {
             setBusy(false);
         }
@@ -49,60 +51,102 @@ const ResetPassword: React.FC = () => {
 
     if (!token) {
         return (
-            <AuthShell centered>
-                <h1>Link is incomplete</h1>
-                <p style={{ color: 'var(--text-muted)' }}>This link is missing its token.</p>
-                <Link to="/forgot-password" className="btn btn-primary" style={{ marginTop: 16 }}>
-                    Request a new link
-                </Link>
+            <AuthShell
+                centered
+                icon={
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-warn/15">
+                        <LinkIcon size={24} className="text-warn" />
+                    </span>
+                }
+                title={t('reset.noTokenTitle')}
+                subtitle={t('reset.noTokenBody')}
+            >
+                <Link to="/forgot-password" className="btn btn-primary">{t('reset.requestNew')}</Link>
             </AuthShell>
         );
     }
 
     if (done) {
         return (
-            <AuthShell centered>
-                <CheckCircle2 size={40} color="var(--green)" />
-                <h1>Password changed</h1>
-                <p style={{ color: 'var(--text-muted)' }}>
-                    You have been signed out everywhere. Sign in with the new password.
-                </p>
-                <Link to="/login" className="btn btn-primary" style={{ marginTop: 16 }}>Sign in</Link>
+            <AuthShell
+                centered
+                icon={
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ok/15">
+                        <CheckCircle2 size={26} className="text-ok" />
+                    </span>
+                }
+                title={t('reset.doneTitle')}
+                subtitle={t('reset.doneBody')}
+            >
+                <Link to="/login" className="btn btn-primary">{t('login.submit')}</Link>
             </AuthShell>
         );
     }
 
     return (
-        <AuthShell>
-            <h1>Choose a new password</h1>
-            <form onSubmit={submit} style={{ marginTop: 16 }}>
+        <AuthShell title={t('reset.title')}>
+            <form onSubmit={submit} className="flex flex-col gap-5">
                 <div className="form-group">
-                    <label className="form-label">New password</label>
-                    <input
-                        type="password" className="form-control" required
-                        value={password} onChange={e => setPassword(e.target.value)}
-                    />
+                    <label className="form-label" htmlFor="password">{t('reset.newPassword')}</label>
+                    <div className="relative">
+                        <Lock size={17} className="input-icon" />
+                        <input
+                            type="password"
+                            id="password"
+                            autoComplete="new-password"
+                            className="form-control form-control-icon"
+                            required
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                        />
+                    </div>
                     {tooShort && (
-                        <p style={{ fontSize: 12, color: 'var(--red)' }}>At least {MIN_LENGTH} characters.</p>
+                        <p className="text-xs text-red">{t('reset.tooShort', { count: MIN_LENGTH })}</p>
                     )}
                 </div>
+
                 <div className="form-group">
-                    <label className="form-label">Repeat it</label>
-                    <input
-                        type="password" className="form-control" required
-                        value={confirm} onChange={e => setConfirm(e.target.value)}
-                    />
-                    {mismatch && <p style={{ fontSize: 12, color: 'var(--red)' }}>These do not match.</p>}
+                    <label className="form-label" htmlFor="confirm">{t('reset.repeat')}</label>
+                    <div className="relative">
+                        <Lock size={17} className="input-icon" />
+                        <input
+                            type="password"
+                            id="confirm"
+                            autoComplete="new-password"
+                            className="form-control form-control-icon"
+                            required
+                            value={confirm}
+                            onChange={e => setConfirm(e.target.value)}
+                        />
+                    </div>
+                    {mismatch && <p className="text-xs text-red">{t('reset.mismatch')}</p>}
                 </div>
-                {error && <div className="alert alert-error">{error}</div>}
-                <button type="submit" className="btn btn-primary" disabled={!canSubmit} style={{ width: '100%' }}>
-                    {busy ? 'Saving…' : 'Set new password'}
+
+                {error && (
+                    <div className="alert-error" role="alert">
+                        <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                )}
+
+                <button type="submit" className="btn btn-primary btn-lg w-full" disabled={!canSubmit}>
+                    {busy ? (
+                        <>
+                            <span className="spinner spinner-sm" />
+                            {t('common.saving')}
+                        </>
+                    ) : (
+                        t('reset.submit')
+                    )}
                 </button>
+
+                <p className="text-center text-[13px] text-ink-dim">
+                    {t('reset.expiryNote')}{' '}
+                    <Link to="/forgot-password" className="text-brand-light transition-colors hover:text-brand">
+                        {t('reset.requestAnother')}
+                    </Link>
+                </p>
             </form>
-            <p style={{ marginTop: 16, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
-                Links expire after an hour and work once.{' '}
-                <Link to="/forgot-password">Request another</Link>
-            </p>
         </AuthShell>
     );
 };

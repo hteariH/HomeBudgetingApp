@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi } from '../api';
 import AuthShell from './AuthShell';
-import { MailCheck } from 'lucide-react';
+import { AlertTriangle, Mail, MailCheck } from 'lucide-react';
+import { useT } from '../i18n';
 
 /**
  * Asks for a reset link.
@@ -13,6 +14,7 @@ import { MailCheck } from 'lucide-react';
  * to be on such a list for.
  */
 const ForgotPassword: React.FC = () => {
+    const t = useT();
     const [email, setEmail] = useState('');
     const [sent, setSent] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -28,7 +30,7 @@ const ForgotPassword: React.FC = () => {
         } catch (e: any) {
             // Only transport or rate-limit failures reach here; the server never
             // reports whether the address exists.
-            setError(e.message || 'Could not send the link. Try again shortly.');
+            setError(e.message || t('forgot.failed'));
         } finally {
             setBusy(false);
         }
@@ -36,43 +38,66 @@ const ForgotPassword: React.FC = () => {
 
     if (sent) {
         return (
-            <AuthShell centered>
-                <MailCheck size={40} color="var(--green)" />
-                <h1>Check your inbox</h1>
-                <p style={{ color: 'var(--text-muted)' }}>
-                    If that address has an account, a reset link is on its way.
-                </p>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-                    The link works once and expires in an hour.
-                </p>
-                <Link to="/login" className="btn btn-secondary" style={{ marginTop: 16 }}>Back to sign in</Link>
+            <AuthShell
+                centered
+                icon={
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ok/15">
+                        <MailCheck size={26} className="text-ok" />
+                    </span>
+                }
+                title={t('forgot.sentTitle')}
+                subtitle={t('forgot.sentBody')}
+            >
+                <p className="text-[13px] text-ink-dim">{t('forgot.sentNote')}</p>
+                <Link to="/login" className="btn btn-secondary mt-5">{t('forgot.backToSignIn')}</Link>
             </AuthShell>
         );
     }
 
     return (
-        <AuthShell>
-            <h1>Reset your password</h1>
-            <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
-                Enter your address and we will send a link to choose a new password.
-            </p>
-            <form onSubmit={submit}>
+        <AuthShell title={t('forgot.title')} subtitle={t('forgot.subtitle')}>
+            <form onSubmit={submit} className="flex flex-col gap-5">
                 <div className="form-group">
-                    <label className="form-label">Email Address</label>
-                    <input
-                        type="email" className="form-control" required
-                        placeholder="you@example.com"
-                        value={email} onChange={e => setEmail(e.target.value)}
-                    />
+                    <label className="form-label" htmlFor="email">{t('auth.email')}</label>
+                    <div className="relative">
+                        <Mail size={17} className="input-icon" />
+                        <input
+                            type="email"
+                            id="email"
+                            autoComplete="email"
+                            className="form-control form-control-icon"
+                            required
+                            placeholder={t('auth.emailPlaceholder')}
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                        />
+                    </div>
                 </div>
-                {error && <div className="alert alert-error">{error}</div>}
-                <button type="submit" className="btn btn-primary" disabled={busy || !email} style={{ width: '100%' }}>
-                    {busy ? 'Sending…' : 'Send reset link'}
+
+                {error && (
+                    <div className="alert-error" role="alert">
+                        <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                )}
+
+                <button type="submit" className="btn btn-primary btn-lg w-full" disabled={busy || !email}>
+                    {busy ? (
+                        <>
+                            <span className="spinner spinner-sm" />
+                            {t('forgot.submitting')}
+                        </>
+                    ) : (
+                        t('forgot.submit')
+                    )}
                 </button>
+
+                <p className="text-center text-sm">
+                    <Link to="/login" className="text-ink-dim transition-colors hover:text-ink-soft">
+                        {t('forgot.backToSignIn')}
+                    </Link>
+                </p>
             </form>
-            <p style={{ marginTop: 16, textAlign: 'center' }}>
-                <Link to="/login">Back to sign in</Link>
-            </p>
         </AuthShell>
     );
 };

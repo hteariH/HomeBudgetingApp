@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { accountApi, categoryApi, transactionApi } from '../api';
 import {
-    Account, Category, CreateTransactionRequest, PagedResponse, Transaction, TransactionType
+    Account, Category, CreateTransactionRequest, PagedResponse, Transaction, TransactionType,
 } from '../types';
 import { Plus, Trash2, Edit2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatAmount } from '../money';
-
+import { useT } from '../i18n';
 
 /**
  * A transfer leg already carries its sign - negative on the account the money leaves,
@@ -20,6 +20,7 @@ const signOf = (t: Transaction) => (isCredit(t) ? '+' : '-');
 const today = () => new Date().toISOString().slice(0, 10);
 
 const Transactions: React.FC = () => {
+    const t = useT();
     const [data, setData] = useState<PagedResponse<Transaction>>({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 });
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -34,7 +35,7 @@ const Transactions: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<Transaction | null>(null);
     const [form, setForm] = useState<CreateTransactionRequest>({
-        accountId: 0, categoryId: 0, amount: 0, type: 'EXPENSE', date: today()
+        accountId: 0, categoryId: 0, amount: 0, type: 'EXPENSE', date: today(),
     });
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
@@ -50,7 +51,7 @@ const Transactions: React.FC = () => {
                     type: filterType ? filterType as TransactionType : undefined,
                     dateFrom: filterDateFrom || undefined,
                     dateTo: filterDateTo || undefined,
-                    page, size: 20
+                    page, size: 20,
                 }),
                 accountApi.getAll(),
                 categoryApi.getAll(),
@@ -66,16 +67,16 @@ const Transactions: React.FC = () => {
         setForm({ accountId: accounts[0]?.id ?? 0, categoryId: 0, amount: 0, type: 'EXPENSE', date: today() });
         setError(''); setShowModal(true);
     };
-    const openEdit = (t: Transaction) => {
-        setEditing(t);
-        setForm({ accountId: t.account.id, categoryId: t.category?.id ?? 0, amount: Number(t.amount), type: t.type, date: t.date, description: t.description });
+    const openEdit = (txn: Transaction) => {
+        setEditing(txn);
+        setForm({ accountId: txn.account.id, categoryId: txn.category?.id ?? 0, amount: Number(txn.amount), type: txn.type, date: txn.date, description: txn.description });
         setError(''); setShowModal(true);
     };
 
     const save = async () => {
-        if (!form.accountId) { setError('Select an account'); return; }
-        if (!form.categoryId) { setError('Select a category'); return; }
-        if (!form.amount || form.amount <= 0) { setError('Enter a valid amount'); return; }
+        if (!form.accountId) { setError(t('transactions.accountRequired')); return; }
+        if (!form.categoryId) { setError(t('transactions.categoryRequired')); return; }
+        if (!form.amount || form.amount <= 0) { setError(t('transactions.amountRequired')); return; }
         setSaving(true); setError('');
         try {
             if (editing) { await transactionApi.update(editing.id, { categoryId: form.categoryId, amount: form.amount, date: form.date, description: form.description }); }
@@ -86,92 +87,106 @@ const Transactions: React.FC = () => {
     };
 
     const remove = async (id: number) => {
-        if (!window.confirm('Delete this transaction?')) return;
+        if (!window.confirm(t('transactions.confirmDelete'))) return;
         try { await transactionApi.delete(id); await load(); }
         catch (e: any) { alert(e.message); }
     };
+
+    const typeLabel = (type: TransactionType) =>
+        type === 'INCOME' ? t('common.income') : type === 'EXPENSE' ? t('common.expense') : t('common.transfer');
 
     return (
         <div className="page">
             <div className="section-header">
                 <div>
-                    <h1 className="section-title" style={{ fontSize: 22 }}>Transactions</h1>
-                    <p className="text-muted text-sm">{data.totalElements} total transactions</p>
+                    <h1 className="section-title" style={{ fontSize: 22 }}>{t('transactions.title')}</h1>
+                    <p className="text-muted text-sm">{t('transactions.totalCount', { count: data.totalElements })}</p>
                 </div>
-                <button className="btn btn-primary" onClick={openCreate}><Plus size={15} /> Add Transaction</button>
+                <button className="btn btn-primary" onClick={openCreate}><Plus size={15} /> {t('transactions.add')}</button>
             </div>
 
             {/* Filters */}
-            <div className="card" style={{ marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', padding: '16px 20px' }}>
-                <div className="form-group" style={{ minWidth: 160 }}>
-                    <label className="form-label">Account</label>
+            <div className="card mb-5 flex flex-wrap items-end gap-3" style={{ padding: '16px 20px' }}>
+                <div className="form-group min-w-[160px] flex-1">
+                    <label className="form-label">{t('common.account')}</label>
                     <select className="form-control" value={filterAccount} onChange={e => { setFilterAccount(e.target.value); setPage(0); }}>
-                        <option value="">All Accounts</option>
+                        <option value="">{t('transactions.allAccounts')}</option>
                         {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
                 </div>
-                <div className="form-group" style={{ minWidth: 120 }}>
-                    <label className="form-label">Type</label>
+                <div className="form-group min-w-[130px] flex-1">
+                    <label className="form-label">{t('common.type')}</label>
                     <select className="form-control" value={filterType} onChange={e => { setFilterType(e.target.value); setPage(0); }}>
-                        <option value="">All Types</option>
-                        <option value="INCOME">Income</option>
-                        <option value="EXPENSE">Expense</option>
+                        <option value="">{t('transactions.allTypes')}</option>
+                        <option value="INCOME">{t('common.income')}</option>
+                        <option value="EXPENSE">{t('common.expense')}</option>
                     </select>
                 </div>
-                <div className="form-group" style={{ minWidth: 140 }}>
-                    <label className="form-label">From</label>
+                <div className="form-group min-w-[140px] flex-1">
+                    <label className="form-label">{t('common.from')}</label>
                     <input type="date" className="form-control" value={filterDateFrom} onChange={e => { setFilterDateFrom(e.target.value); setPage(0); }} />
                 </div>
-                <div className="form-group" style={{ minWidth: 140 }}>
-                    <label className="form-label">To</label>
+                <div className="form-group min-w-[140px] flex-1">
+                    <label className="form-label">{t('common.to')}</label>
                     <input type="date" className="form-control" value={filterDateTo} onChange={e => { setFilterDateTo(e.target.value); setPage(0); }} />
                 </div>
             </div>
 
             {/* Table */}
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="card overflow-hidden" style={{ padding: 0 }}>
                 {loading ? (
                     <div className="loading"><div className="spinner" /></div>
                 ) : data.content.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">💸</div>
-                        <p className="empty-state-text">No transactions found</p>
+                        <p className="empty-state-text">{t('transactions.empty')}</p>
+                        <p className="empty-state-sub">{t('transactions.emptyBody')}</p>
                     </div>
                 ) : (
                     <div className="table-wrap">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Date</th><th>Account</th><th>Category</th><th>Description</th><th>Type</th><th style={{ textAlign: 'right' }}>Amount</th><th></th>
+                                    <th>{t('common.date')}</th>
+                                    <th>{t('common.account')}</th>
+                                    <th>{t('common.category')}</th>
+                                    <th>{t('common.description')}</th>
+                                    <th>{t('common.type')}</th>
+                                    <th className="text-right">{t('common.amount')}</th>
+                                    <th />
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.content.map(t => (
-                                    <tr key={t.id}>
-                                        <td>{t.date}</td>
+                                {data.content.map(txn => (
+                                    <tr key={txn.id}>
+                                        <td className="whitespace-nowrap">{txn.date}</td>
                                         <td>
                                             <div className="account-chip">
-                                                <div className="account-chip-dot" style={{ background: t.account.color }} />
-                                                {t.account.name}
+                                                <div className="account-chip-dot" style={{ background: txn.account.color }} />
+                                                {txn.account.name}
                                             </div>
                                         </td>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: t.category?.color ?? '#9CA3AF' }} />
-                                                {t.category?.name ?? 'Uncategorised'}
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: txn.category?.color ?? '#9CA3AF' }} />
+                                                {txn.category?.name ?? t('common.uncategorised')}
                                             </div>
                                         </td>
-                                        <td style={{ color: 'var(--text-muted)' }}>{t.description || '—'}</td>
+                                        <td className="text-muted">{txn.description || t('common.none')}</td>
                                         <td>
-                                            <span className={`badge badge-${t.type.toLowerCase()}`}>{t.type}</span>
+                                            <span className={`badge badge-${txn.type.toLowerCase()}`}>{typeLabel(txn.type)}</span>
                                         </td>
-                                        <td style={{ textAlign: 'right', fontWeight: 700, color: isCredit(t) ? 'var(--green)' : 'var(--red)' }}>
-                                            {signOf(t)}{t.account.currency.symbol}{formatAmount(Math.abs(Number(t.amount)), t.account.currency)}
+                                        <td
+                                            className="whitespace-nowrap text-right font-bold"
+                                            style={{ color: isCredit(txn) ? 'var(--green)' : 'var(--red)' }}
+                                        >
+                                            {signOf(txn)}{txn.account.currency.symbol}
+                                            {formatAmount(Math.abs(Number(txn.amount)), txn.account.currency)}
                                         </td>
                                         <td>
-                                            <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                                                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(t)}><Edit2 size={13} /></button>
-                                                <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--red)' }} onClick={() => remove(t.id)}><Trash2 size={13} /></button>
+                                            <div className="flex justify-end gap-1">
+                                                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(txn)} aria-label={t('common.edit')}><Edit2 size={13} /></button>
+                                                <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--red)' }} onClick={() => remove(txn.id)} aria-label={t('common.delete')}><Trash2 size={13} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -183,10 +198,12 @@ const Transactions: React.FC = () => {
 
                 {/* Pagination */}
                 {data.totalPages > 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, padding: '12px 20px', borderTop: '1px solid var(--border)' }}>
-                        <span className="text-muted text-sm">Page {page + 1} of {data.totalPages}</span>
-                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}><ChevronLeft size={14} /></button>
-                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setPage(p => p + 1)} disabled={page + 1 >= data.totalPages}><ChevronRight size={14} /></button>
+                    <div className="flex items-center justify-end gap-2 border-t border-line" style={{ padding: '12px 20px' }}>
+                        <span className="text-muted text-sm">
+                            {t('transactions.page', { page: page + 1, total: data.totalPages })}
+                        </span>
+                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setPage(p => p - 1)} disabled={page === 0} aria-label="Previous page"><ChevronLeft size={14} /></button>
+                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setPage(p => p + 1)} disabled={page + 1 >= data.totalPages} aria-label="Next page"><ChevronRight size={14} /></button>
                     </div>
                 )}
             </div>
@@ -196,50 +213,50 @@ const Transactions: React.FC = () => {
                 <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
                     <div className="modal">
                         <div className="modal-header">
-                            <h2 className="modal-title">{editing ? 'Edit Transaction' : 'Add Transaction'}</h2>
-                            <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setShowModal(false)}><X size={16} /></button>
+                            <h2 className="modal-title">{editing ? t('transactions.editTitle') : t('transactions.add')}</h2>
+                            <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setShowModal(false)} aria-label={t('common.close')}><X size={16} /></button>
                         </div>
                         <div className="modal-body">
-                            {error && <p style={{ color: 'var(--red)', fontSize: 13 }}>{error}</p>}
+                            {error && <div className="alert-error" role="alert">{error}</div>}
                             <div className="grid-2">
                                 <div className="form-group">
-                                    <label className="form-label">Type</label>
+                                    <label className="form-label">{t('common.type')}</label>
                                     <select className="form-control" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as TransactionType, categoryId: 0 }))} disabled={!!editing}>
-                                        <option value="EXPENSE">Expense</option>
-                                        <option value="INCOME">Income</option>
+                                        <option value="EXPENSE">{t('common.expense')}</option>
+                                        <option value="INCOME">{t('common.income')}</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label">Date</label>
+                                    <label className="form-label">{t('common.date')}</label>
                                     <input type="date" className="form-control" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Account *</label>
+                                <label className="form-label">{t('common.account')} *</label>
                                 <select className="form-control" value={form.accountId} onChange={e => setForm(f => ({ ...f, accountId: Number(e.target.value) }))} disabled={!!editing}>
-                                    <option value={0}>Select account…</option>
+                                    <option value={0}>{t('transactions.selectAccount')}</option>
                                     {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({a.currency.code})</option>)}
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Category *</label>
+                                <label className="form-label">{t('common.category')} *</label>
                                 <select className="form-control" value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: Number(e.target.value) }))}>
-                                    <option value={0}>Select category…</option>
+                                    <option value={0}>{t('transactions.selectCategory')}</option>
                                     {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Amount *</label>
+                                <label className="form-label">{t('common.amount')} *</label>
                                 <input type="number" step="0.01" min="0.01" className="form-control" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: Number(e.target.value) }))} />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Description</label>
-                                <input className="form-control" value={form.description ?? ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional note" />
+                                <label className="form-label">{t('common.description')}</label>
+                                <input className="form-control" value={form.description ?? ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t('transactions.descriptionPlaceholder')} />
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-                            <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+                            <button className="btn btn-ghost" onClick={() => setShowModal(false)}>{t('common.cancel')}</button>
+                            <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? t('common.saving') : t('common.save')}</button>
                         </div>
                     </div>
                 </div>

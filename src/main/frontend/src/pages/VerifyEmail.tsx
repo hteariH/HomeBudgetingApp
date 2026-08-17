@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api';
 import AuthShell from './AuthShell';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { useT } from '../i18n';
 
 /**
  * Lands here from the confirmation email.
@@ -13,6 +14,7 @@ import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
  * so beats leaving someone staring at a spinner.
  */
 const VerifyEmail: React.FC = () => {
+    const t = useT();
     const [params] = useSearchParams();
     const token = params.get('token');
     const [state, setState] = useState<'working' | 'done' | 'failed'>('working');
@@ -28,43 +30,56 @@ const VerifyEmail: React.FC = () => {
 
         if (!token) {
             setState('failed');
-            setMessage('This link is missing its token.');
+            setMessage(t('verify.noToken'));
             return;
         }
         authApi.verifyEmail(token)
-            .then(() => { setState('done'); setMessage('Your address is confirmed.'); })
-            .catch((e: any) => { setState('failed'); setMessage(e.message || 'This link is not valid.'); });
+            .then(() => { setState('done'); setMessage(t('verify.doneBody')); })
+            .catch((e: any) => { setState('failed'); setMessage(e.message || t('verify.failedBody')); });
+        // Runs once by design - re-running on a language change would spend the token again.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
+    if (state === 'working') {
+        return (
+            <AuthShell
+                centered
+                icon={<Loader2 size={34} className="animate-spin text-brand-light" />}
+                title={t('verify.working')}
+            />
+        );
+    }
+
+    if (state === 'done') {
+        return (
+            <AuthShell
+                centered
+                icon={
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ok/15">
+                        <CheckCircle2 size={26} className="text-ok" />
+                    </span>
+                }
+                title={t('verify.doneTitle')}
+                subtitle={message}
+            >
+                <Link to="/login" className="btn btn-primary">{t('login.submit')}</Link>
+            </AuthShell>
+        );
+    }
+
     return (
-        <AuthShell centered>
-            {state === 'working' && (
-                <>
-                    <Loader2 size={40} />
-                    <h1>Confirming…</h1>
-                </>
-            )}
-
-            {state === 'done' && (
-                <>
-                    <CheckCircle2 size={40} color="var(--green)" />
-                    <h1>Address confirmed</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{message}</p>
-                    <Link to="/login" className="btn btn-primary" style={{ marginTop: 16 }}>Sign in</Link>
-                </>
-            )}
-
-            {state === 'failed' && (
-                <>
-                    <XCircle size={40} color="var(--red)" />
-                    <h1>Could not confirm</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>{message}</p>
-                    <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-                        Confirmation links expire after 24 hours and work once. Sign in and ask for a new one.
-                    </p>
-                    <Link to="/login" className="btn btn-secondary" style={{ marginTop: 16 }}>Back to sign in</Link>
-                </>
-            )}
+        <AuthShell
+            centered
+            icon={
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-bad/15">
+                    <XCircle size={26} className="text-bad" />
+                </span>
+            }
+            title={t('verify.failedTitle')}
+            subtitle={message}
+        >
+            <p className="text-[13px] text-ink-dim">{t('verify.failedNote')}</p>
+            <Link to="/login" className="btn btn-secondary mt-5">{t('forgot.backToSignIn')}</Link>
         </AuthShell>
     );
 };
