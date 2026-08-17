@@ -58,8 +58,10 @@ is gone.
 
 `.env.example` documents the same fields if you would rather write the file by hand.
 
-GitHub only needs the SSH secrets - `HOST`, `USERNAME`, `VPS_SSH_KEY` and optionally
-`VPS_PORT`. Nothing about the application is stored there.
+GitHub only needs the SSH secrets, named the same way as the edge and wordle repos so
+one set of values works everywhere: `SSH_HOST`, `SSH_USER`, `SSH_KEY` and optionally
+`SSH_PORT`. Nothing about the application is stored there any more, so the older
+`DB_*`, `JWT_SECRET`, `CRYPTO_SECRET` and `MAIL_*` repository secrets can be deleted.
 
 ### 4. The database must be created fresh
 
