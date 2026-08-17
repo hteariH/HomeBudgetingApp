@@ -43,6 +43,10 @@ Thumbs.db
 # Logs
 *.log
 
+# Deployment secrets. .env lives on the server only; .env.example is the template.
+.env
+!.env.example
+
 # Local H2 database (local profile)
 data/
 *.mv.db

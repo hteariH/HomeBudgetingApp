@@ -91,7 +91,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           source: docker-compose.yml
-          target: ~/homebudget
+          target: /opt/homebudget
 
       # Ship the edge site config so the shared proxy routes personalmoney.app to us.
       - name: Copy edge site config to VPS
@@ -113,20 +113,17 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
-            cd ~/homebudget
+            set -e
+            cd /opt/homebudget
 
+            # Everything else comes from /opt/homebudget/.env, which compose reads on its
+            # own and which no deploy ever writes to. The image tag is derived here
+            # rather than stored, since it is not a secret.
+            if [ ! -f .env ]; then
+              echo "Missing /opt/homebudget/.env - copy it from .env.example and chmod 600" >&2
+              exit 1
+            fi
             export DOCKER_IMAGE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):latest
-            export DB_USERNAME=${{ secrets.DB_USERNAME }}
-            export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            export DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
-            export JWT_SECRET=${{ secrets.JWT_SECRET }}
-            export CRYPTO_SECRET=${{ secrets.CRYPTO_SECRET }}
-            export APP_BASE_URL=${{ secrets.APP_BASE_URL }}
-            export MAIL_HOST=${{ secrets.MAIL_HOST }}
-            export MAIL_PORT=${{ secrets.MAIL_PORT }}
-            export MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
-            export MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
-            export MAIL_FROM=${{ secrets.MAIL_FROM }}
 
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo -E docker login ghcr.io -u ${{ github.actor }} --password-stdin
 

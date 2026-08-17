@@ -34,19 +34,24 @@ It is not required to send, but it is what stops somebody else spoofing the doma
 logged, so registration works and nobody is locked out - the confirmation link simply
 never arrives, and users can request another one.
 
-### 3. Repository secrets
+### 3. Secrets
 
-| Secret | Notes |
-| --- | --- |
-| `HOST`, `USERNAME`, `VPS_SSH_KEY`, `VPS_PORT` | SSH access to the VPS |
-| `DB_USERNAME`, `DB_PASSWORD`, `DB_ROOT_PASSWORD` | MySQL |
-| `JWT_SECRET` | Signs access tokens. Rotating it signs everyone out. |
-| `CRYPTO_SECRET` | Encrypts stored bank credentials. **Rotating it makes existing bank connections unreadable** and users must reconnect - set it once and leave it. |
-| `APP_BASE_URL` | `https://personalmoney.app`. Used for links inside emails, which must be absolute. |
-| `MAIL_PASSWORD` | Resend API key (`re_...`) |
-| `MAIL_FROM` | e.g. `noreply@personalmoney.app`, on the verified domain |
+Application secrets live in `/opt/homebudget/.env` on the server, the same way the
+edge and wordle stacks do. Deploys never write to that file, so it survives every
+release and is the one place to look.
 
-`MAIL_HOST`, `MAIL_PORT` and `MAIL_USERNAME` only need setting to move off Resend.
+```bash
+sudo mkdir -p /opt/homebudget
+sudo cp .env.example /opt/homebudget/.env   # then fill it in
+sudo chmod 600 /opt/homebudget/.env
+```
+
+Generate the two secrets with `openssl rand -base64 32` and **keep copies in a password
+manager**. `CRYPTO_SECRET` in particular cannot be recovered: lose it and every stored
+bank connection becomes unreadable, so users have to reconnect.
+
+GitHub only needs the SSH secrets - `HOST`, `USERNAME`, `VPS_SSH_KEY` and optionally
+`VPS_PORT`. Nothing about the application is stored there.
 
 ### 4. The database must be created fresh
 
