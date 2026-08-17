@@ -40,15 +40,23 @@ Application secrets live in `/opt/homebudget/.env` on the server, the same way t
 edge and wordle stacks do. Deploys never write to that file, so it survives every
 release and is the one place to look.
 
+Use the generator, which produces the random values on the server so they never travel
+anywhere:
+
 ```bash
-sudo mkdir -p /opt/homebudget
-sudo cp .env.example /opt/homebudget/.env   # then fill it in
-sudo chmod 600 /opt/homebudget/.env
+scp deploy/init-env.sh <vps>:/tmp/
+ssh <vps> 'sudo bash /tmp/init-env.sh'
 ```
 
-Generate the two secrets with `openssl rand -base64 32` and **keep copies in a password
-manager**. `CRYPTO_SECRET` in particular cannot be recovered: lose it and every stored
-bank connection becomes unreadable, so users have to reconnect.
+It asks only for the Resend key; the database passwords and both secrets are generated
+in place. It refuses to run if the file already exists, because regenerating
+`CRYPTO_SECRET` would silently make every stored bank connection unreadable.
+
+It prints `JWT_SECRET` and `CRYPTO_SECRET` once at the end - **put them in a password
+manager then**. `CRYPTO_SECRET` cannot be recovered from anywhere else once the disk
+is gone.
+
+`.env.example` documents the same fields if you would rather write the file by hand.
 
 GitHub only needs the SSH secrets - `HOST`, `USERNAME`, `VPS_SSH_KEY` and optionally
 `VPS_PORT`. Nothing about the application is stored there.
