@@ -92,7 +92,13 @@ class AuthRateLimitFilter(
      * this is a speed bump against bulk guessing, not an identity check.
      */
     private fun clientKey(request: HttpServletRequest): String =
-        request.getHeader("X-Forwarded-For")?.substringBefore(',')?.trim()?.takeIf { it.isNotBlank() }
+        // CF-Connecting-IP first: the domain is proxied through Cloudflare, so
+        // X-Forwarded-For carries Cloudflare's edge address and every user in the world
+        // would share a single bucket - ten failed logins anywhere and nobody can sign
+        // in. Falls back to the forwarded chain, then the socket, so the filter still
+        // works if the proxy setup changes.
+        request.getHeader("CF-Connecting-IP")?.trim()?.takeIf { it.isNotBlank() }
+            ?: request.getHeader("X-Forwarded-For")?.substringBefore(',')?.trim()?.takeIf { it.isNotBlank() }
             ?: request.remoteAddr
             ?: "unknown"
 

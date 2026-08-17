@@ -7,6 +7,10 @@ personalmoney.app {
 
 	# The real client address. Without it every request looks like it came from the
 	# proxy, and the login rate limiter would throttle all users as one.
+	#
+	# The domain is additionally proxied through Cloudflare, which puts the true client
+	# in CF-Connecting-IP; that header is passed through untouched and the application
+	# prefers it. Turning the Cloudflare proxy off later needs no change here.
 	reverse_proxy personalmoney-app:8085 {
 		header_up X-Forwarded-For {remote_host}
 		header_up X-Forwarded-Proto {scheme}
