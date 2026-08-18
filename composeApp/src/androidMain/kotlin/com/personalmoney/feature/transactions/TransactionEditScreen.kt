@@ -42,11 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.AmountDisplay
 import com.personalmoney.core.ui.components.CategoryChip
@@ -67,7 +67,6 @@ fun TransactionEditScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var showAccountSheet by remember { mutableStateOf(false) }
@@ -81,7 +80,7 @@ fun TransactionEditScreen(
 
     LaunchedEffect(state.saved) {
         if (state.saved) {
-            snackbarHostState.showSnackbar(context.getString(R.string.quickadd_saved))
+            snackbarHostState.showSnackbar(getString(Res.string.quickadd_saved))
             onSaved()
         }
     }
@@ -100,17 +99,17 @@ fun TransactionEditScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text(stringResource(R.string.action_delete)) },
-            text = { Text(stringResource(R.string.transaction_delete_confirm)) },
+            title = { Text(stringResource(Res.string.action_delete)) },
+            text = { Text(stringResource(Res.string.transaction_delete_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
                     viewModel.delete()
-                }) { Text(stringResource(R.string.action_delete)) }
+                }) { Text(stringResource(Res.string.action_delete)) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text(stringResource(R.string.action_cancel))
+                    Text(stringResource(Res.string.action_cancel))
                 }
             }
         )
@@ -119,22 +118,22 @@ fun TransactionEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.transaction_edit_title)) },
+                title = { Text(stringResource(Res.string.transaction_edit_title)) },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_close))
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(Res.string.action_close))
                     }
                 },
                 actions = {
                     if (!state.loading) {
                         IconButton(onClick = { showDatePicker = true }) {
-                            Icon(Icons.Filled.CalendarToday, contentDescription = stringResource(R.string.quickadd_date))
+                            Icon(Icons.Filled.CalendarToday, contentDescription = stringResource(Res.string.quickadd_date))
                         }
                         IconButton(onClick = { showNoteInput = !showNoteInput }) {
-                            Icon(Icons.Filled.EditNote, contentDescription = stringResource(R.string.quickadd_note))
+                            Icon(Icons.Filled.EditNote, contentDescription = stringResource(Res.string.quickadd_note))
                         }
                         IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.action_delete))
                         }
                     }
                 },
@@ -158,7 +157,7 @@ fun TransactionEditScreen(
         ) {
             if (state.isTransfer) {
                 Text(
-                    text = stringResource(R.string.transaction_transfer_readonly),
+                    text = stringResource(Res.string.transaction_transfer_readonly),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -179,8 +178,8 @@ fun TransactionEditScreen(
                         ) {
                             Text(
                                 stringResource(
-                                    if (type == TransactionType.INCOME) R.string.dashboard_add_income
-                                    else R.string.dashboard_add_expense
+                                    if (type == TransactionType.INCOME) Res.string.dashboard_add_income
+                                    else Res.string.dashboard_add_expense
                                 )
                             )
                         }
@@ -229,7 +228,7 @@ fun TransactionEditScreen(
                 OutlinedTextField(
                     value = state.note,
                     onValueChange = viewModel::setNote,
-                    placeholder = { Text(stringResource(R.string.quickadd_note_hint)) },
+                    placeholder = { Text(stringResource(Res.string.quickadd_note_hint)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
@@ -256,7 +255,7 @@ fun TransactionEditScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text(stringResource(R.string.action_save))
+                    Text(stringResource(Res.string.action_save))
                 }
             }
         }

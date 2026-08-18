@@ -23,6 +23,8 @@ import com.personalmoney.core.security.BiometricGate
 import com.personalmoney.core.security.LockScreen
 import com.personalmoney.core.ui.theme.PersonalMoneyTheme
 import com.personalmoney.navigation.PersonalMoneyNavHost
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import org.koin.android.ext.android.inject
 
 class MainActivity : AppCompatActivity() {
@@ -57,9 +59,17 @@ class MainActivity : AppCompatActivity() {
             var lockError by remember { mutableStateOf<String?>(null) }
             val locked = biometricLockEnabled && !unlocked
 
+            // The biometric prompt is platform UI and wants plain strings, but the shared
+            // resource reader is suspend - so the labels are resolved here, in composition,
+            // and handed down rather than looked up at the call site.
+            val lockTitle = stringResource(Res.string.lock_prompt_title)
+            val lockSubtitle = stringResource(Res.string.lock_prompt_subtitle)
+            val lockCancel = stringResource(Res.string.action_cancel)
+
             LaunchedEffect(biometricLockEnabled) {
                 if (biometricLockEnabled && !unlocked) {
-                    promptUnlock(onSuccess = { unlocked = true }, onError = { lockError = it })
+                    promptUnlock(lockTitle, lockSubtitle, lockCancel,
+                        onSuccess = { unlocked = true }, onError = { lockError = it })
                 } else if (!biometricLockEnabled) {
                     unlocked = true
                 }
@@ -71,7 +81,8 @@ class MainActivity : AppCompatActivity() {
                         error = lockError,
                         onUnlock = {
                             lockError = null
-                            promptUnlock(onSuccess = { unlocked = true }, onError = { lockError = it })
+                            promptUnlock(lockTitle, lockSubtitle, lockCancel,
+                                onSuccess = { unlocked = true }, onError = { lockError = it })
                         }
                     )
                 } else {
@@ -85,12 +96,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun promptUnlock(onSuccess: () -> Unit, onError: (String?) -> Unit) {
+    private fun promptUnlock(
+        title: String,
+        subtitle: String,
+        cancelLabel: String,
+        onSuccess: () -> Unit,
+        onError: (String?) -> Unit,
+    ) {
         BiometricGate.authenticate(
             activity = this,
-            title = getString(R.string.lock_prompt_title),
-            subtitle = getString(R.string.lock_prompt_subtitle),
-            cancelLabel = getString(R.string.action_cancel),
+            title = title,
+            subtitle = subtitle,
+            cancelLabel = cancelLabel,
             onSuccess = onSuccess,
             onFailure = { code, message ->
                 // User dismissals are not errors; surface real failures so the lock screen

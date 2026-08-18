@@ -6,15 +6,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.personalmoney.R
 
 @Composable
 fun NoCategoriesHint(modifier: Modifier = Modifier) {
     Text(
-        text = stringResource(R.string.quickadd_pick_category),
+        text = stringResource(Res.string.quickadd_pick_category),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,

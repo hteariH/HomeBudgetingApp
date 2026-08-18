@@ -47,11 +47,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.ads.BannerAd
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CurrencyCode
@@ -86,11 +86,11 @@ fun TransactionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.transactions_title)) },
+                title = { Text(stringResource(Res.string.transactions_title)) },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                         }
                     }
                 },
@@ -108,12 +108,12 @@ fun TransactionsScreen(
                         }) {
                             Icon(
                                 Icons.Filled.FilterAltOff,
-                                contentDescription = stringResource(R.string.action_clear_filters)
+                                contentDescription = stringResource(Res.string.action_clear_filters)
                             )
                         }
                     }
                     IconButton(onClick = { showSearch = !showSearch }) {
-                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.transactions_search))
+                        Icon(Icons.Filled.Search, contentDescription = stringResource(Res.string.transactions_search))
                     }
                 }
             )
@@ -124,7 +124,7 @@ fun TransactionsScreen(
                 OutlinedTextField(
                     value = state.filter.query,
                     onValueChange = viewModel::setQuery,
-                    placeholder = { Text(stringResource(R.string.transactions_search)) },
+                    placeholder = { Text(stringResource(Res.string.transactions_search)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -146,11 +146,11 @@ fun TransactionsScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val periodLabel = when (activePeriod) {
-                    PeriodFilter.ALL -> stringResource(R.string.filter_period)
-                    PeriodFilter.TODAY -> stringResource(R.string.period_today)
-                    PeriodFilter.WEEK -> stringResource(R.string.period_week)
-                    PeriodFilter.MONTH -> stringResource(R.string.period_month)
-                    PeriodFilter.YEAR -> stringResource(R.string.period_year)
+                    PeriodFilter.ALL -> stringResource(Res.string.filter_period)
+                    PeriodFilter.TODAY -> stringResource(Res.string.period_today)
+                    PeriodFilter.WEEK -> stringResource(Res.string.period_week)
+                    PeriodFilter.MONTH -> stringResource(Res.string.period_month)
+                    PeriodFilter.YEAR -> stringResource(Res.string.period_year)
                 }
                 FilterDropdown(
                     label = periodLabel,
@@ -163,35 +163,35 @@ fun TransactionsScreen(
                         dismiss()
                     }
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.period_all)) },
+                        text = { Text(stringResource(Res.string.period_all)) },
                         onClick = { pick(PeriodFilter.ALL, null, null) }
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.period_today)) },
+                        text = { Text(stringResource(Res.string.period_today)) },
                         onClick = { pick(PeriodFilter.TODAY, today, today) }
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.period_week)) },
+                        text = { Text(stringResource(Res.string.period_week)) },
                         onClick = {
                             val weekStart = LocalDate.fromEpochDays(today.toEpochDays() - today.dayOfWeek.ordinal)
                             pick(PeriodFilter.WEEK, weekStart, today)
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.period_month)) },
+                        text = { Text(stringResource(Res.string.period_month)) },
                         onClick = { pick(PeriodFilter.MONTH, LocalDate(today.year, today.month, 1), today) }
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.period_year)) },
+                        text = { Text(stringResource(Res.string.period_year)) },
                         onClick = { pick(PeriodFilter.YEAR, LocalDate(today.year, 1, 1), today) }
                     )
                 }
 
                 val typeLabel = when (state.filter.type) {
-                    null -> stringResource(R.string.filter_type)
-                    TransactionType.EXPENSE -> stringResource(R.string.dashboard_add_expense)
-                    TransactionType.INCOME -> stringResource(R.string.dashboard_add_income)
-                    TransactionType.TRANSFER -> stringResource(R.string.dashboard_transfer)
+                    null -> stringResource(Res.string.filter_type)
+                    TransactionType.EXPENSE -> stringResource(Res.string.dashboard_add_expense)
+                    TransactionType.INCOME -> stringResource(Res.string.dashboard_add_income)
+                    TransactionType.TRANSFER -> stringResource(Res.string.dashboard_transfer)
                 }
                 FilterDropdown(
                     label = typeLabel,
@@ -199,33 +199,33 @@ fun TransactionsScreen(
                     modifier = Modifier.weight(1f)
                 ) { dismiss ->
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.transactions_all)) },
+                        text = { Text(stringResource(Res.string.transactions_all)) },
                         onClick = { viewModel.setType(null); dismiss() }
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.dashboard_add_expense)) },
+                        text = { Text(stringResource(Res.string.dashboard_add_expense)) },
                         onClick = { viewModel.setType(TransactionType.EXPENSE); dismiss() }
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.dashboard_add_income)) },
+                        text = { Text(stringResource(Res.string.dashboard_add_income)) },
                         onClick = { viewModel.setType(TransactionType.INCOME); dismiss() }
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.dashboard_transfer)) },
+                        text = { Text(stringResource(Res.string.dashboard_transfer)) },
                         onClick = { viewModel.setType(TransactionType.TRANSFER); dismiss() }
                     )
                 }
 
                 if (accountFilters.size > 1) {
                     val accountLabel = accountFilters.firstOrNull { it.id == state.filter.accountId }?.name
-                        ?: stringResource(R.string.filter_account)
+                        ?: stringResource(Res.string.filter_account)
                     FilterDropdown(
                         label = accountLabel,
                         active = state.filter.accountId != null,
                         modifier = Modifier.weight(1f)
                     ) { dismiss ->
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.transactions_all)) },
+                            text = { Text(stringResource(Res.string.transactions_all)) },
                             onClick = { viewModel.setAccount(null); dismiss() }
                         )
                         accountFilters.forEach { account ->
@@ -247,7 +247,7 @@ fun TransactionsScreen(
             }
 
             if (state.transactions.isEmpty()) {
-                EmptyState(title = stringResource(R.string.transactions_empty))
+                EmptyState(title = stringResource(Res.string.transactions_empty))
             } else {
                 TransactionList(
                     state = state,
@@ -276,24 +276,24 @@ private fun TransactionList(
     deleteTarget?.let { tx ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text(stringResource(R.string.action_delete)) },
-            text = { Text(stringResource(R.string.transaction_delete_confirm)) },
+            title = { Text(stringResource(Res.string.action_delete)) },
+            text = { Text(stringResource(Res.string.transaction_delete_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete(tx)
                     deleteTarget = null
-                }) { Text(stringResource(R.string.action_delete)) }
+                }) { Text(stringResource(Res.string.action_delete)) }
             },
             dismissButton = {
                 TextButton(onClick = { deleteTarget = null }) {
-                    Text(stringResource(R.string.action_cancel))
+                    Text(stringResource(Res.string.action_cancel))
                 }
             }
         )
     }
 
-    val todayLabel = stringResource(R.string.transactions_today)
-    val yesterdayLabel = stringResource(R.string.transactions_yesterday)
+    val todayLabel = stringResource(Res.string.transactions_today)
+    val yesterdayLabel = stringResource(Res.string.transactions_yesterday)
 
     val zone = TimeZone.currentSystemDefault()
     val today = Clock.System.now().toLocalDateTime(zone).date
@@ -371,7 +371,7 @@ private fun TransactionRow(
     }
     val subtitle = when {
         !tx.note.isNullOrBlank() -> tx.note
-        isTransfer -> stringResource(R.string.dashboard_transfer)
+        isTransfer -> stringResource(Res.string.dashboard_transfer)
         else -> accountName
     }
     Box {
@@ -423,12 +423,12 @@ private fun TransactionRow(
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             if (tx.transferGroupId == null) {
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.action_duplicate)) },
+                    text = { Text(stringResource(Res.string.action_duplicate)) },
                     onClick = { menuOpen = false; onDuplicate() }
                 )
             }
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.action_delete)) },
+                text = { Text(stringResource(Res.string.action_delete)) },
                 onClick = { menuOpen = false; onDelete() }
             )
         }

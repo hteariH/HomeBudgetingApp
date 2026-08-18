@@ -28,10 +28,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.ui.components.EmptyState
@@ -52,17 +52,17 @@ fun CategoriesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.categories_title)) },
+                title = { Text(stringResource(Res.string.categories_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { onAdd(state.selectedTab) }) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.categories_new))
+                Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.categories_new))
             }
         }
     ) { padding ->
@@ -71,19 +71,19 @@ fun CategoriesScreen(
                 Tab(
                     selected = tabIndex == 0,
                     onClick = { viewModel.setTab(CategoryType.EXPENSE) },
-                    text = { Text(stringResource(R.string.categories_expense)) }
+                    text = { Text(stringResource(Res.string.categories_expense)) }
                 )
                 Tab(
                     selected = tabIndex == 1,
                     onClick = { viewModel.setTab(CategoryType.INCOME) },
-                    text = { Text(stringResource(R.string.categories_income)) }
+                    text = { Text(stringResource(Res.string.categories_income)) }
                 )
             }
             val list = if (state.selectedTab == CategoryType.EXPENSE) state.expense else state.income
             if (list.isEmpty()) {
                 EmptyState(
-                    title = stringResource(R.string.categories_new),
-                    actionLabel = stringResource(R.string.action_add),
+                    title = stringResource(Res.string.categories_new),
+                    actionLabel = stringResource(Res.string.action_add),
                     onAction = { onAdd(state.selectedTab) }
                 )
             } else {

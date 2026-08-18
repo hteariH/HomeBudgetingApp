@@ -30,12 +30,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.ui.components.ConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 
@@ -54,8 +54,8 @@ fun CurrencyEditScreen(
     }
 
     val errMsg = when (state.errorMessage) {
-        "CODE_TAKEN" -> stringResource(R.string.currencies_code_taken)
-        "INVALID_CODE" -> stringResource(R.string.currencies_code_invalid)
+        "CODE_TAKEN" -> stringResource(Res.string.currencies_code_taken)
+        "INVALID_CODE" -> stringResource(Res.string.currencies_code_invalid)
         null -> null
         else -> state.errorMessage
     }
@@ -68,10 +68,10 @@ fun CurrencyEditScreen(
 
     if (state.usageBlocked > 0) {
         ConfirmDialog(
-            title = stringResource(R.string.action_delete),
-            message = stringResource(R.string.currencies_in_use, state.usageBlocked),
-            confirmLabel = stringResource(R.string.action_archive),
-            dismissLabel = stringResource(R.string.action_cancel),
+            title = stringResource(Res.string.action_delete),
+            message = stringResource(Res.string.currencies_in_use, state.usageBlocked),
+            confirmLabel = stringResource(Res.string.action_archive),
+            dismissLabel = stringResource(Res.string.action_cancel),
             destructive = true,
             onConfirm = {
                 viewModel.setActive(false)
@@ -88,14 +88,14 @@ fun CurrencyEditScreen(
                 title = {
                     Text(
                         if (state.isEditing) state.name.ifBlank { state.code }
-                        else stringResource(R.string.currencies_new)
+                        else stringResource(Res.string.currencies_new)
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.action_back)
+                            contentDescription = stringResource(Res.string.action_back)
                         )
                     }
                 },
@@ -104,12 +104,12 @@ fun CurrencyEditScreen(
                         IconButton(onClick = viewModel::delete) {
                             Icon(
                                 Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.action_delete)
+                                contentDescription = stringResource(Res.string.action_delete)
                             )
                         }
                     }
                     TextButton(onClick = viewModel::save, enabled = state.canSave) {
-                        Text(stringResource(R.string.action_save))
+                        Text(stringResource(Res.string.action_save))
                     }
                 }
             )
@@ -126,7 +126,7 @@ fun CurrencyEditScreen(
             OutlinedTextField(
                 value = state.code,
                 onValueChange = viewModel::setCode,
-                label = { Text(stringResource(R.string.currencies_code)) },
+                label = { Text(stringResource(Res.string.currencies_code)) },
                 singleLine = true,
                 enabled = !state.isEditing,
                 keyboardOptions = KeyboardOptions(
@@ -135,7 +135,7 @@ fun CurrencyEditScreen(
                 ),
                 supportingText = {
                     if (state.code.isNotEmpty() && state.errorMessage == "INVALID_CODE") {
-                        Text(stringResource(R.string.currencies_code_invalid))
+                        Text(stringResource(Res.string.currencies_code_invalid))
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -144,7 +144,7 @@ fun CurrencyEditScreen(
             OutlinedTextField(
                 value = state.name,
                 onValueChange = viewModel::setName,
-                label = { Text(stringResource(R.string.currencies_name)) },
+                label = { Text(stringResource(Res.string.currencies_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -152,14 +152,14 @@ fun CurrencyEditScreen(
             OutlinedTextField(
                 value = state.symbol,
                 onValueChange = viewModel::setSymbol,
-                label = { Text(stringResource(R.string.currencies_symbol)) },
+                label = { Text(stringResource(Res.string.currencies_symbol)) },
                 singleLine = true,
                 supportingText = { Text("$ € ¥ ₿ Ξ …") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Text(
-                text = stringResource(R.string.currencies_decimals),
+                text = stringResource(Res.string.currencies_decimals),
                 style = MaterialTheme.typography.titleSmall
             )
             Row(
@@ -180,7 +180,7 @@ fun CurrencyEditScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.currencies_active),
+                    text = stringResource(Res.string.currencies_active),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )

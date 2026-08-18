@@ -7,8 +7,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.personalmoney.R
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -31,10 +31,10 @@ fun DatePickerDialogWrapper(
                 val ms = state.selectedDateMillis ?: initialMs
                 val date = Instant.fromEpochMilliseconds(ms).toLocalDateTime(TimeZone.UTC).date
                 onConfirm(date)
-            }) { Text(stringResource(R.string.action_done)) }
+            }) { Text(stringResource(Res.string.action_done)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
         }
     ) {
         DatePicker(state = state)

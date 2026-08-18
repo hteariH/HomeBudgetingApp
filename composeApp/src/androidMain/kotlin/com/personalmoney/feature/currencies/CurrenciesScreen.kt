@@ -40,12 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.database.entity.CurrencyEntity
 import org.koin.androidx.compose.koinViewModel
 
@@ -70,12 +70,12 @@ fun CurrenciesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.currencies_title)) },
+                title = { Text(stringResource(Res.string.currencies_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.action_back)
+                            contentDescription = stringResource(Res.string.action_back)
                         )
                     }
                 }
@@ -85,7 +85,7 @@ fun CurrenciesScreen(
             ExtendedFloatingActionButton(
                 onClick = onAdd,
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.currencies_add_custom)) }
+                text = { Text(stringResource(Res.string.currencies_add_custom)) }
             )
         },
         snackbarHost = { SnackbarHost(snackbar) }
@@ -99,7 +99,7 @@ fun CurrenciesScreen(
                 value = state.query,
                 onValueChange = viewModel::setQuery,
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                placeholder = { Text(stringResource(R.string.currencies_search)) },
+                placeholder = { Text(stringResource(Res.string.currencies_search)) },
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -114,7 +114,7 @@ fun CurrenciesScreen(
                 if (state.active.isNotEmpty()) {
                     item(key = "header_active") {
                         SectionHeader(
-                            text = "${stringResource(R.string.currencies_active)} · ${state.active.size}"
+                            text = "${stringResource(Res.string.currencies_active)} · ${state.active.size}"
                         )
                     }
                     items(state.active, key = { "active_${it.code}" }) { currency ->
@@ -129,7 +129,7 @@ fun CurrenciesScreen(
                 if (state.available.isNotEmpty()) {
                     item(key = "header_available") {
                         SectionHeader(
-                            text = "${stringResource(R.string.currencies_available)} · ${state.available.size}"
+                            text = "${stringResource(Res.string.currencies_available)} · ${state.available.size}"
                         )
                     }
                     items(state.available, key = { "avail_${it.code}" }) { currency ->

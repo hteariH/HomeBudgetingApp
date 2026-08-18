@@ -23,7 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -31,7 +32,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
-import com.personalmoney.R
 import com.personalmoney.core.calc.NumpadKey
 
 
@@ -116,13 +116,13 @@ private fun KeyButton(
     val isDone = key == NumpadKey.DONE
     // Spoken label for screen readers — raw symbols like ⌫/✓/× don't read well.
     val keyDescription = when (key) {
-        NumpadKey.PLUS -> stringResource(R.string.a11y_plus)
-        NumpadKey.MINUS -> stringResource(R.string.a11y_minus)
-        NumpadKey.MULTIPLY -> stringResource(R.string.a11y_multiply)
-        NumpadKey.DIVIDE -> stringResource(R.string.a11y_divide)
-        NumpadKey.DOT -> stringResource(R.string.a11y_decimal)
-        NumpadKey.BACKSPACE -> stringResource(R.string.a11y_backspace)
-        NumpadKey.DONE -> stringResource(R.string.a11y_done)
+        NumpadKey.PLUS -> stringResource(Res.string.a11y_plus)
+        NumpadKey.MINUS -> stringResource(Res.string.a11y_minus)
+        NumpadKey.MULTIPLY -> stringResource(Res.string.a11y_multiply)
+        NumpadKey.DIVIDE -> stringResource(Res.string.a11y_divide)
+        NumpadKey.DOT -> stringResource(Res.string.a11y_decimal)
+        NumpadKey.BACKSPACE -> stringResource(Res.string.a11y_backspace)
+        NumpadKey.DONE -> stringResource(Res.string.a11y_done)
         else -> key.display
     }
     val container: Color = when {

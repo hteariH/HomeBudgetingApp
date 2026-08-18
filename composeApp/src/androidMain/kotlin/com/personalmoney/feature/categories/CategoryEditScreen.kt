@@ -42,12 +42,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.rememberCoroutineScope
-import com.personalmoney.R
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.ui.PickerColors
 import com.personalmoney.core.ui.components.ConfirmDialog
@@ -77,10 +77,10 @@ fun CategoryEditScreen(
 
     if (showDeleteConfirm) {
         ConfirmDialog(
-            title = stringResource(R.string.action_delete),
-            message = stringResource(R.string.category_delete_confirm),
-            confirmLabel = stringResource(R.string.action_delete),
-            dismissLabel = stringResource(R.string.action_cancel),
+            title = stringResource(Res.string.action_delete),
+            message = stringResource(Res.string.category_delete_confirm),
+            confirmLabel = stringResource(Res.string.action_delete),
+            dismissLabel = stringResource(Res.string.action_cancel),
             destructive = true,
             onConfirm = viewModel::delete,
             onDismiss = { showDeleteConfirm = false }
@@ -91,22 +91,22 @@ fun CategoryEditScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (state.isEditing) stringResource(R.string.action_edit)
-                    else stringResource(R.string.categories_new))
+                    Text(if (state.isEditing) stringResource(Res.string.action_edit)
+                    else stringResource(Res.string.categories_new))
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 },
                 actions = {
                     if (state.isEditing) {
                         IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.action_delete))
                         }
                     }
                     TextButton(onClick = viewModel::save, enabled = state.canSave) {
-                        Text(stringResource(R.string.action_save))
+                        Text(stringResource(Res.string.action_save))
                     }
                 }
             )
@@ -120,7 +120,7 @@ fun CategoryEditScreen(
             OutlinedTextField(
                 value = state.name,
                 onValueChange = viewModel::setName,
-                label = { Text(stringResource(R.string.categories_name)) },
+                label = { Text(stringResource(Res.string.categories_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -134,8 +134,8 @@ fun CategoryEditScreen(
                         shape = SegmentedButtonDefaults.itemShape(i, options.size)
                     ) {
                         Text(stringResource(
-                            if (t == CategoryType.EXPENSE) R.string.categories_expense
-                            else R.string.categories_income
+                            if (t == CategoryType.EXPENSE) Res.string.categories_expense
+                            else Res.string.categories_income
                         ))
                     }
                 }
@@ -145,16 +145,16 @@ fun CategoryEditScreen(
                 OutlinedTextField(
                     value = state.budgetLimit,
                     onValueChange = viewModel::setBudgetLimit,
-                    label = { Text(stringResource(R.string.category_budget)) },
+                    label = { Text(stringResource(Res.string.category_budget)) },
                     suffix = { Text(state.baseCurrency) },
-                    supportingText = { Text(stringResource(R.string.category_budget_hint)) },
+                    supportingText = { Text(stringResource(Res.string.category_budget_hint)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Text(stringResource(R.string.accounts_icon), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(Res.string.accounts_icon), style = MaterialTheme.typography.titleSmall)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
                 items(IconLibrary.pickerSet) { key ->
                     val selected = state.icon == key
@@ -174,7 +174,7 @@ fun CategoryEditScreen(
                 }
             }
 
-            Text(stringResource(R.string.accounts_color), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(Res.string.accounts_color), style = MaterialTheme.typography.titleSmall)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
                 items(PickerColors) { c ->
                     Box(

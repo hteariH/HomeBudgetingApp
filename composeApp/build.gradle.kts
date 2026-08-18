@@ -70,6 +70,10 @@ kotlin {
             // IconLibrary maps ~29 icons by name. The set is large, but only the icons
             // actually referenced survive dead-code elimination in the wasm bundle.
             implementation(compose.materialIconsExtended)
+            // Multiplatform strings. The Android resource table cannot be read from
+            // wasm, so every user-facing string lives in composeResources instead of
+            // res/values - see the note on the compose.resources block below.
+            implementation(compose.components.resources)
 
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
@@ -167,6 +171,15 @@ kotlin {
             implementation(libs.mockk.android)
         }
     }
+}
+
+// Strings, and later any other shared asset, are generated into one predictable class
+// rather than the per-module default `<module>.generated.resources`, so `Res.string.x`
+// imports the same way from every source set.
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.personalmoney.resources"
+    generateResClass = always
 }
 
 android {

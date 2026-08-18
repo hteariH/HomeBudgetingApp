@@ -43,11 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.calc.Calculator
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.domain.TransactionType
@@ -77,7 +77,6 @@ fun QuickAddScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val transferState by transferViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
 
     var mode by remember {
         mutableStateOf(
@@ -113,7 +112,7 @@ fun QuickAddScreen(
 
     LaunchedEffect(state.saved) {
         if (state.saved) {
-            snackbarHostState.showSnackbar(context.getString(R.string.quickadd_saved))
+            snackbarHostState.showSnackbar(getString(Res.string.quickadd_saved))
             onSaved()
         }
     }
@@ -125,7 +124,7 @@ fun QuickAddScreen(
     }
     LaunchedEffect(transferState.saved) {
         if (mode == EntryMode.TRANSFER && transferState.saved) {
-            snackbarHostState.showSnackbar(context.getString(R.string.quickadd_saved))
+            snackbarHostState.showSnackbar(getString(Res.string.quickadd_saved))
             onSaved()
         }
     }
@@ -137,9 +136,9 @@ fun QuickAddScreen(
     }
 
     val titleRes = when (mode) {
-        EntryMode.TRANSFER -> R.string.transfer_title
-        EntryMode.INCOME -> R.string.quickadd_title_income
-        EntryMode.EXPENSE -> R.string.quickadd_title_expense
+        EntryMode.TRANSFER -> Res.string.transfer_title
+        EntryMode.INCOME -> Res.string.quickadd_title_income
+        EntryMode.EXPENSE -> Res.string.quickadd_title_expense
     }
 
     Scaffold(
@@ -148,17 +147,17 @@ fun QuickAddScreen(
                 title = { Text(stringResource(titleRes)) },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_close))
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(Res.string.action_close))
                     }
                 },
                 actions = {
                     if (mode != EntryMode.TRANSFER) {
                         IconButton(onClick = { showDatePicker = true }) {
-                            Icon(Icons.Filled.CalendarToday, contentDescription = stringResource(R.string.quickadd_date))
+                            Icon(Icons.Filled.CalendarToday, contentDescription = stringResource(Res.string.quickadd_date))
                         }
                     }
                     IconButton(onClick = { showNoteInput = !showNoteInput }) {
-                        Icon(Icons.Filled.EditNote, contentDescription = stringResource(R.string.quickadd_note))
+                        Icon(Icons.Filled.EditNote, contentDescription = stringResource(Res.string.quickadd_note))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -197,9 +196,9 @@ fun QuickAddScreen(
                         Text(
                             stringResource(
                                 when (option) {
-                                    EntryMode.EXPENSE -> R.string.dashboard_add_expense
-                                    EntryMode.INCOME -> R.string.dashboard_add_income
-                                    EntryMode.TRANSFER -> R.string.transfer_mode
+                                    EntryMode.EXPENSE -> Res.string.dashboard_add_expense
+                                    EntryMode.INCOME -> Res.string.dashboard_add_income
+                                    EntryMode.TRANSFER -> Res.string.transfer_mode
                                 }
                             )
                         )
@@ -236,7 +235,7 @@ fun QuickAddScreen(
                     transferState.fromAccount?.id == transferState.toAccount?.id
                 ) {
                     Text(
-                        text = stringResource(R.string.transfer_same_account),
+                        text = stringResource(Res.string.transfer_same_account),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(horizontal = 16.dp)
@@ -303,7 +302,7 @@ fun QuickAddScreen(
                                 TransferAmountField.FEE -> transferState.feeFrom
                             }.ifBlank { "0" }
                             val label = if (target == TransferAmountField.FEE) {
-                                stringResource(R.string.transfer_fee) + ": $ccy $raw"
+                                stringResource(Res.string.transfer_fee) + ": $ccy $raw"
                             } else {
                                 "$ccy $raw"
                             }
@@ -324,7 +323,7 @@ fun QuickAddScreen(
                         },
                         modifier = Modifier.padding(horizontal = 8.dp)
                     ) {
-                        Text(stringResource(R.string.transfer_add_fee))
+                        Text(stringResource(Res.string.transfer_add_fee))
                     }
                 }
             } else {
@@ -365,7 +364,7 @@ fun QuickAddScreen(
                         if (mode == EntryMode.TRANSFER) transferViewModel.setNote(it)
                         else viewModel.setNote(it)
                     },
-                    placeholder = { Text(stringResource(R.string.quickadd_note_hint)) },
+                    placeholder = { Text(stringResource(Res.string.quickadd_note_hint)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
@@ -429,7 +428,7 @@ private fun TransferAccountsBlock(
     onSwap: () -> Unit
 ) {
     Text(
-        text = stringResource(R.string.transfer_from),
+        text = stringResource(Res.string.transfer_from),
         style = MaterialTheme.typography.titleSmall,
         modifier = Modifier.padding(horizontal = 16.dp)
     )
@@ -439,11 +438,11 @@ private fun TransferAccountsBlock(
         horizontalArrangement = Arrangement.Center
     ) {
         IconButton(onClick = onSwap) {
-            Icon(Icons.Filled.SwapVert, contentDescription = stringResource(R.string.a11y_swap_accounts))
+            Icon(Icons.Filled.SwapVert, contentDescription = stringResource(Res.string.a11y_swap_accounts))
         }
     }
     Text(
-        text = stringResource(R.string.transfer_to),
+        text = stringResource(Res.string.transfer_to),
         style = MaterialTheme.typography.titleSmall,
         modifier = Modifier.padding(horizontal = 16.dp)
     )

@@ -40,12 +40,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.BuildConfig
-import com.personalmoney.R
 import com.personalmoney.core.data.ThemeMode
 import com.personalmoney.core.locale.LocaleManager
 import com.personalmoney.core.security.BiometricGate
@@ -92,11 +92,11 @@ fun SettingsScreen(
         val p = req.preview
         AlertDialog(
             onDismissRequest = viewModel::cancelImport,
-            title = { Text(stringResource(R.string.settings_import_confirm_title)) },
+            title = { Text(stringResource(Res.string.settings_import_confirm_title)) },
             text = {
                 Text(
                     stringResource(
-                        R.string.settings_import_confirm_message,
+                        Res.string.settings_import_confirm_message,
                         p.accounts, p.categories, p.transactions, p.subscriptions
                     )
                 )
@@ -104,11 +104,11 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.confirmImport { msg -> scope.launch { snackbar.showSnackbar(msg) } }
-                }) { Text(stringResource(R.string.settings_import_replace)) }
+                }) { Text(stringResource(Res.string.settings_import_replace)) }
             },
             dismissButton = {
                 TextButton(onClick = viewModel::cancelImport) {
-                    Text(stringResource(R.string.action_cancel))
+                    Text(stringResource(Res.string.action_cancel))
                 }
             }
         )
@@ -117,10 +117,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = { Text(stringResource(Res.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 }
             )
@@ -134,7 +134,7 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SectionLabel(stringResource(R.string.settings_base_currency))
+            SectionLabel(stringResource(Res.string.settings_base_currency))
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -150,23 +150,23 @@ fun SettingsScreen(
             }
 
             SettingsItem(
-                title = stringResource(R.string.settings_manage_currencies),
+                title = stringResource(Res.string.settings_manage_currencies),
                 subtitle = "${state.currencies.count { it.active }} / ${state.currencies.size}",
                 onClick = onOpenCurrencies
             )
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            SectionLabel(stringResource(R.string.settings_theme))
+            SectionLabel(stringResource(Res.string.settings_theme))
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
             ) {
                 val themes = listOf(
-                    ThemeMode.SYSTEM to R.string.settings_theme_system,
-                    ThemeMode.LIGHT to R.string.settings_theme_light,
-                    ThemeMode.DARK to R.string.settings_theme_dark
+                    ThemeMode.SYSTEM to Res.string.settings_theme_system,
+                    ThemeMode.LIGHT to Res.string.settings_theme_light,
+                    ThemeMode.DARK to Res.string.settings_theme_dark
                 )
                 items(themes) { (mode, label) ->
                     FilterChip(
@@ -178,8 +178,8 @@ fun SettingsScreen(
             }
 
             ToggleRow(
-                title = stringResource(R.string.settings_dynamic_color),
-                subtitle = stringResource(R.string.settings_dynamic_color_subtitle),
+                title = stringResource(Res.string.settings_dynamic_color),
+                subtitle = stringResource(Res.string.settings_dynamic_color_subtitle),
                 checked = state.dynamicColor,
                 onCheckedChange = viewModel::setDynamicColor
             )
@@ -187,7 +187,7 @@ fun SettingsScreen(
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             // Numpad layout
-            SectionLabel(stringResource(R.string.settings_numpad_layout))
+            SectionLabel(stringResource(Res.string.settings_numpad_layout))
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -197,14 +197,14 @@ fun SettingsScreen(
                     FilterChip(
                         selected = !state.numpadPhoneLayout,
                         onClick = { viewModel.setNumpadPhoneLayout(false) },
-                        label = { Text(stringResource(R.string.settings_numpad_calc)) }
+                        label = { Text(stringResource(Res.string.settings_numpad_calc)) }
                     )
                 }
                 item {
                     FilterChip(
                         selected = state.numpadPhoneLayout,
                         onClick = { viewModel.setNumpadPhoneLayout(true) },
-                        label = { Text(stringResource(R.string.settings_numpad_phone)) }
+                        label = { Text(stringResource(Res.string.settings_numpad_phone)) }
                     )
                 }
             }
@@ -212,7 +212,7 @@ fun SettingsScreen(
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             // Language picker
-            SectionLabel(stringResource(R.string.settings_language))
+            SectionLabel(stringResource(Res.string.settings_language))
             var currentLangTag by remember { mutableStateOf(LocaleManager.currentTag()) }
             val availableLangs = remember(currentLangTag) { LocaleManager.availableLanguages() }
             LazyRow(
@@ -227,7 +227,7 @@ fun SettingsScreen(
                             LocaleManager.apply(null)
                             currentLangTag = null
                         },
-                        label = { Text(stringResource(R.string.settings_language_system)) }
+                        label = { Text(stringResource(Res.string.settings_language_system)) }
                     )
                 }
                 items(availableLangs) { lang ->
@@ -246,13 +246,18 @@ fun SettingsScreen(
 
             // Biometric lock
             val biometricEnabled = state.biometricLockEnabled
+            // Resolved in composition: BiometricGate takes plain strings and the shared
+            // resource reader is suspend, so it cannot be called from the click lambda.
+            val lockTitle = stringResource(Res.string.lock_prompt_title)
+            val lockSubtitle = stringResource(Res.string.lock_prompt_subtitle)
+            val lockCancel = stringResource(Res.string.action_cancel)
             val biometricSubtitle = when (biometricAvailability) {
                 BiometricGate.Availability.AVAILABLE -> null
-                BiometricGate.Availability.NOT_ENROLLED -> stringResource(R.string.settings_biometric_lock_not_enrolled)
-                else -> stringResource(R.string.settings_biometric_lock_unavailable)
+                BiometricGate.Availability.NOT_ENROLLED -> stringResource(Res.string.settings_biometric_lock_not_enrolled)
+                else -> stringResource(Res.string.settings_biometric_lock_unavailable)
             }
             ToggleRow(
-                title = stringResource(R.string.settings_biometric_lock),
+                title = stringResource(Res.string.settings_biometric_lock),
                 subtitle = biometricSubtitle,
                 checked = biometricEnabled,
                 enabled = biometricAvailability == BiometricGate.Availability.AVAILABLE,
@@ -262,9 +267,9 @@ fun SettingsScreen(
                         if (activity != null) {
                             BiometricGate.authenticate(
                                 activity = activity,
-                                title = context.getString(R.string.lock_prompt_title),
-                                subtitle = context.getString(R.string.lock_prompt_subtitle),
-                                cancelLabel = context.getString(R.string.action_cancel),
+                                title = lockTitle,
+                                subtitle = lockSubtitle,
+                                cancelLabel = lockCancel,
                                 onSuccess = { viewModel.setBiometricLockEnabled(true) },
                                 onFailure = { _, _ -> }
                             )
@@ -278,22 +283,22 @@ fun SettingsScreen(
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             SettingsItem(
-                title = stringResource(R.string.settings_export),
+                title = stringResource(Res.string.settings_export),
                 onClick = { exportLauncher.launch("personalmoney-backup.json") }
             )
             SettingsItem(
-                title = stringResource(R.string.settings_import),
+                title = stringResource(Res.string.settings_import),
                 onClick = { importLauncher.launch(arrayOf("application/json")) }
             )
             SettingsItem(
-                title = stringResource(R.string.settings_export_csv),
+                title = stringResource(Res.string.settings_export_csv),
                 onClick = { exportCsvLauncher.launch("personalmoney-transactions.csv") }
             )
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             SettingsItem(
-                title = stringResource(R.string.settings_privacy_policy),
+                title = stringResource(Res.string.settings_privacy_policy),
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.PRIVACY_POLICY_URL))
                     runCatching { context.startActivity(intent) }
@@ -301,8 +306,8 @@ fun SettingsScreen(
             )
 
             SettingsItem(
-                title = stringResource(R.string.settings_about),
-                subtitle = stringResource(R.string.settings_version) + " " + BuildConfig.VERSION_NAME,
+                title = stringResource(Res.string.settings_about),
+                subtitle = stringResource(Res.string.settings_version) + " " + BuildConfig.VERSION_NAME,
                 onClick = { }
             )
         }

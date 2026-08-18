@@ -49,12 +49,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.personalmoney.core.ui.PickerColors
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.database.entity.CurrencyEntity
 import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.core.ui.components.IconCircle
@@ -70,7 +69,6 @@ fun AccountEditScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) { if (state.saved) onSaved() }
@@ -86,13 +84,13 @@ fun AccountEditScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (state.isEditing) stringResource(R.string.action_edit)
-                        else stringResource(R.string.accounts_new)
+                        if (state.isEditing) stringResource(Res.string.action_edit)
+                        else stringResource(Res.string.accounts_new)
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 },
                 actions = {
@@ -100,15 +98,15 @@ fun AccountEditScreen(
                         IconButton(onClick = { viewModel.setArchived(!state.archived) }) {
                             Icon(
                                 imageVector = if (state.archived) Icons.Filled.Unarchive else Icons.Filled.Archive,
-                                contentDescription = stringResource(R.string.action_archive)
+                                contentDescription = stringResource(Res.string.action_archive)
                             )
                         }
                         IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.action_delete))
                         }
                     }
                     TextButton(onClick = viewModel::save, enabled = state.canSave) {
-                        Text(stringResource(R.string.action_save))
+                        Text(stringResource(Res.string.action_save))
                     }
                 }
             )
@@ -124,7 +122,7 @@ fun AccountEditScreen(
             OutlinedTextField(
                 value = state.name,
                 onValueChange = viewModel::setName,
-                label = { Text(stringResource(R.string.accounts_name)) },
+                label = { Text(stringResource(Res.string.accounts_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -138,7 +136,7 @@ fun AccountEditScreen(
             OutlinedTextField(
                 value = state.initialBalance,
                 onValueChange = viewModel::setInitialBalance,
-                label = { Text(stringResource(R.string.accounts_initial_balance)) },
+                label = { Text(stringResource(Res.string.accounts_initial_balance)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
@@ -147,12 +145,12 @@ fun AccountEditScreen(
             OutlinedTextField(
                 value = state.note,
                 onValueChange = viewModel::setNote,
-                label = { Text(stringResource(R.string.quickadd_note)) },
+                label = { Text(stringResource(Res.string.quickadd_note)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Text(stringResource(R.string.accounts_icon), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(Res.string.accounts_icon), style = MaterialTheme.typography.titleSmall)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
                 items(IconLibrary.pickerSet) { key ->
                     val selected = state.icon == key
@@ -175,7 +173,7 @@ fun AccountEditScreen(
                 }
             }
 
-            Text(stringResource(R.string.accounts_color), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(Res.string.accounts_color), style = MaterialTheme.typography.titleSmall)
             ColorPickerRow(selected = state.color, onPick = viewModel::setColor)
 
             Row(
@@ -183,7 +181,7 @@ fun AccountEditScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.accounts_total),
+                    text = stringResource(Res.string.accounts_total),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
@@ -193,15 +191,15 @@ fun AccountEditScreen(
 
         if (showDeleteConfirm) {
             val message = if (state.transactionCount > 0) {
-                stringResource(R.string.accounts_delete_warning, state.name, state.transactionCount)
+                stringResource(Res.string.accounts_delete_warning, state.name, state.transactionCount)
             } else {
-                stringResource(R.string.accounts_name) + ": " + state.name
+                stringResource(Res.string.accounts_name) + ": " + state.name
             }
             ConfirmDialog(
-                title = stringResource(R.string.action_delete),
+                title = stringResource(Res.string.action_delete),
                 message = message,
-                confirmLabel = stringResource(R.string.action_delete),
-                dismissLabel = stringResource(R.string.action_cancel),
+                confirmLabel = stringResource(Res.string.action_delete),
+                dismissLabel = stringResource(Res.string.action_cancel),
                 destructive = true,
                 onConfirm = viewModel::delete,
                 onDismiss = { showDeleteConfirm = false }
@@ -227,7 +225,7 @@ private fun CurrencyDropdown(
             value = if (selectedName != null) "$selected · $selectedName" else selected,
             onValueChange = { },
             readOnly = true,
-            label = { Text(stringResource(R.string.accounts_currency)) },
+            label = { Text(stringResource(Res.string.accounts_currency)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()

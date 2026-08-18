@@ -3,7 +3,9 @@ package com.personalmoney.core.locale
 import android.content.res.Resources
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.personalmoney.resources.*
 import java.util.Locale
+import org.jetbrains.compose.resources.StringResource
 
 /**
  * Wraps the AppCompat per-app locale API. On API 33+ Android handles persistence
@@ -16,10 +18,10 @@ import java.util.Locale
 object LocaleManager {
 
     /** Supported languages, declared in `app/build.gradle.kts` `resourceConfigurations`. */
-    enum class Lang(val tag: String, val labelRes: Int) {
-        EN("en", com.personalmoney.R.string.lang_english),
-        RU("ru", com.personalmoney.R.string.lang_russian),
-        UK("uk", com.personalmoney.R.string.lang_ukrainian);
+    enum class Lang(val tag: String, val labelRes: StringResource) {
+        EN("en", Res.string.lang_english),
+        RU("ru", Res.string.lang_russian),
+        UK("uk", Res.string.lang_ukrainian);
 
         companion object {
             fun fromTag(tag: String?): Lang? = entries.firstOrNull { it.tag.equals(tag, ignoreCase = true) }

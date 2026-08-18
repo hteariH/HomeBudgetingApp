@@ -20,7 +20,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -31,7 +33,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import com.personalmoney.R
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.feature.accounts.AccountEditScreen
@@ -55,13 +56,13 @@ import com.personalmoney.feature.transactions.TransactionEditScreen
 import com.personalmoney.feature.transactions.TransactionsScreen
 import org.koin.androidx.compose.koinViewModel
 
-private data class BottomNavItem(val route: String, val icon: ImageVector, val label: Int)
+private data class BottomNavItem(val route: String, val icon: ImageVector, val label: StringResource)
 
 private val bottomNavItems = listOf(
-    BottomNavItem(Routes.DASHBOARD, Icons.Filled.Home, R.string.nav_overview),
-    BottomNavItem(Routes.TRANSACTIONS, Icons.AutoMirrored.Filled.List, R.string.nav_transactions),
-    BottomNavItem(Routes.ANALYTICS, Icons.Filled.BarChart, R.string.nav_analytics),
-    BottomNavItem(Routes.MORE, Icons.Filled.MoreHoriz, R.string.nav_more),
+    BottomNavItem(Routes.DASHBOARD, Icons.Filled.Home, Res.string.nav_overview),
+    BottomNavItem(Routes.TRANSACTIONS, Icons.AutoMirrored.Filled.List, Res.string.nav_transactions),
+    BottomNavItem(Routes.ANALYTICS, Icons.Filled.BarChart, Res.string.nav_analytics),
+    BottomNavItem(Routes.MORE, Icons.Filled.MoreHoriz, Res.string.nav_more),
 )
 
 private fun NavController.switchTab(route: String) {
@@ -116,7 +117,7 @@ fun PersonalMoneyNavHost(
         floatingActionButton = {
             if (showFab) {
                 FloatingActionButton(onClick = { navController.navigate(Routes.quickAdd("EXPENSE")) }) {
-                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_add_expense_fab))
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.action_add_expense_fab))
                 }
             }
         },

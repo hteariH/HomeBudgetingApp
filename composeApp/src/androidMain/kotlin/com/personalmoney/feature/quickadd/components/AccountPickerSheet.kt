@@ -18,9 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import com.personalmoney.R
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.ui.components.IconCircle
 
@@ -39,7 +39,7 @@ fun AccountPickerSheet(
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
             Text(
-                text = stringResource(R.string.accounts_title),
+                text = stringResource(Res.string.accounts_title),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
             )

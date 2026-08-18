@@ -26,9 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import com.personalmoney.R
+import org.jetbrains.compose.resources.StringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,7 +41,7 @@ fun MoreScreen(
     onOpenSettings: () -> Unit
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.more_title)) }) }
+        topBar = { TopAppBar(title = { Text(stringResource(Res.string.more_title)) }) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -48,17 +49,17 @@ fun MoreScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            MoreItem(Icons.Filled.CompareArrows, R.string.dashboard_transfer, onOpenTransfer)
-            MoreItem(Icons.Filled.Wallet, R.string.dashboard_accounts, onOpenAccounts)
-            MoreItem(Icons.Filled.Category, R.string.dashboard_categories, onOpenCategories)
-            MoreItem(Icons.Filled.Subscriptions, R.string.dashboard_subscriptions, onOpenSubscriptions)
-            MoreItem(Icons.Filled.Settings, R.string.dashboard_settings, onOpenSettings)
+            MoreItem(Icons.Filled.CompareArrows, Res.string.dashboard_transfer, onOpenTransfer)
+            MoreItem(Icons.Filled.Wallet, Res.string.dashboard_accounts, onOpenAccounts)
+            MoreItem(Icons.Filled.Category, Res.string.dashboard_categories, onOpenCategories)
+            MoreItem(Icons.Filled.Subscriptions, Res.string.dashboard_subscriptions, onOpenSubscriptions)
+            MoreItem(Icons.Filled.Settings, Res.string.dashboard_settings, onOpenSettings)
         }
     }
 }
 
 @Composable
-private fun MoreItem(icon: ImageVector, labelRes: Int, onClick: () -> Unit) {
+private fun MoreItem(icon: ImageVector, labelRes: StringResource, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

@@ -35,13 +35,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,7 +82,7 @@ fun OnboardingScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    text = stringResource(R.string.onboarding_step_of, state.step + 1, state.totalSteps),
+                    text = stringResource(Res.string.onboarding_step_of, state.step + 1, state.totalSteps),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
@@ -122,9 +122,9 @@ fun OnboardingScreen(
                 ) {
                     Text(
                         text = if (state.step < state.totalSteps - 1)
-                            stringResource(R.string.onboarding_next)
+                            stringResource(Res.string.onboarding_next)
                         else
-                            stringResource(R.string.onboarding_start)
+                            stringResource(Res.string.onboarding_start)
                     )
                 }
                 if (state.step > 0) {
@@ -132,7 +132,7 @@ fun OnboardingScreen(
                         onClick = viewModel::skip,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(stringResource(R.string.onboarding_skip))
+                        Text(stringResource(Res.string.onboarding_skip))
                     }
                 }
             }
@@ -154,12 +154,12 @@ private fun WelcomeStep() {
             tint = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = stringResource(R.string.onboarding_welcome),
+            text = stringResource(Res.string.onboarding_welcome),
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier.fillMaxWidth()
         )
         Text(
-            text = stringResource(R.string.onboarding_subtitle),
+            text = stringResource(Res.string.onboarding_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth()
@@ -191,7 +191,7 @@ private fun CurrencyStep(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = stringResource(R.string.onboarding_pick_currency),
+            text = stringResource(Res.string.onboarding_pick_currency),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
         )
 
@@ -208,7 +208,7 @@ private fun CurrencyStep(
                     onClick = onNotMyList,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 ) {
-                    Text(stringResource(R.string.onboarding_currency_not_here))
+                    Text(stringResource(Res.string.onboarding_currency_not_here))
                 }
             }
         }
@@ -259,13 +259,13 @@ private fun AllCurrenciesDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.onboarding_all_currencies)) },
+        title = { Text(stringResource(Res.string.onboarding_all_currencies)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchChange,
-                    placeholder = { Text(stringResource(R.string.currencies_search)) },
+                    placeholder = { Text(stringResource(Res.string.currencies_search)) },
                     leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -284,7 +284,7 @@ private fun AllCurrenciesDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
+                Text(stringResource(Res.string.action_cancel))
             }
         }
     )
@@ -297,14 +297,14 @@ private fun AccountStep(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
-            text = stringResource(R.string.onboarding_first_account),
+            text = stringResource(Res.string.onboarding_first_account),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
         )
         OutlinedTextField(
             value = name,
             onValueChange = onNameChange,
-            label = { Text(stringResource(R.string.onboarding_account_name)) },
-            placeholder = { Text(stringResource(R.string.onboarding_account_placeholder)) },
+            label = { Text(stringResource(Res.string.onboarding_account_name)) },
+            placeholder = { Text(stringResource(Res.string.onboarding_account_placeholder)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Words,

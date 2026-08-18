@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.LocalContext
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -36,8 +35,9 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.personalmoney.R
 import com.personalmoney.core.domain.CategoryType
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.flow.first
 
 class QuickExpenseWidget : GlanceAppWidget() {
@@ -74,17 +74,28 @@ class QuickExpenseWidget : GlanceAppWidget() {
             }
         }
 
+        // Glance runs its own composition, so the Compose Multiplatform `stringResource`
+        // composable is not available inside it. provideGlance is suspend, which is exactly
+        // what the shared resource reader wants - so the labels are read here and passed in.
+        val labels = WidgetLabels(
+            expense = getString(Res.string.widget_expense),
+            income = getString(Res.string.widget_income),
+            saved = getString(Res.string.widget_saved),
+        )
+
         provideContent {
             GlanceTheme {
-                WidgetBody(currentState())
+                WidgetBody(currentState(), labels)
             }
         }
     }
 }
 
+/** Widget text, resolved before composition — see the note in `provideGlance`. */
+private data class WidgetLabels(val expense: String, val income: String, val saved: String)
+
 @Composable
-private fun WidgetBody(prefs: Preferences) {
-    val context = LocalContext.current
+private fun WidgetBody(prefs: Preferences, labels: WidgetLabels) {
     val expression   = prefs[KEY_EXPRESSION] ?: ""
     val selectedCatId = prefs[KEY_CAT_ID]
     val justSaved    = prefs[KEY_JUST_SAVED] ?: false
@@ -106,14 +117,14 @@ private fun WidgetBody(prefs: Preferences) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             TypeButton(
-                label = context.getString(R.string.widget_expense),
+                label = labels.expense,
                 isSelected = isExpense,
                 type = "EXPENSE",
                 modifier = GlanceModifier.defaultWeight().fillMaxHeight()
             )
             Spacer(GlanceModifier.width(4.dp))
             TypeButton(
-                label = context.getString(R.string.widget_income),
+                label = labels.income,
                 isSelected = !isExpense,
                 type = "INCOME",
                 modifier = GlanceModifier.defaultWeight().fillMaxHeight()
@@ -190,7 +201,7 @@ private fun WidgetBody(prefs: Preferences) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    context.getString(R.string.widget_saved),
+                    labels.saved,
                     style = TextStyle(
                         color = GlanceTheme.colors.onPrimaryContainer,
                         fontSize = 22.sp,

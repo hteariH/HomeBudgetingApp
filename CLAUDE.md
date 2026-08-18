@@ -74,8 +74,14 @@ Tests: JUnit + MockK + Turbine, with a `MainDispatcherRule` (UnconfinedTestDispa
   optimistic via `baseUpdatedAt`. **uuid is the identity across clients — server ids are not
   portable.** Tokens live in `core/auth/TokenStore` (EncryptedSharedPreferences); refresh is
   handled once, under a mutex, by `TokenAuthenticator` — never refresh at a call site.
-- **i18n:** every user-facing string goes in all three of `res/values/`, `res/values-ru/`,
-  `res/values-uk/strings.xml`. Never hardcode UI text.
+- **i18n:** strings live in **`composeApp/src/commonMain/composeResources/values{,-ru,-uk}/
+  strings.xml`**, not in `res/values*` - the Android resource table cannot be read from wasm.
+  Read them with `stringResource(Res.string.x)` (composable) or the **suspend**
+  `getString(Res.string.x)` (anywhere else), both from `org.jetbrains.compose.resources`;
+  `Res` and the accessors come from `com.personalmoney.resources.*`. Every key exists in all
+  three locales - never hardcode UI text. Counting strings use `<plurals>` +
+  `pluralStringResource`. Only `app_name` and `widget_quick_expense` stay in `res/values*`,
+  because the manifest and the widget-info XML are read by the platform.
 
 ## Git / workflow norms
 

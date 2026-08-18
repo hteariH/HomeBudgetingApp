@@ -34,14 +34,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.ads.BannerAd
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CurrencyCode
@@ -67,7 +67,7 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_title)) }
+                title = { Text(stringResource(Res.string.dashboard_title)) }
             )
         }
     ) { padding ->
@@ -89,7 +89,7 @@ fun DashboardScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = stringResource(R.string.dashboard_total_balance),
+                            text = stringResource(Res.string.dashboard_total_balance),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -119,13 +119,13 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     StatCard(
-                        title = stringResource(R.string.dashboard_add_expense),
+                        title = stringResource(Res.string.dashboard_add_expense),
                         money = state.monthExpenses,
                         type = TransactionType.EXPENSE,
                         modifier = Modifier.weight(1f)
                     )
                     StatCard(
-                        title = stringResource(R.string.dashboard_add_income),
+                        title = stringResource(Res.string.dashboard_add_income),
                         money = state.monthIncome,
                         type = TransactionType.INCOME,
                         modifier = Modifier.weight(1f)
@@ -145,7 +145,7 @@ fun DashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = stringResource(R.string.chart_expenses_by_category),
+                                text = stringResource(Res.string.chart_expenses_by_category),
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Spacer(Modifier.size(12.dp))
@@ -167,7 +167,7 @@ fun DashboardScreen(
                             if (state.moreExpenseCategories > 0) {
                                 Spacer(Modifier.size(8.dp))
                                 Text(
-                                    text = stringResource(R.string.dashboard_more_categories, state.moreExpenseCategories),
+                                    text = stringResource(Res.string.dashboard_more_categories, state.moreExpenseCategories),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -189,7 +189,7 @@ fun DashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = stringResource(R.string.dashboard_budgets),
+                                text = stringResource(Res.string.dashboard_budgets),
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Spacer(Modifier.size(12.dp))
@@ -205,7 +205,7 @@ fun DashboardScreen(
             // Recent transactions
             item {
                 Text(
-                    text = stringResource(R.string.dashboard_recent),
+                    text = stringResource(Res.string.dashboard_recent),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -213,7 +213,7 @@ fun DashboardScreen(
             if (state.recent.isEmpty()) {
                 item {
                     Text(
-                        text = stringResource(R.string.dashboard_no_transactions),
+                        text = stringResource(Res.string.dashboard_no_transactions),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp)

@@ -34,13 +34,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.ui.components.MoneyText
 import com.personalmoney.core.ui.theme.ExpenseRed
 import com.personalmoney.core.ui.theme.IncomeGreen
@@ -59,11 +59,11 @@ fun AnalyticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.analytics_title)) },
+                title = { Text(stringResource(Res.string.analytics_title)) },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                         }
                     }
                 }
@@ -84,13 +84,13 @@ fun AnalyticsScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 SummaryCard(
-                    title = stringResource(R.string.dashboard_add_expense),
+                    title = stringResource(Res.string.dashboard_add_expense),
                     money = state.totalExpenses,
                     color = finance.expense,
                     modifier = Modifier.weight(1f)
                 )
                 SummaryCard(
-                    title = stringResource(R.string.dashboard_add_income),
+                    title = stringResource(Res.string.dashboard_add_income),
                     money = state.totalIncome,
                     color = finance.income,
                     modifier = Modifier.weight(1f)
@@ -111,14 +111,14 @@ fun AnalyticsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = stringResource(R.string.analytics_insights),
+                            text = stringResource(Res.string.analytics_insights),
                             style = MaterialTheme.typography.titleMedium
                         )
                         if (expenseChange != null) {
                             val text = when {
-                                expenseChange > 0 -> stringResource(R.string.analytics_expense_up, expenseChange)
-                                expenseChange < 0 -> stringResource(R.string.analytics_expense_down, -expenseChange)
-                                else -> stringResource(R.string.analytics_expense_flat)
+                                expenseChange > 0 -> stringResource(Res.string.analytics_expense_up, expenseChange)
+                                expenseChange < 0 -> stringResource(Res.string.analytics_expense_down, -expenseChange)
+                                else -> stringResource(Res.string.analytics_expense_flat)
                             }
                             Text(
                                 text = text,
@@ -128,7 +128,7 @@ fun AnalyticsScreen(
                         }
                         if (savingsRate != null) {
                             Text(
-                                text = stringResource(R.string.analytics_savings_rate, savingsRate),
+                                text = stringResource(Res.string.analytics_savings_rate, savingsRate),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (savingsRate >= 0) finance.income else finance.expense
                             )
@@ -146,7 +146,7 @@ fun AnalyticsScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Text(
-                        text = stringResource(R.string.chart_no_data),
+                        text = stringResource(Res.string.chart_no_data),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(24.dp)
@@ -163,11 +163,11 @@ fun AnalyticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = stringResource(R.string.analytics_by_month),
+                            text = stringResource(Res.string.analytics_by_month),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = stringResource(R.string.analytics_last_months, state.months.size),
+                            text = stringResource(Res.string.analytics_last_months, state.months.size),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -184,11 +184,11 @@ fun AnalyticsScreen(
                         ) {
                             LegendItem(
                                 color = finance.expense,
-                                label = stringResource(R.string.dashboard_add_expense)
+                                label = stringResource(Res.string.dashboard_add_expense)
                             )
                             LegendItem(
                                 color = finance.income,
-                                label = stringResource(R.string.dashboard_add_income)
+                                label = stringResource(Res.string.dashboard_add_income)
                             )
                         }
                     }

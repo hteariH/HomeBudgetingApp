@@ -1,6 +1,5 @@
 package com.personalmoney.feature.transfers
 
-import android.content.Context
 import app.cash.turbine.test
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.ExchangeRateRepository
@@ -36,7 +35,6 @@ class TransferViewModelKeyTest {
     private val card = AccountEntity(id = 2L, name = "Card", currencyCode = "USD")
     private val euro = AccountEntity(id = 3L, name = "Euro", currencyCode = "EUR")
 
-    private val appContext = mockk<Context>(relaxed = true)
     private val accountRepository = mockk<AccountRepository>(relaxed = true)
     private val exchangeRateRepository = mockk<ExchangeRateRepository>(relaxed = true)
     private val transactionRepository = mockk<TransactionRepository>(relaxed = true)
@@ -52,7 +50,7 @@ class TransferViewModelKeyTest {
     ): TransferViewModel {
         every { accountRepository.observeActive() } returns flowOf(accounts)
         every { exchangeRateRepository.observeAll() } returns flowOf(rates)
-        return TransferViewModel(appContext, accountRepository, exchangeRateRepository, transactionRepository)
+        return TransferViewModel(accountRepository, exchangeRateRepository, transactionRepository)
     }
 
     @Test

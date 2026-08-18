@@ -22,14 +22,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -62,14 +62,14 @@ fun AuthScreen(
             Spacer(Modifier.height(48.dp))
 
             Text(
-                text = stringResource(R.string.app_name),
+                text = stringResource(Res.string.app_name),
                 style = MaterialTheme.typography.headlineMedium
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 text = stringResource(
-                    if (state.registerMode) R.string.auth_register_subtitle
-                    else R.string.auth_login_subtitle
+                    if (state.registerMode) Res.string.auth_register_subtitle
+                    else Res.string.auth_login_subtitle
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -82,7 +82,7 @@ fun AuthScreen(
                 OutlinedTextField(
                     value = state.firstName,
                     onValueChange = viewModel::onFirstNameChange,
-                    label = { Text(stringResource(R.string.auth_first_name)) },
+                    label = { Text(stringResource(Res.string.auth_first_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -90,7 +90,7 @@ fun AuthScreen(
                 OutlinedTextField(
                     value = state.lastName,
                     onValueChange = viewModel::onLastNameChange,
-                    label = { Text(stringResource(R.string.auth_last_name)) },
+                    label = { Text(stringResource(Res.string.auth_last_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -100,7 +100,7 @@ fun AuthScreen(
             OutlinedTextField(
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
-                label = { Text(stringResource(R.string.auth_email)) },
+                label = { Text(stringResource(Res.string.auth_email)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
@@ -114,7 +114,7 @@ fun AuthScreen(
             OutlinedTextField(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
-                label = { Text(stringResource(R.string.auth_password)) },
+                label = { Text(stringResource(Res.string.auth_password)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
@@ -125,7 +125,7 @@ fun AuthScreen(
                     {
                         Text(
                             stringResource(
-                                R.string.auth_password_hint,
+                                Res.string.auth_password_hint,
                                 AuthUiState.MIN_PASSWORD_LENGTH
                             )
                         )
@@ -160,8 +160,8 @@ fun AuthScreen(
                 } else {
                     Text(
                         stringResource(
-                            if (state.registerMode) R.string.auth_create_account
-                            else R.string.auth_sign_in
+                            if (state.registerMode) Res.string.auth_create_account
+                            else Res.string.auth_sign_in
                         )
                     )
                 }
@@ -170,8 +170,8 @@ fun AuthScreen(
             TextButton(onClick = viewModel::toggleMode, enabled = !state.busy) {
                 Text(
                     stringResource(
-                        if (state.registerMode) R.string.auth_have_account
-                        else R.string.auth_need_account
+                        if (state.registerMode) Res.string.auth_have_account
+                        else Res.string.auth_need_account
                     )
                 )
             }

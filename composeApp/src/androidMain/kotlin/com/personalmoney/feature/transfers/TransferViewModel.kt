@@ -1,9 +1,7 @@
 package com.personalmoney.feature.transfers
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.personalmoney.R
 import com.personalmoney.core.calc.Calculator
 import com.personalmoney.core.calc.ExpressionInput
 import com.personalmoney.core.currency.FxSnapshot
@@ -13,6 +11,9 @@ import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,7 +58,6 @@ data class TransferUiState(
 }
 
 class TransferViewModel constructor(
-    private val appContext: Context,
     accountRepository: AccountRepository,
     exchangeRateRepository: ExchangeRateRepository,
     private val transactionRepository: TransactionRepository
@@ -186,7 +186,7 @@ class TransferViewModel constructor(
         val toDecimals = currencyDecimals(to.currencyCode)
 
         val amountFromBd = Calculator.evaluate(s.amountFrom, fromDecimals) ?: run {
-            internalState.update { it.copy(error = appContext.getString(R.string.transfer_invalid_source)) }; return
+            failWith(Res.string.transfer_invalid_source); return
         }
         val amountToBd = if (s.sameCurrency) {
             amountFromBd
@@ -196,7 +196,7 @@ class TransferViewModel constructor(
             if (rate != null) amountFromBd.times(BigDecimal.fromDouble(rate)) else amountFromBd
         } else {
             Calculator.evaluate(s.amountTo, toDecimals) ?: run {
-                internalState.update { it.copy(error = appContext.getString(R.string.transfer_invalid_destination)) }; return
+                failWith(Res.string.transfer_invalid_destination); return
             }
         }
         val feeBd = if (s.feeFrom.isBlank()) BigDecimal.ZERO
@@ -246,6 +246,15 @@ class TransferViewModel constructor(
                 .onSuccess { internalState.update { it.copy(saving = false, saved = true) } }
                 .onFailure { e -> internalState.update { it.copy(saving = false, error = e.message) } }
         }
+    }
+
+    /**
+     * Validation messages are resource-backed, and the multiplatform resource reader is
+     * suspend - so the string is resolved in [viewModelScope] and lands in state a
+     * dispatch later, rather than being read straight off an Android Context.
+     */
+    private fun failWith(res: StringResource) {
+        viewModelScope.launch { internalState.update { it.copy(error = getString(res)) } }
     }
 
     private fun currencyDecimals(code: String): Int =

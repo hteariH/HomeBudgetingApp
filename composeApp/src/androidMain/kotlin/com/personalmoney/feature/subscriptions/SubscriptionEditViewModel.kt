@@ -1,10 +1,8 @@
 package com.personalmoney.feature.subscriptions
 
-import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.personalmoney.R
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.CategoryRepository
 import com.personalmoney.core.data.repository.SubscriptionRepository
@@ -13,6 +11,8 @@ import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.database.entity.SubscriptionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.SubscriptionFrequency
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,7 +55,6 @@ private fun today(): LocalDate =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
 class SubscriptionEditViewModel constructor(
-    private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val subscriptionRepository: SubscriptionRepository,
     accountRepository: AccountRepository,
@@ -120,7 +119,13 @@ class SubscriptionEditViewModel constructor(
         val amountMinor = runCatching {
             BigDecimal.parseString(s.amount).toMinorUnits(decimals)
         }.getOrElse {
-            internal.update { it.copy(error = appContext.getString(R.string.subscriptions_invalid_amount)) }; return
+            viewModelScope.launch {
+                // The multiplatform resource reader is suspend, so the message is resolved
+                // here rather than off an Android Context.
+                val message = getString(Res.string.subscriptions_invalid_amount)
+                internal.update { it.copy(error = message) }
+            }
+            return
         }
         internal.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {

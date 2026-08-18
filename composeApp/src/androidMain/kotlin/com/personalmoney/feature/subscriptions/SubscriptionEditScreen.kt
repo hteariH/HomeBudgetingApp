@@ -37,11 +37,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.domain.SubscriptionFrequency
 import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
@@ -77,10 +77,10 @@ fun SubscriptionEditScreen(
 
     if (showDeleteConfirm) {
         ConfirmDialog(
-            title = stringResource(R.string.action_delete),
-            message = stringResource(R.string.subscription_delete_confirm),
-            confirmLabel = stringResource(R.string.action_delete),
-            dismissLabel = stringResource(R.string.action_cancel),
+            title = stringResource(Res.string.action_delete),
+            message = stringResource(Res.string.subscription_delete_confirm),
+            confirmLabel = stringResource(Res.string.action_delete),
+            dismissLabel = stringResource(Res.string.action_cancel),
             destructive = true,
             onConfirm = viewModel::delete,
             onDismiss = { showDeleteConfirm = false }
@@ -91,22 +91,22 @@ fun SubscriptionEditScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (state.isEditing) stringResource(R.string.action_edit)
-                    else stringResource(R.string.subscriptions_new))
+                    Text(if (state.isEditing) stringResource(Res.string.action_edit)
+                    else stringResource(Res.string.subscriptions_new))
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 },
                 actions = {
                     if (state.isEditing) {
                         IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.action_delete))
                         }
                     }
                     TextButton(onClick = viewModel::save, enabled = state.canSave) {
-                        Text(stringResource(R.string.action_save))
+                        Text(stringResource(Res.string.action_save))
                     }
                 }
             )
@@ -120,7 +120,7 @@ fun SubscriptionEditScreen(
             OutlinedTextField(
                 value = state.name,
                 onValueChange = viewModel::setName,
-                label = { Text(stringResource(R.string.subscriptions_name)) },
+                label = { Text(stringResource(Res.string.subscriptions_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -128,19 +128,19 @@ fun SubscriptionEditScreen(
             OutlinedTextField(
                 value = state.amount,
                 onValueChange = viewModel::setAmount,
-                label = { Text("${stringResource(R.string.subscriptions_amount)} (${state.currencyCode})") },
+                label = { Text("${stringResource(Res.string.subscriptions_amount)} (${state.currencyCode})") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Text(stringResource(R.string.subscriptions_frequency), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(Res.string.subscriptions_frequency), style = MaterialTheme.typography.titleSmall)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 val freqs = listOf(
-                    SubscriptionFrequency.DAILY to R.string.freq_daily,
-                    SubscriptionFrequency.WEEKLY to R.string.freq_weekly,
-                    SubscriptionFrequency.MONTHLY to R.string.freq_monthly,
-                    SubscriptionFrequency.YEARLY to R.string.freq_yearly
+                    SubscriptionFrequency.DAILY to Res.string.freq_daily,
+                    SubscriptionFrequency.WEEKLY to Res.string.freq_weekly,
+                    SubscriptionFrequency.MONTHLY to Res.string.freq_monthly,
+                    SubscriptionFrequency.YEARLY to Res.string.freq_yearly
                 )
                 freqs.forEachIndexed { i, (freq, label) ->
                     SegmentedButton(
@@ -154,7 +154,7 @@ fun SubscriptionEditScreen(
             // Repeat interval ("every N <frequency>")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    stringResource(R.string.subscriptions_interval),
+                    stringResource(Res.string.subscriptions_interval),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f)
                 )
@@ -162,22 +162,22 @@ fun SubscriptionEditScreen(
                     onClick = { viewModel.setInterval(state.interval - 1) },
                     enabled = state.interval > 1
                 ) {
-                    Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.a11y_decrease))
+                    Icon(Icons.Filled.Remove, contentDescription = stringResource(Res.string.a11y_decrease))
                 }
                 Text(
                     text = state.interval.toString(),
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = { viewModel.setInterval(state.interval + 1) }) {
-                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.a11y_increase))
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.a11y_increase))
                 }
             }
 
-            Text("${stringResource(R.string.subscriptions_next_charge)}: ${formatSubDate(state.nextChargeDate)}", style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = { showDatePicker = true }) { Text(stringResource(R.string.action_edit)) }
+            Text("${stringResource(Res.string.subscriptions_next_charge)}: ${formatSubDate(state.nextChargeDate)}", style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = { showDatePicker = true }) { Text(stringResource(Res.string.action_edit)) }
 
             if (state.accounts.size > 1) {
-                Text(stringResource(R.string.quickadd_account), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(Res.string.quickadd_account), style = MaterialTheme.typography.titleSmall)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(state.accounts) { acc ->
                         FilterChip(
@@ -190,7 +190,7 @@ fun SubscriptionEditScreen(
             }
 
             if (state.categories.isNotEmpty()) {
-                Text(stringResource(R.string.quickadd_category), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(Res.string.quickadd_category), style = MaterialTheme.typography.titleSmall)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
                     items(state.categories) { cat ->
                         FilterChip(

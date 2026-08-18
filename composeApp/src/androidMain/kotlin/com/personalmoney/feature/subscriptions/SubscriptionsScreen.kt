@@ -30,11 +30,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.database.entity.SubscriptionEntity
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
@@ -60,24 +60,24 @@ fun SubscriptionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.subscriptions_title)) },
+                title = { Text(stringResource(Res.string.subscriptions_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAdd) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.subscriptions_new))
+                Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.subscriptions_new))
             }
         }
     ) { padding ->
         if (state.subscriptions.isEmpty()) {
             EmptyState(
-                title = stringResource(R.string.subscriptions_new),
-                actionLabel = stringResource(R.string.action_add),
+                title = stringResource(Res.string.subscriptions_new),
+                actionLabel = stringResource(Res.string.action_add),
                 onAction = onAdd,
                 modifier = Modifier.padding(padding)
             )
@@ -97,7 +97,7 @@ fun SubscriptionsScreen(
                     Row(modifier = Modifier.padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                stringResource(R.string.subscriptions_total_month),
+                                stringResource(Res.string.subscriptions_total_month),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -109,7 +109,7 @@ fun SubscriptionsScreen(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                stringResource(R.string.subscriptions_total_year),
+                                stringResource(Res.string.subscriptions_total_year),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -180,11 +180,11 @@ private fun formatSubListDate(date: LocalDate): String =
 
 @Composable
 private fun frequencyLabel(frequency: SubscriptionFrequency, interval: Int): String {
-    val every = if (interval > 1) stringResource(R.string.freq_interval_prefix, interval) else ""
+    val every = if (interval > 1) stringResource(Res.string.freq_interval_prefix, interval) else ""
     return when (frequency) {
-        SubscriptionFrequency.DAILY -> every + stringResource(R.string.freq_daily)
-        SubscriptionFrequency.WEEKLY -> every + stringResource(R.string.freq_weekly)
-        SubscriptionFrequency.MONTHLY -> every + stringResource(R.string.freq_monthly)
-        SubscriptionFrequency.YEARLY -> every + stringResource(R.string.freq_yearly)
+        SubscriptionFrequency.DAILY -> every + stringResource(Res.string.freq_daily)
+        SubscriptionFrequency.WEEKLY -> every + stringResource(Res.string.freq_weekly)
+        SubscriptionFrequency.MONTHLY -> every + stringResource(Res.string.freq_monthly)
+        SubscriptionFrequency.YEARLY -> every + stringResource(Res.string.freq_yearly)
     }
 }

@@ -42,7 +42,10 @@ import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.toDecimalString
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.util.AppLog
+import com.personalmoney.resources.*
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import org.koin.core.context.GlobalContext
 
 /**
@@ -74,7 +77,7 @@ fun WebApp() {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("PersonalMoney", style = MaterialTheme.typography.headlineMedium)
+                Text(stringResource(Res.string.app_name), style = MaterialTheme.typography.headlineMedium)
                 if (signedIn) {
                     AccountsPane(accountsRepo, auth)
                     TransactionsPane(transactionsRepo, categoriesRepo)
@@ -98,9 +101,9 @@ private fun SignInPane(auth: AuthRepository) {
         Modifier.widthIn(max = 360.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedTextField(email, { email = it }, label = { Text("Email") })
+        OutlinedTextField(email, { email = it }, label = { Text(stringResource(Res.string.auth_email)) })
         OutlinedTextField(
-            password, { password = it }, label = { Text("Password") },
+            password, { password = it }, label = { Text(stringResource(Res.string.auth_password)) },
             visualTransformation = PasswordVisualTransformation(),
         )
         Button(
@@ -116,7 +119,9 @@ private fun SignInPane(auth: AuthRepository) {
                     busy = false
                 }
             },
-        ) { Text(if (busy) "Signing in…" else "Sign in") }
+        ) {
+            Text(stringResource(if (busy) Res.string.auth_signing_in else Res.string.auth_sign_in))
+        }
 
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }
@@ -132,7 +137,7 @@ private fun AccountsPane(repository: AccountRepository, auth: AuthRepository) {
         runCatching { repository.refresh() }
             .onFailure {
                 AppLog.w("WebApp", "Loading accounts failed: ${it.message}")
-                error = it.message ?: "Could not load accounts"
+                error = it.message ?: getString(Res.string.common_load_failed)
             }
     }
     // Collected rather than assigned once: the repository republishes after every write.
@@ -145,8 +150,10 @@ private fun AccountsPane(repository: AccountRepository, auth: AuthRepository) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Accounts", style = MaterialTheme.typography.titleLarge)
-        Button(onClick = { scope.launch { auth.logout() } }) { Text("Sign out") }
+        Text(stringResource(Res.string.accounts_title), style = MaterialTheme.typography.titleLarge)
+        Button(onClick = { scope.launch { auth.logout() } }) {
+            Text(stringResource(Res.string.header_sign_out))
+        }
     }
 
     when {
@@ -194,7 +201,7 @@ private fun TransactionsPane(
             transactions.refresh()
         }.onFailure {
             AppLog.w("WebApp", "Loading the ledger failed: ${it.message}")
-            error = it.message ?: "Could not load transactions"
+            error = it.message ?: getString(Res.string.common_load_failed)
         }
     }
     LaunchedEffect(transactions) { transactions.observeRecent(10).collect { rows = it } }
@@ -203,7 +210,7 @@ private fun TransactionsPane(
     }
 
     Text(
-        "Recent",
+        stringResource(Res.string.dashboard_recent),
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.fillMaxWidth().widthIn(max = 640.dp).padding(top = 8.dp),
     )
@@ -221,7 +228,8 @@ private fun TransactionsPane(
                     Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text(tx.note ?: categoriesById[tx.categoryId]?.name ?: "—")
+                    Text(tx.note ?: categoriesById[tx.categoryId]?.name
+                        ?: stringResource(Res.string.common_none))
                     Text(
                         "${signed.toDecimalString(decimals)} ${tx.currencyCode}",
                         color = if (signed < 0) MaterialTheme.colorScheme.error

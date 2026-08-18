@@ -16,9 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import com.personalmoney.R
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.ui.components.IconCircle
 
@@ -59,7 +59,7 @@ fun SelectedAccountBar(
                 )
             } else {
                 Text(
-                    text = stringResource(R.string.quickadd_no_account),
+                    text = stringResource(Res.string.quickadd_no_account),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f)
@@ -67,7 +67,7 @@ fun SelectedAccountBar(
             }
             Icon(
                 imageVector = Icons.Filled.KeyboardArrowDown,
-                contentDescription = stringResource(R.string.quickadd_account)
+                contentDescription = stringResource(Res.string.quickadd_account)
             )
         }
     }

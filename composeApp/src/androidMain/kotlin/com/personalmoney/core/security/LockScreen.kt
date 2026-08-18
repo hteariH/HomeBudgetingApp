@@ -15,10 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.personalmoney.R
 
 @Composable
 fun LockScreen(
@@ -41,13 +41,13 @@ fun LockScreen(
                 modifier = Modifier.size(72.dp)
             )
             Text(
-                text = stringResource(R.string.lock_title),
+                text = stringResource(Res.string.lock_title),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 24.dp),
                 textAlign = TextAlign.Center
             )
             Text(
-                text = stringResource(R.string.lock_subtitle),
+                text = stringResource(Res.string.lock_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -63,7 +63,7 @@ fun LockScreen(
                 )
             }
             Button(onClick = onUnlock) {
-                Text(stringResource(R.string.lock_unlock))
+                Text(stringResource(Res.string.lock_unlock))
             }
         }
     }

@@ -27,10 +27,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import com.personalmoney.resources.*
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.R
 import com.personalmoney.core.ui.components.EmptyState
 import com.personalmoney.core.ui.components.IconCircle
 import com.personalmoney.core.ui.components.MoneyText
@@ -48,24 +48,24 @@ fun AccountsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.accounts_title)) },
+                title = { Text(stringResource(Res.string.accounts_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAdd) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.accounts_new))
+                Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.accounts_new))
             }
         }
     ) { padding ->
         if (state.accounts.isEmpty() && state.archived.isEmpty()) {
             EmptyState(
-                title = stringResource(R.string.accounts_empty),
-                actionLabel = stringResource(R.string.accounts_new),
+                title = stringResource(Res.string.accounts_empty),
+                actionLabel = stringResource(Res.string.accounts_new),
                 onAction = onAdd,
                 modifier = Modifier.padding(padding)
             )
@@ -82,7 +82,7 @@ fun AccountsScreen(
             if (state.archived.isNotEmpty()) {
                 item {
                     Text(
-                        text = stringResource(R.string.accounts_archived),
+                        text = stringResource(Res.string.accounts_archived),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
