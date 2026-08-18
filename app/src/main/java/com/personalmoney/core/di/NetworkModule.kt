@@ -1,29 +1,20 @@
 package com.personalmoney.core.di
 
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.personalmoney.BuildConfig
-import com.personalmoney.core.auth.AuthInterceptor
-import com.personalmoney.core.auth.TokenAuthenticator
+import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.currency.FrankfurterApi
 import com.personalmoney.core.network.HomeBudgetApi
+import com.personalmoney.core.network.createBackendClient
+import com.personalmoney.core.network.createJson
+import com.personalmoney.core.network.createPlainClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import java.util.concurrent.TimeUnit
-import javax.inject.Qualifier
 import javax.inject.Singleton
-
-/** The plain client, used for third-party APIs that must not receive our bearer token. */
-@Qualifier annotation class PlainClient
-
-/** The authenticated client for our own backend. */
-@Qualifier annotation class BackendClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -36,56 +27,25 @@ object NetworkModule {
     private const val FRANKFURTER_BASE_URL = "https://api.frankfurter.dev/"
 
     @Provides @Singleton
-    fun provideJson(): Json = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-        explicitNulls = false
-    }
+    fun provideJson(): Json = createJson()
 
-    private fun baseClient(): OkHttpClient.Builder {
-        val logging = HttpLoggingInterceptor().apply {
-            // BASIC even in debug: BODY would put bearer tokens and balances in logcat.
-            level = HttpLoggingInterceptor.Level.BASIC
-        }
-        return OkHttpClient.Builder()
-            .addInterceptor(logging)
-            .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-    }
-
-    @Provides @Singleton @PlainClient
-    fun providePlainClient(): OkHttpClient = baseClient().build()
-
-    @Provides @Singleton @BackendClient
-    fun provideBackendClient(
-        authInterceptor: AuthInterceptor,
-        tokenAuthenticator: TokenAuthenticator
-    ): OkHttpClient = baseClient()
-        .addInterceptor(authInterceptor)
-        // OkHttp retries the request itself once this hands back a refreshed token,
-        // so no call site has to know about token expiry.
-        .authenticator(tokenAuthenticator)
-        .build()
+    /**
+     * OkHttp is the Ktor engine on Android. On iOS this becomes Darwin and on wasm Js;
+     * only this provider changes, because everything above it is engine-agnostic.
+     */
+    @Provides @Singleton
+    fun provideEngine(): HttpClientEngine = OkHttp.create()
 
     @Provides @Singleton
-    fun provideHomeBudgetApi(@BackendClient okHttp: OkHttpClient, json: Json): HomeBudgetApi {
-        val contentType = "application/json".toMediaType()
-        return Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
-            .client(okHttp)
-            .addConverterFactory(json.asConverterFactory(contentType))
-            .build()
-            .create(HomeBudgetApi::class.java)
-    }
+    fun provideHomeBudgetApi(
+        engine: HttpClientEngine,
+        json: Json,
+        tokenStore: TokenStore,
+    ): HomeBudgetApi = HomeBudgetApi(
+        createBackendClient(engine, json, BuildConfig.API_BASE_URL, tokenStore)
+    )
 
     @Provides @Singleton
-    fun provideFrankfurterApi(@PlainClient okHttp: OkHttpClient, json: Json): FrankfurterApi {
-        val contentType = "application/json".toMediaType()
-        return Retrofit.Builder()
-            .baseUrl(FRANKFURTER_BASE_URL)
-            .client(okHttp)
-            .addConverterFactory(json.asConverterFactory(contentType))
-            .build()
-            .create(FrankfurterApi::class.java)
-    }
+    fun provideFrankfurterApi(engine: HttpClientEngine, json: Json): FrankfurterApi =
+        FrankfurterApi(createPlainClient(engine, json, FRANKFURTER_BASE_URL))
 }

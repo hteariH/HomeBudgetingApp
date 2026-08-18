@@ -1,8 +1,10 @@
 package com.personalmoney.core.currency
 
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import kotlinx.serialization.Serializable
-import retrofit2.http.GET
-import retrofit2.http.Query
 
 /**
  * Frankfurter is a free, no-key currency rates API.
@@ -10,16 +12,16 @@ import retrofit2.http.Query
  * ECB-only v1 endpoint — including currencies such as UAH that v1 omits.
  * Docs: https://frankfurter.dev
  */
-interface FrankfurterApi {
+class FrankfurterApi(private val client: HttpClient) {
     /**
      * Latest rates for [base] against the comma-separated [quotes].
      * Returns one entry per quote currency.
      */
-    @GET("v2/rates")
-    suspend fun rates(
-        @Query("base") base: String,
-        @Query("quotes") quotes: String? = null
-    ): List<FrankfurterRate>
+    suspend fun rates(base: String, quotes: String? = null): List<FrankfurterRate> =
+        client.get("v2/rates") {
+            parameter("base", base)
+            if (quotes != null) parameter("quotes", quotes)
+        }.body()
 }
 
 @Serializable

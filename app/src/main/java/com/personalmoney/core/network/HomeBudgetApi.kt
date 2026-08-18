@@ -1,9 +1,13 @@
 package com.personalmoney.core.network
 
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Query
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 
 /**
  * The HomeBudgeting server API.
@@ -13,37 +17,44 @@ import retrofit2.http.Query
  * transactions - travels through sync rather than through per-entity REST calls,
  * because the app has to work with no network at all and a REST call cannot be queued
  * meaningfully.
+ *
+ * The client is configured with `expectSuccess = true`, so a non-2xx response throws
+ * a `ResponseException` rather than returning a body nobody checked.
  */
-interface HomeBudgetApi {
+class HomeBudgetApi(private val client: HttpClient) {
 
-    @POST("api/auth/login")
-    suspend fun login(@Body body: LoginRequestDto): JwtResponseDto
+    suspend fun login(body: LoginRequestDto): JwtResponseDto =
+        client.post("api/auth/login") { jsonBody(body) }.body()
 
-    @POST("api/auth/register")
-    suspend fun register(@Body body: RegisterRequestDto)
+    suspend fun register(body: RegisterRequestDto) {
+        client.post("api/auth/register") { jsonBody(body) }
+    }
 
-    @POST("api/auth/refresh")
-    suspend fun refresh(@Body body: RefreshRequestDto): JwtResponseDto
+    suspend fun refresh(body: RefreshRequestDto): JwtResponseDto =
+        client.post("api/auth/refresh") { jsonBody(body) }.body()
 
-    @POST("api/auth/logout")
-    suspend fun logout()
+    suspend fun logout() {
+        client.post("api/auth/logout")
+    }
 
-    @GET("api/users/me")
-    suspend fun me(): UserDto
+    suspend fun me(): UserDto = client.get("api/users/me").body()
 
-    @GET("api/currencies")
-    suspend fun currencies(): List<CurrencyDto>
+    suspend fun currencies(): List<CurrencyDto> = client.get("api/currencies").body()
 
     /** Server-side rates, so the phone does not hold a Frankfurter dependency of its own. */
-    @GET("api/fx/rates")
-    suspend fun fxRates(): List<FxRateDto>
+    suspend fun fxRates(): List<FxRateDto> = client.get("api/fx/rates").body()
 
-    @GET("api/sync/pull")
-    suspend fun pull(
-        @Query("since") since: String,
-        @Query("limit") limit: Int = 500
-    ): SyncPullResponseDto
+    suspend fun pull(since: String, limit: Int = 500): SyncPullResponseDto =
+        client.get("api/sync/pull") {
+            parameter("since", since)
+            parameter("limit", limit)
+        }.body()
 
-    @POST("api/sync/push")
-    suspend fun push(@Body body: SyncPushRequestDto): SyncPushResponseDto
+    suspend fun push(body: SyncPushRequestDto): SyncPushResponseDto =
+        client.post("api/sync/push") { jsonBody(body) }.body()
+}
+
+private fun io.ktor.client.request.HttpRequestBuilder.jsonBody(body: Any) {
+    contentType(ContentType.Application.Json)
+    setBody(body)
 }
