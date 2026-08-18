@@ -60,7 +60,7 @@ import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.EmptyState
 import com.personalmoney.core.ui.components.IconCircle
 import com.personalmoney.core.ui.components.MoneyText
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn

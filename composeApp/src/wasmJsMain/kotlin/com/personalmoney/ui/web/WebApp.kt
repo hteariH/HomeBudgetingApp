@@ -33,6 +33,11 @@ import com.personalmoney.core.auth.AuthRepository
 import com.personalmoney.core.auth.AuthResult
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.toDecimalString
 import com.personalmoney.core.currency.CurrencyRegistry
@@ -56,6 +61,8 @@ fun WebApp() {
     val koin = remember { GlobalContext.get() }
     val auth = remember { koin.get<AuthRepository>() }
     val accountsRepo = remember { koin.get<AccountRepository>() }
+    val categoriesRepo = remember { koin.get<CategoryRepository>() }
+    val transactionsRepo = remember { koin.get<TransactionRepository>() }
     val tokens = remember { koin.get<TokenStore>() }
 
     val signedIn by tokens.signedIn.collectAsState()
@@ -68,7 +75,12 @@ fun WebApp() {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text("PersonalMoney", style = MaterialTheme.typography.headlineMedium)
-                if (signedIn) AccountsPane(accountsRepo, auth) else SignInPane(auth)
+                if (signedIn) {
+                    AccountsPane(accountsRepo, auth)
+                    TransactionsPane(transactionsRepo, categoriesRepo)
+                } else {
+                    SignInPane(auth)
+                }
             }
         }
     }
@@ -155,6 +167,66 @@ private fun AccountsPane(repository: AccountRepository, auth: AuthRepository) {
                         val decimals = CurrencyRegistry.decimalsOrFallback(account.currencyCode)
                         Text("${account.balanceMinor.toDecimalString(decimals)} ${account.currencyCode}")
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Recent ledger rows, resolving each one's category name.
+ *
+ * Exists to exercise the transaction and category repositories the same way the accounts
+ * pane exercises its own - the shared contract is only proven once something reads it.
+ */
+@Composable
+private fun TransactionsPane(
+    transactions: TransactionRepository,
+    categories: CategoryRepository,
+) {
+    var rows by remember { mutableStateOf<List<Transaction>>(emptyList()) }
+    var categoriesById by remember { mutableStateOf<Map<Long, Category>>(emptyMap()) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        runCatching {
+            categories.refresh()
+            transactions.refresh()
+        }.onFailure {
+            AppLog.w("WebApp", "Loading the ledger failed: ${it.message}")
+            error = it.message ?: "Could not load transactions"
+        }
+    }
+    LaunchedEffect(transactions) { transactions.observeRecent(10).collect { rows = it } }
+    LaunchedEffect(categories) {
+        categories.observeAll().collect { all -> categoriesById = all.associateBy { it.id } }
+    }
+
+    Text(
+        "Recent",
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.fillMaxWidth().widthIn(max = 640.dp).padding(top = 8.dp),
+    )
+    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+
+    LazyColumn(
+        Modifier.fillMaxWidth().widthIn(max = 640.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(rows) { tx ->
+            val decimals = CurrencyRegistry.decimalsOrFallback(tx.currencyCode)
+            val signed = if (tx.type == TransactionType.EXPENSE) -tx.amountMinor else tx.amountMinor
+            Card(Modifier.fillMaxWidth()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(tx.note ?: categoriesById[tx.categoryId]?.name ?: "—")
+                    Text(
+                        "${signed.toDecimalString(decimals)} ${tx.currencyCode}",
+                        color = if (signed < 0) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         }

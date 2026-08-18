@@ -7,7 +7,7 @@ import com.personalmoney.core.data.repository.SubscriptionRepository
 import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn

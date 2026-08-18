@@ -1,7 +1,7 @@
 package com.personalmoney.core.domain.model
 
 import com.personalmoney.core.domain.TransactionType
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * A single ledger row. See [Account] for why this is not the Room entity.

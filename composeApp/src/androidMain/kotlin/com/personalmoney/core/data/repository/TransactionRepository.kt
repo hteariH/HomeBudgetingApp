@@ -6,7 +6,7 @@ import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Public surface unchanged; writes now mark rows for sync and deletes leave tombstones. */
 class TransactionRepository constructor(

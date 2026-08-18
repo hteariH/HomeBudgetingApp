@@ -17,7 +17,7 @@ import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import com.personalmoney.core.domain.toMinorUnits
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
 

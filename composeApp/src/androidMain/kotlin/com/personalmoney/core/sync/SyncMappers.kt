@@ -13,7 +13,7 @@ import com.personalmoney.core.network.SyncCategoryDto
 import com.personalmoney.core.network.SyncCurrencySettingDto
 import com.personalmoney.core.network.SyncSubscriptionDto
 import com.personalmoney.core.network.SyncTransactionDto
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.personalmoney.core.domain.toMinorUnits

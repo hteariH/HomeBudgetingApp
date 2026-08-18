@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -102,7 +102,7 @@ class DashboardViewModel constructor(
         val today = Clock.System.now().toLocalDateTime(zone).date
         val monthStart = LocalDate(today.year, today.month, 1).atStartOfDayIn(zone)
         val nextMonth = run {
-            val m = today.month.value
+            val m = today.monthNumber
             val y = today.year
             val nm = if (m == 12) LocalDate(y + 1, 1, 1) else LocalDate(y, m + 1, 1)
             nm.atStartOfDayIn(zone)

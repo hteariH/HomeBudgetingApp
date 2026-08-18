@@ -3,7 +3,7 @@ package com.personalmoney.core.data
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.domain.model.Transaction
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * The ledger, wherever it lives. See [AccountRepository] for the guarantees.

@@ -20,7 +20,11 @@ coil = "2.7.0"
 vico = "2.0.0-beta.3"
 
 kotlinxSerialization = "1.7.3"
-kotlinxDatetime = "0.6.1"
+# 0.6.x-compat keeps kotlinx.datetime.Instant rather than switching to kotlin.time.Instant,
+# which 0.7+ moved to. 0.6.1 itself does not link on wasm under Kotlin 2.4: the klib fails
+# with "No class found for symbol kotlinx.datetime/Instant.Companion" at runtime, not at
+# compile time.
+kotlinxDatetime = "0.8.0-0.6.x-compat"
 kotlinxCoroutines = "1.9.0"
 composeMultiplatform = "1.11.1"
 bignum = "0.3.10"

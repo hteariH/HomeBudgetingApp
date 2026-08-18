@@ -5,7 +5,7 @@ import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.ExchangeRateSource
 import com.personalmoney.core.domain.SubscriptionFrequency
 import com.personalmoney.core.domain.TransactionType
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 
 class Converters {
