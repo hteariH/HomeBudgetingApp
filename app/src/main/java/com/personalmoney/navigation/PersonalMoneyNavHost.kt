@@ -33,17 +33,18 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.personalmoney.R
+import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.feature.accounts.AccountEditScreen
 import com.personalmoney.feature.accounts.AccountPickerScreen
 import com.personalmoney.feature.accounts.AccountsScreen
 import com.personalmoney.feature.analytics.AnalyticsScreen
+import com.personalmoney.feature.auth.AuthScreen
 import com.personalmoney.feature.categories.CategoriesScreen
 import com.personalmoney.feature.categories.CategoryEditScreen
 import com.personalmoney.feature.currencies.CurrenciesScreen
 import com.personalmoney.feature.currencies.CurrencyEditScreen
 import com.personalmoney.feature.dashboard.DashboardScreen
-import com.personalmoney.feature.homemoney.HomeMoneyImportScreen
 import com.personalmoney.feature.more.MoreScreen
 import com.personalmoney.feature.onboarding.OnboardingScreen
 import com.personalmoney.feature.quickadd.QuickAddScreen
@@ -53,7 +54,6 @@ import com.personalmoney.feature.subscriptions.SubscriptionEditScreen
 import com.personalmoney.feature.subscriptions.SubscriptionsScreen
 import com.personalmoney.feature.transactions.TransactionEditScreen
 import com.personalmoney.feature.transactions.TransactionsScreen
-import com.personalmoney.feature.transfers.TransferScreen
 
 private data class BottomNavItem(val route: String, val icon: ImageVector, val label: Int)
 
@@ -75,12 +75,22 @@ private fun NavController.switchTab(route: String) {
 @Composable
 fun PersonalMoneyNavHost(
     deepLinkIntent: Intent? = null,
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
+    tokenStore: TokenStore
 ) {
     val onboarded by userPreferences.onboarded.collectAsStateWithLifecycle(initialValue = null)
+    val signedIn by tokenStore.signedIn.collectAsStateWithLifecycle()
 
     // Wait for preference to be read (typically <16ms from DataStore cache)
     if (onboarded == null) return
+
+    // The app is a client of an account now, so nothing can be shown before there is
+    // one. This is a whole separate NavHost rather than a start destination, so that
+    // signing out cannot leave a signed-in screen on the back stack.
+    if (!signedIn) {
+        AuthScreen(onSignedIn = { })
+        return
+    }
 
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -261,12 +271,6 @@ fun PersonalMoneyNavHost(
                 )
             }
 
-            composable(Routes.TRANSFER) {
-                TransferScreen(
-                    onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() }
-                )
-            }
             composable(Routes.SUBSCRIPTIONS) {
                 SubscriptionsScreen(
                     onAdd = { navController.navigate(Routes.subscriptionEdit()) },
@@ -292,14 +296,7 @@ fun PersonalMoneyNavHost(
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenCurrencies = { navController.navigate(Routes.CURRENCIES) },
-                    onOpenHomeMoneyImport = { navController.navigate(Routes.IMPORT_HOMEMONEY) }
-                )
-            }
-            composable(Routes.IMPORT_HOMEMONEY) {
-                HomeMoneyImportScreen(
-                    onBack = { navController.popBackStack() },
-                    onDone = { navController.popBackStack() }
+                    onOpenCurrencies = { navController.navigate(Routes.CURRENCIES) }
                 )
             }
             composable(Routes.CURRENCIES) {

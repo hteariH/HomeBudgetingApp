@@ -4,14 +4,17 @@ import com.personalmoney.core.database.dao.CategoryTotalRow
 import com.personalmoney.core.database.dao.TransactionDao
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** Public surface unchanged; writes now mark rows for sync and deletes leave tombstones. */
 @Singleton
 class TransactionRepository @Inject constructor(
-    private val dao: TransactionDao
+    private val dao: TransactionDao,
+    private val syncTrigger: SyncTrigger
 ) {
     fun observeRecent(limit: Int = 50): Flow<List<TransactionEntity>> = dao.observeRecent(limit)
     fun observeById(id: Long): Flow<TransactionEntity?> = dao.observeById(id)
@@ -42,11 +45,29 @@ class TransactionRepository @Inject constructor(
         dao.observeSumByTypeInAccount(type.name, accountId, from.toEpochMilliseconds(), to.toEpochMilliseconds())
 
     suspend fun findById(id: Long): TransactionEntity? = dao.findById(id)
-    suspend fun insert(transaction: TransactionEntity): Long = dao.insert(transaction)
-    suspend fun update(transaction: TransactionEntity) = dao.update(transaction)
-    suspend fun delete(id: Long) = dao.deleteById(id)
-    suspend fun deleteTransfer(groupId: String) = dao.deleteByTransferGroup(groupId)
+
+    suspend fun insert(transaction: TransactionEntity): Long =
+        dao.insert(transaction.copy(pendingSync = true)).also { syncTrigger.requestSync() }
+
+    suspend fun update(transaction: TransactionEntity) {
+        dao.update(transaction.copy(pendingSync = true))
+        syncTrigger.requestSync()
+    }
+
+    suspend fun delete(id: Long) {
+        dao.tombstoneById(id)
+        syncTrigger.requestSync()
+    }
+
+    /** Both legs go together: half a transfer is two wrong balances. */
+    suspend fun deleteTransfer(groupId: String) {
+        dao.tombstoneByTransferGroup(groupId)
+        syncTrigger.requestSync()
+    }
+
     suspend fun insertTransferPair(debit: TransactionEntity, credit: TransactionEntity) =
-        dao.insertTransferPair(debit, credit)
+        dao.insertTransferPair(debit.copy(pendingSync = true), credit.copy(pendingSync = true))
+            .also { syncTrigger.requestSync() }
+
     suspend fun findTransferPair(groupId: String): List<TransactionEntity> = dao.findTransferPair(groupId)
 }

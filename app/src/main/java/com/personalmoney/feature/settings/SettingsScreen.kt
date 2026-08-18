@@ -57,7 +57,6 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenCurrencies: () -> Unit = {},
-    onOpenHomeMoneyImport: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -289,14 +288,6 @@ fun SettingsScreen(
             SettingsItem(
                 title = stringResource(R.string.settings_export_csv),
                 onClick = { exportCsvLauncher.launch("personalmoney-transactions.csv") }
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-
-            SettingsItem(
-                title = stringResource(R.string.settings_import_homemoney),
-                subtitle = stringResource(R.string.settings_import_homemoney_subtitle),
-                onClick = onOpenHomeMoneyImport
             )
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))

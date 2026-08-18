@@ -7,6 +7,7 @@ import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.currency.FxScheduler
 import com.personalmoney.core.data.repository.CurrencyRepository
 import com.personalmoney.core.database.seed.DatabaseSeeder
+import com.personalmoney.core.sync.SyncScheduler
 import com.personalmoney.feature.subscriptions.SubscriptionWorkScheduler
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +25,7 @@ class PersonalMoneyApplication : Application(), Configuration.Provider {
     @Inject lateinit var fxScheduler: FxScheduler
     @Inject lateinit var subscriptionScheduler: SubscriptionWorkScheduler
     @Inject lateinit var currencyRepository: CurrencyRepository
+    @Inject lateinit var syncScheduler: SyncScheduler
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -34,6 +36,9 @@ class PersonalMoneyApplication : Application(), Configuration.Provider {
             fxScheduler.schedule()
             fxScheduler.refreshNow()
             subscriptionScheduler.schedule()
+            // Catches changes made on the web, which have nothing on this device to
+            // trigger a sync of their own.
+            syncScheduler.schedule()
         }
         appScope.launch {
             currencyRepository.observeAll().collect { CurrencyRegistry.update(it) }

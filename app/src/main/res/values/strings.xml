@@ -154,25 +154,6 @@
     <string name="settings_import_failed">Import failed</string>
     <string name="settings_backup_read_failed">Couldn\'t read the backup file</string>
 
-    <!-- HomeMoney import -->
-    <string name="settings_import_homemoney">Import from HomeMoney</string>
-    <string name="settings_import_homemoney_subtitle">Accounts &amp; balances from homemoney.ua</string>
-    <string name="homemoney_import_title">Import from HomeMoney</string>
-    <string name="homemoney_intro">Sign in with your homemoney.ua login to import your accounts and their current balances. Your password is sent only to HomeMoney to obtain an access token.</string>
-    <string name="homemoney_username">Login (email)</string>
-    <string name="homemoney_password">Password</string>
-    <string name="homemoney_connect">Connect</string>
-    <string name="homemoney_found">Found %1$d accounts</string>
-    <string name="homemoney_select_all">Select all</string>
-    <string name="homemoney_deselect_all">Deselect all</string>
-    <string name="homemoney_already_exists">Already added</string>
-    <string name="homemoney_import_button">Import (%1$d)</string>
-    <string name="homemoney_no_accounts">No accounts found</string>
-    <string name="homemoney_done">Imported %1$d accounts</string>
-    <string name="homemoney_done_button">Done</string>
-    <string name="homemoney_signed_in_as">Signed in as %1$s</string>
-    <string name="homemoney_error_generic">Couldn\'t connect to HomeMoney</string>
-    <string name="homemoney_error_network">Network error. Check your connection and try again.</string>
     <string name="settings_clear">Clear all data</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version</string>
@@ -199,7 +180,7 @@
 
     <!-- Onboarding -->
     <string name="onboarding_welcome">Welcome to PersonalMoney</string>
-    <string name="onboarding_subtitle">Track your finances, fully on-device</string>
+    <string name="onboarding_subtitle">Track your finances, synced across your devices</string>
     <string name="onboarding_pick_currency">Pick your base currency</string>
     <string name="onboarding_first_account">Create your first account</string>
     <string name="onboarding_allow_notifications">Allow notifications for subscription reminders?</string>
@@ -275,4 +256,25 @@
     <string name="onboarding_account_name">Account name</string>
     <string name="onboarding_account_placeholder">e.g. Cash, Card</string>
     <string name="onboarding_step_of">Step %1$d of %2$d</string>
+
+    <!-- Auth & sync -->
+    <string name="auth_login_subtitle">Sign in to sync your finances across devices</string>
+    <string name="auth_register_subtitle">Create an account to sync across devices</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_password_hint">At least %1$d characters</string>
+    <string name="auth_first_name">First name</string>
+    <string name="auth_last_name">Last name</string>
+    <string name="auth_sign_in">Sign in</string>
+    <string name="auth_create_account">Create account</string>
+    <string name="auth_need_account">No account yet? Register</string>
+    <string name="auth_have_account">Already have an account? Sign in</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_sign_out_confirm">Sign out? Local data will be removed from this device. It stays on the server.</string>
+    <string name="settings_sync_now">Sync now</string>
+    <string name="settings_sync_status_synced">All changes synced</string>
+    <string name="settings_sync_status_pending">%1$d change(s) waiting to sync</string>
+    <string name="settings_sync_status_never">Not synced yet</string>
+    <string name="sync_pending_banner">%1$d change(s) not yet synced</string>
 </resources>

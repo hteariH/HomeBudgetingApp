@@ -29,6 +29,12 @@ val admobInterstitial = keystoreProps.getProperty("admobInterstitialUnitId")
 val privacyPolicyUrl = keystoreProps.getProperty("privacyPolicyUrl")
     ?: "https://gist.github.com/hteariH/bfd7d6412cc41a227bcc53646655bfc2"
 
+// Backend the app syncs with. 10.0.2.2 is the emulator's route to the host machine,
+// so a debug build talks to a server running locally; release points at production.
+// Override either by putting apiBaseUrl / apiBaseUrlDebug in keystore.properties.
+val apiBaseUrl = keystoreProps.getProperty("apiBaseUrl") ?: "https://homebudget.example.com/"
+val apiBaseUrlDebug = keystoreProps.getProperty("apiBaseUrlDebug") ?: "http://10.0.2.2:8085/"
+
 android {
     namespace = "com.personalmoney"
     compileSdk = 35
@@ -67,6 +73,7 @@ android {
             buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"ca-app-pub-3940256099942544/6300978111\"")
             buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
             buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
+            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrlDebug\"")
         }
         release {
             isMinifyEnabled = true
@@ -78,6 +85,7 @@ android {
             buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobBanner\"")
             buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"$admobInterstitial\"")
             buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
+            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -117,6 +125,20 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    // Exported Room schemas double as fixtures for MigrationTestHelper, which reads
+    // them from the androidTest assets.
+    sourceSets {
+        getByName("androidTest") {
+            assets.srcDir("$projectDir/schemas")
+        }
+    }
+}
+
+// AppDatabase sets exportSchema = true, but without this the schemas were never
+// written anywhere - so there was no baseline to test a migration against.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -125,6 +147,9 @@ dependencies {
     implementation(libs.google.material)
     implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.biometric)
+    // EncryptedSharedPreferences for the auth tokens - the app had no
+    // encrypted storage at all, and a refresh token is a 60-day credential.
+    implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

@@ -17,6 +17,7 @@ import com.personalmoney.ads.AdsConsentManager
 import com.personalmoney.ads.AdsInitializer
 import com.personalmoney.ads.InterstitialAdManager
 import com.personalmoney.core.data.ThemeMode
+import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.security.BiometricGate
 import com.personalmoney.core.security.LockScreen
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var adsInitializer: AdsInitializer
     @Inject lateinit var interstitialManager: InterstitialAdManager
     @Inject lateinit var preferences: UserPreferences
+    @Inject lateinit var tokenStore: TokenStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -77,7 +79,8 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     PersonalMoneyNavHost(
                         deepLinkIntent = intent,
-                        userPreferences = preferences
+                        userPreferences = preferences,
+                        tokenStore = tokenStore
                     )
                 }
             }

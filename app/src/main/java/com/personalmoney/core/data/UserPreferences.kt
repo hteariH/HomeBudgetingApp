@@ -31,6 +31,12 @@ class UserPreferences @Inject constructor(
         val ADS_CONSENT_OBTAINED = booleanPreferencesKey("ads_consent_obtained")
         val BIOMETRIC_LOCK_ENABLED = booleanPreferencesKey("biometric_lock_enabled")
         val NUMPAD_PHONE_LAYOUT = booleanPreferencesKey("numpad_phone_layout")
+
+        // Server-issued cursor for the last successful sync pull. Kept as the exact
+        // string the server sent rather than a parsed instant, so no local clock or
+        // formatting quirk can shift it and skip changes.
+        val SYNC_CURSOR = stringPreferencesKey("sync_cursor")
+        val SYNC_LAST_OK_MS = longPreferencesKey("sync_last_ok_ms")
     }
 
     val baseCurrency: Flow<String> = context.dataStore.data.map { it[Keys.BASE_CURRENCY] ?: "USD" }
@@ -46,6 +52,24 @@ class UserPreferences @Inject constructor(
     val adsConsentObtained: Flow<Boolean> = context.dataStore.data.map { it[Keys.ADS_CONSENT_OBTAINED] ?: false }
     val biometricLockEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.BIOMETRIC_LOCK_ENABLED] ?: false }
     val numpadPhoneLayout: Flow<Boolean> = context.dataStore.data.map { it[Keys.NUMPAD_PHONE_LAYOUT] ?: false }
+    val syncCursor: Flow<String> = context.dataStore.data.map { it[Keys.SYNC_CURSOR] ?: "" }
+    val syncLastOkMs: Flow<Long> = context.dataStore.data.map { it[Keys.SYNC_LAST_OK_MS] ?: 0L }
+
+    suspend fun setSyncCursor(cursor: String) {
+        context.dataStore.edit { it[Keys.SYNC_CURSOR] = cursor }
+    }
+
+    suspend fun setSyncLastOkMs(ms: Long) {
+        context.dataStore.edit { it[Keys.SYNC_LAST_OK_MS] = ms }
+    }
+
+    /** Wipes sync bookkeeping on sign-out so the next account starts from scratch. */
+    suspend fun clearSyncState() {
+        context.dataStore.edit {
+            it.remove(Keys.SYNC_CURSOR)
+            it.remove(Keys.SYNC_LAST_OK_MS)
+        }
+    }
 
     suspend fun setBaseCurrency(code: String) {
         context.dataStore.edit { it[Keys.BASE_CURRENCY] = code }

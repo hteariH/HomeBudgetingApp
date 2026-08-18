@@ -144,25 +144,6 @@
     <string name="settings_import_failed">Не удалось импортировать</string>
     <string name="settings_backup_read_failed">Не удалось прочитать файл резервной копии</string>
 
-    <!-- Импорт из HomeMoney -->
-    <string name="settings_import_homemoney">Импорт из HomeMoney</string>
-    <string name="settings_import_homemoney_subtitle">Счета и остатки с homemoney.ua</string>
-    <string name="homemoney_import_title">Импорт из HomeMoney</string>
-    <string name="homemoney_intro">Войдите с логином homemoney.ua, чтобы импортировать счета и их текущие остатки. Пароль отправляется только в HomeMoney для получения токена доступа.</string>
-    <string name="homemoney_username">Логин (email)</string>
-    <string name="homemoney_password">Пароль</string>
-    <string name="homemoney_connect">Подключиться</string>
-    <string name="homemoney_found">Найдено счетов: %1$d</string>
-    <string name="homemoney_select_all">Выбрать все</string>
-    <string name="homemoney_deselect_all">Снять все</string>
-    <string name="homemoney_already_exists">Уже добавлен</string>
-    <string name="homemoney_import_button">Импортировать (%1$d)</string>
-    <string name="homemoney_no_accounts">Счета не найдены</string>
-    <string name="homemoney_done">Импортировано счетов: %1$d</string>
-    <string name="homemoney_done_button">Готово</string>
-    <string name="homemoney_signed_in_as">Вход выполнен: %1$s</string>
-    <string name="homemoney_error_generic">Не удалось подключиться к HomeMoney</string>
-    <string name="homemoney_error_network">Ошибка сети. Проверьте подключение и повторите.</string>
     <string name="settings_clear">Очистить все данные</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_version">Версия</string>
@@ -187,7 +168,7 @@
     <string name="settings_manage_currencies">Управление валютами</string>
 
     <string name="onboarding_welcome">Добро пожаловать в PersonalMoney</string>
-    <string name="onboarding_subtitle">Учёт финансов, полностью на устройстве</string>
+    <string name="onboarding_subtitle">Учёт финансов с синхронизацией между устройствами</string>
     <string name="onboarding_pick_currency">Выберите базовую валюту</string>
     <string name="onboarding_first_account">Создайте первый счёт</string>
     <string name="onboarding_allow_notifications">Разрешить уведомления о подписках?</string>
@@ -251,4 +232,25 @@
     <string name="onboarding_account_name">Название счёта</string>
     <string name="onboarding_account_placeholder">Например: Наличные, Карта</string>
     <string name="onboarding_step_of">Шаг %1$d из %2$d</string>
+
+    <!-- Auth & sync -->
+    <string name="auth_login_subtitle">Войдите, чтобы синхронизировать финансы между устройствами</string>
+    <string name="auth_register_subtitle">Создайте аккаунт для синхронизации между устройствами</string>
+    <string name="auth_email">Электронная почта</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_password_hint">Не менее %1$d символов</string>
+    <string name="auth_first_name">Имя</string>
+    <string name="auth_last_name">Фамилия</string>
+    <string name="auth_sign_in">Войти</string>
+    <string name="auth_create_account">Создать аккаунт</string>
+    <string name="auth_need_account">Нет аккаунта? Зарегистрируйтесь</string>
+    <string name="auth_have_account">Уже есть аккаунт? Войдите</string>
+    <string name="settings_account">Аккаунт</string>
+    <string name="settings_sign_out">Выйти</string>
+    <string name="settings_sign_out_confirm">Выйти? Локальные данные будут удалены с устройства. На сервере они сохранятся.</string>
+    <string name="settings_sync_now">Синхронизировать сейчас</string>
+    <string name="settings_sync_status_synced">Все изменения синхронизированы</string>
+    <string name="settings_sync_status_pending">Изменений в очереди: %1$d</string>
+    <string name="settings_sync_status_never">Ещё не синхронизировано</string>
+    <string name="sync_pending_banner">Не отправлено изменений: %1$d</string>
 </resources>
