@@ -5,6 +5,8 @@ import com.personalmoney.core.auth.BrowserTokenStore
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.CurrencyRepository
+import com.personalmoney.core.data.RestCurrencyRepository
 import com.personalmoney.core.data.RestAccountRepository
 import com.personalmoney.core.data.RestCategoryRepository
 import com.personalmoney.core.data.RestTransactionRepository
@@ -40,6 +42,7 @@ val webModule = module {
     singleOf(::RestAccountRepository) bind AccountRepository::class
     singleOf(::RestCategoryRepository) bind CategoryRepository::class
     singleOf(::RestTransactionRepository) bind TransactionRepository::class
+    singleOf(::RestCurrencyRepository) bind CurrencyRepository::class
 
     single<HttpClient> { createBackendClient(get(), get(), pageOrigin(), get()) }
     single { RestApi(get()) }

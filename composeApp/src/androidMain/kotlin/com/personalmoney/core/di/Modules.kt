@@ -15,6 +15,8 @@ import com.personalmoney.core.currency.FxScheduler
 import com.personalmoney.core.data.AccountRepository as SharedAccountRepository
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.CategoryRepository as SharedCategoryRepository
+import com.personalmoney.core.data.CurrencyRepository as SharedCurrencyRepository
+import com.personalmoney.core.data.repository.RoomCurrencyRepository
 import com.personalmoney.core.data.TransactionRepository as SharedTransactionRepository
 import com.personalmoney.core.data.repository.RoomAccountRepository
 import com.personalmoney.core.data.repository.RoomCategoryRepository
@@ -126,6 +128,7 @@ val dataModule = module {
     singleOf(::RoomAccountRepository) bind SharedAccountRepository::class
     singleOf(::RoomCategoryRepository) bind SharedCategoryRepository::class
     singleOf(::RoomTransactionRepository) bind SharedTransactionRepository::class
+    singleOf(::RoomCurrencyRepository) bind SharedCurrencyRepository::class
     singleOf(::CategoryRepository)
     singleOf(::CurrencyRepository)
     singleOf(::ExchangeRateRepository)
