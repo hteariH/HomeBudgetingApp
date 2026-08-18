@@ -5,13 +5,9 @@ import android.content.Context
 import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class AdsConsentManager @Inject constructor(
-    @ApplicationContext private val context: Context
+class AdsConsentManager constructor(
+    private val context: Context
 ) {
     private val consentInformation: ConsentInformation = UserMessagingPlatform.getConsentInformation(context)
 

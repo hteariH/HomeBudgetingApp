@@ -5,12 +5,9 @@ import com.personalmoney.core.database.entity.SubscriptionEntity
 import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /** Public surface unchanged; writes now mark rows for sync and deletes leave tombstones. */
-@Singleton
-class SubscriptionRepository @Inject constructor(
+class SubscriptionRepository constructor(
     private val dao: SubscriptionDao,
     private val syncTrigger: SyncTrigger
 ) {

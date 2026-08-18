@@ -6,16 +6,13 @@ import com.personalmoney.core.database.dao.AccountDao
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * The public surface is unchanged from the local-only version on purpose: every screen
  * and ViewModel keeps calling exactly what it called before. What changed is underneath -
  * a write now marks the row for sync, and a delete leaves a tombstone instead of a hole.
  */
-@Singleton
-class AccountRepository @Inject constructor(
+class AccountRepository constructor(
     private val dao: AccountDao,
     private val transactor: Transactor,
     private val syncTrigger: SyncTrigger

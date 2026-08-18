@@ -14,7 +14,6 @@ import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.TransactionType
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,7 +31,6 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import javax.inject.Inject
 
 data class CategorySlice(
     val categoryId: Long?,
@@ -77,8 +75,7 @@ data class DashboardUiState(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@HiltViewModel
-class DashboardViewModel @Inject constructor(
+class DashboardViewModel constructor(
     accountRepository: AccountRepository,
     categoryRepository: CategoryRepository,
     transactionRepository: TransactionRepository,

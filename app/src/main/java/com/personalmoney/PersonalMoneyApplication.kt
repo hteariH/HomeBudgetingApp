@@ -1,36 +1,43 @@
 package com.personalmoney
 
 import android.app.Application
-import androidx.hilt.work.HiltWorkerFactory
-import androidx.work.Configuration
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.currency.FxScheduler
 import com.personalmoney.core.data.repository.CurrencyRepository
 import com.personalmoney.core.database.seed.DatabaseSeeder
+import com.personalmoney.core.di.appModule
 import com.personalmoney.core.sync.SyncScheduler
 import com.personalmoney.feature.subscriptions.SubscriptionWorkScheduler
-import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import org.koin.android.ext.android.inject
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.workmanager.koin.workManagerFactory
+import org.koin.core.context.startKoin
 
-@HiltAndroidApp
-class PersonalMoneyApplication : Application(), Configuration.Provider {
+class PersonalMoneyApplication : Application() {
 
-    @Inject lateinit var workerFactory: HiltWorkerFactory
-    @Inject lateinit var seeder: DatabaseSeeder
-    @Inject lateinit var fxScheduler: FxScheduler
-    @Inject lateinit var subscriptionScheduler: SubscriptionWorkScheduler
-    @Inject lateinit var currencyRepository: CurrencyRepository
-    @Inject lateinit var syncScheduler: SyncScheduler
+    private val seeder: DatabaseSeeder by inject()
+    private val fxScheduler: FxScheduler by inject()
+    private val subscriptionScheduler: SubscriptionWorkScheduler by inject()
+    private val currencyRepository: CurrencyRepository by inject()
+    private val syncScheduler: SyncScheduler by inject()
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
+        startKoin {
+            androidContext(this@PersonalMoneyApplication)
+            // Supplies the WorkerFactory that builds workers with their dependencies.
+            // The manifest already removes androidx.work's default initializer, so this
+            // is the only thing initialising WorkManager.
+            workManagerFactory()
+            modules(appModule)
+        }
+
         appScope.launch {
             seeder.seedIfEmpty()
             fxScheduler.schedule()
@@ -44,10 +51,4 @@ class PersonalMoneyApplication : Application(), Configuration.Provider {
             currencyRepository.observeAll().collect { CurrencyRegistry.update(it) }
         }
     }
-
-    override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .setMinimumLoggingLevel(android.util.Log.INFO)
-            .build()
 }

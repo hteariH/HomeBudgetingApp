@@ -10,7 +10,6 @@ import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.domain.TransactionType
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,7 +25,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
-import javax.inject.Inject
 
 data class TransactionsFilter(
     val from: LocalDate? = null,
@@ -47,8 +45,7 @@ data class TransactionsUiState(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@HiltViewModel
-class TransactionsViewModel @Inject constructor(
+class TransactionsViewModel constructor(
     private val transactionRepository: TransactionRepository,
     accountRepository: AccountRepository,
     categoryRepository: CategoryRepository

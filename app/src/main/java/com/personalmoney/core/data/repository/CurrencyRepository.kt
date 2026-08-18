@@ -4,16 +4,13 @@ import com.personalmoney.core.database.dao.CurrencyDao
 import com.personalmoney.core.database.entity.CurrencyEntity
 import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * The catalog is reference data; what syncs is which entries the user switched on.
  * That is why toggling `active` marks the row pending but the catalog itself is never
  * pushed as new content.
  */
-@Singleton
-class CurrencyRepository @Inject constructor(
+class CurrencyRepository constructor(
     private val dao: CurrencyDao,
     private val syncTrigger: SyncTrigger
 ) {

@@ -5,14 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.database.entity.AccountEntity
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import javax.inject.Inject
 
-@HiltViewModel
-class AccountPickerViewModel @Inject constructor(
+class AccountPickerViewModel constructor(
     savedStateHandle: SavedStateHandle,
     accountRepository: AccountRepository
 ) : ViewModel() {

@@ -1,11 +1,8 @@
 package com.personalmoney.core.database.seed
 
 import com.personalmoney.core.database.AppDatabase
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class DatabaseSeeder @Inject constructor(
+class DatabaseSeeder constructor(
     private val db: AppDatabase
 ) {
     /**

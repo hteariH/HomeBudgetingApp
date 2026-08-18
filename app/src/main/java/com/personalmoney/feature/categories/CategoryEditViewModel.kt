@@ -10,7 +10,6 @@ import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +17,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
-import javax.inject.Inject
 
 data class CategoryEditUiState(
     val id: Long? = null,
@@ -38,8 +36,7 @@ data class CategoryEditUiState(
     val showBudget: Boolean get() = type == CategoryType.EXPENSE
 }
 
-@HiltViewModel
-class CategoryEditViewModel @Inject constructor(
+class CategoryEditViewModel constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: CategoryRepository,
     private val userPreferences: UserPreferences

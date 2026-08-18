@@ -5,14 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.repository.CategoryRepository
 import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.domain.CategoryType
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class CategoriesUiState(
     val selectedTab: CategoryType = CategoryType.EXPENSE,
@@ -20,8 +18,7 @@ data class CategoriesUiState(
     val income: List<CategoryEntity> = emptyList()
 )
 
-@HiltViewModel
-class CategoriesViewModel @Inject constructor(
+class CategoriesViewModel constructor(
     private val repository: CategoryRepository
 ) : ViewModel() {
 

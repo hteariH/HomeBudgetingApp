@@ -5,11 +5,8 @@ import com.personalmoney.core.database.entity.ExchangeRateEntity
 import com.personalmoney.core.domain.ExchangeRateSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class ExchangeRateRepository @Inject constructor(
+class ExchangeRateRepository constructor(
     private val dao: ExchangeRateDao
 ) {
     fun observeAll(): Flow<List<ExchangeRateEntity>> = dao.observeAll()

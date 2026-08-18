@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
 }
 
 // Release signing config. Generate the keystore and the properties file once
@@ -37,7 +36,10 @@ val apiBaseUrlDebug = keystoreProps.getProperty("apiBaseUrlDebug") ?: "http://10
 
 android {
     namespace = "com.personalmoney"
-    compileSdk = 35
+    // 36 because androidx.activity 1.12+ (pulled in by Koin) refuses to compile against 35.
+    // targetSdk stays at 35 deliberately: that one opts the app into new runtime behaviour
+    // and is a release decision, not a dependency-migration one.
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.personalmoney"
@@ -176,11 +178,10 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
 
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
-    implementation(libs.hilt.work)
-    ksp(libs.hilt.work.compiler)
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.koin.androidx.workmanager)
 
     implementation(libs.coil.compose)
     implementation(libs.vico.compose)
@@ -205,6 +206,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.koin.test)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

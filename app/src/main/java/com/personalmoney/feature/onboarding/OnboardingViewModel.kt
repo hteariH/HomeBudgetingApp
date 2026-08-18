@@ -7,7 +7,6 @@ import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.CurrencyRepository
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.CurrencyEntity
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
-import javax.inject.Inject
 
 data class OnboardingUiState(
     val step: Int = 0,
@@ -45,8 +43,7 @@ data class OnboardingUiState(
     }
 }
 
-@HiltViewModel
-class OnboardingViewModel @Inject constructor(
+class OnboardingViewModel constructor(
     private val userPreferences: UserPreferences,
     private val accountRepository: AccountRepository,
     private val currencyRepository: CurrencyRepository

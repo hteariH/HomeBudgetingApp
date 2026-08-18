@@ -40,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.R
 import com.personalmoney.core.domain.SubscriptionFrequency
@@ -49,6 +48,7 @@ import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
 import kotlinx.datetime.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import org.koin.androidx.compose.koinViewModel
 
 private val subDateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
 
@@ -60,7 +60,7 @@ private fun formatSubDate(date: LocalDate): String =
 fun SubscriptionEditScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
-    viewModel: SubscriptionEditViewModel = hiltViewModel()
+    viewModel: SubscriptionEditViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }

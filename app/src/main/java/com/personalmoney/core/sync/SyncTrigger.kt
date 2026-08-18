@@ -7,10 +7,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Asks for a sync after a local write.
@@ -28,9 +25,8 @@ interface SyncTrigger {
     fun requestSync()
 }
 
-@Singleton
-class WorkManagerSyncTrigger @Inject constructor(
-    @ApplicationContext private val context: Context
+class WorkManagerSyncTrigger constructor(
+    private val context: Context
 ) : SyncTrigger {
 
     override fun requestSync() {

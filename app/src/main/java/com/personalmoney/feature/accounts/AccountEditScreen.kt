@@ -53,20 +53,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.R
 import com.personalmoney.core.database.entity.CurrencyEntity
 import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.core.ui.components.IconCircle
 import com.personalmoney.core.ui.icons.IconLibrary
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountEditScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
-    viewModel: AccountEditViewModel = hiltViewModel()
+    viewModel: AccountEditViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }

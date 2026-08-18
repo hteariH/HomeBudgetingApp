@@ -14,7 +14,6 @@ import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.NumpadKey
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,7 +32,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import java.math.BigDecimal
-import javax.inject.Inject
 
 data class TransactionEditUiState(
     val loading: Boolean = true,
@@ -62,8 +60,7 @@ data class TransactionEditUiState(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@HiltViewModel
-class TransactionEditViewModel @Inject constructor(
+class TransactionEditViewModel constructor(
     savedStateHandle: SavedStateHandle,
     private val transactionRepository: TransactionRepository,
     private val accountRepository: AccountRepository,

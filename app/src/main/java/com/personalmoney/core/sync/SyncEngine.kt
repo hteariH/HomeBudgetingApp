@@ -15,8 +15,6 @@ import com.personalmoney.core.network.SyncPushRequestDto
 import com.personalmoney.core.sync.SyncMappers.toDto
 import com.personalmoney.core.sync.SyncMappers.toEntity
 import kotlinx.coroutines.flow.first
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * One pass of two-way sync: **pull, merge, push**.
@@ -28,8 +26,7 @@ import javax.inject.Singleton
  * References travel as uuids, so a merge has to resolve them back to local row ids -
  * and parents have to be written before children or the resolution fails.
  */
-@Singleton
-class SyncEngine @Inject constructor(
+class SyncEngine constructor(
     private val api: HomeBudgetApi,
     private val accountDao: AccountDao,
     private val categoryDao: CategoryDao,

@@ -8,13 +8,11 @@ import com.personalmoney.core.database.dao.AccountBalanceRow
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class AccountWithBalance(
     val account: AccountEntity,
@@ -27,8 +25,7 @@ data class AccountsUiState(
     val baseCurrency: String = "USD"
 )
 
-@HiltViewModel
-class AccountsViewModel @Inject constructor(
+class AccountsViewModel constructor(
     private val accountRepository: AccountRepository,
     private val userPreferences: UserPreferences
 ) : ViewModel() {

@@ -5,18 +5,14 @@ import android.net.Uri
 import androidx.room.withTransaction
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.database.AppDatabase
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
 import java.math.BigDecimal
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class BackupManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+class BackupManager constructor(
+    private val context: Context,
     private val db: AppDatabase
 ) {
     private val json = Json {

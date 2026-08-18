@@ -7,12 +7,9 @@ import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /** Public surface unchanged; writes now mark rows for sync and deletes leave tombstones. */
-@Singleton
-class CategoryRepository @Inject constructor(
+class CategoryRepository constructor(
     private val dao: CategoryDao,
     private val transactor: Transactor,
     private val syncTrigger: SyncTrigger

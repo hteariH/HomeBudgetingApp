@@ -6,8 +6,6 @@ import com.personalmoney.core.network.LoginRequestDto
 import com.personalmoney.core.network.RegisterRequestDto
 import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.flow.StateFlow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /** What went wrong, in terms the UI can act on. */
 sealed interface AuthResult {
@@ -22,8 +20,7 @@ sealed interface AuthResult {
  * that (see `createBackendClient`), so no call site and no repository has to think about
  * token expiry.
  */
-@Singleton
-class AuthRepository @Inject constructor(
+class AuthRepository constructor(
     private val api: HomeBudgetApi,
     private val tokenStore: TokenStore
 ) {

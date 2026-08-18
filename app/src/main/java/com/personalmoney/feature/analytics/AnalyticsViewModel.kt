@@ -9,7 +9,6 @@ import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.TransactionType
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +25,6 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
-import javax.inject.Inject
 
 data class MonthlyBar(
     val label: String,
@@ -72,8 +70,7 @@ private fun monthLabel(monthNumber: Int): String =
         .getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@HiltViewModel
-class AnalyticsViewModel @Inject constructor(
+class AnalyticsViewModel constructor(
     private val transactionRepository: TransactionRepository,
     exchangeRateRepository: ExchangeRateRepository,
     userPreferences: UserPreferences

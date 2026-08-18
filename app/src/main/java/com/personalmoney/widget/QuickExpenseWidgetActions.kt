@@ -15,7 +15,6 @@ import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -77,11 +76,9 @@ class SelectTypeAction : ActionCallback {
         context: Context, glanceId: GlanceId, parameters: ActionParameters
     ) {
         val type = parameters[PARAM_TYPE] ?: return
-        val entryPoint = EntryPointAccessors.fromApplication(
-            context.applicationContext, WidgetEntryPoint::class.java
-        )
+        val entryPoint = WidgetDependencies
         val categoryType = if (type == "INCOME") CategoryType.INCOME else CategoryType.EXPENSE
-        val categories = entryPoint.categoryRepository()
+        val categories = entryPoint.categoryRepository
             .observeByType(categoryType).first().filter { !it.archived }.take(4)
 
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
@@ -141,16 +138,14 @@ class SaveWidgetExpenseAction : ActionCallback {
     override suspend fun onAction(
         context: Context, glanceId: GlanceId, parameters: ActionParameters
     ) {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            context.applicationContext, WidgetEntryPoint::class.java
-        )
+        val entryPoint = WidgetDependencies
         val state      = getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)
         val expr       = state[KEY_EXPRESSION]?.takeIf { it.isNotEmpty() } ?: return
         val catId      = state[KEY_CAT_ID]
         val isIncome   = state[KEY_TYPE] == "INCOME"
         val txType     = if (isIncome) TransactionType.INCOME else TransactionType.EXPENSE
 
-        val accountRepo = entryPoint.accountRepository()
+        val accountRepo = entryPoint.accountRepository
         val selectedId  = state[KEY_ACCOUNT_ID]
         val accountCandidate: AccountEntity? =
             (if (selectedId != null) accountRepo.findById(selectedId) else null)
@@ -166,7 +161,7 @@ class SaveWidgetExpenseAction : ActionCallback {
         val now = Clock.System.now()
 
         runCatching {
-            entryPoint.transactionRepository().insert(
+            entryPoint.transactionRepository.insert(
                 TransactionEntity(
                     type               = txType,
                     accountId          = account.id,
@@ -190,7 +185,7 @@ class SaveWidgetExpenseAction : ActionCallback {
             delay(2_000)
 
             val categoryType = if (isIncome) CategoryType.INCOME else CategoryType.EXPENSE
-            val categories   = entryPoint.categoryRepository()
+            val categories   = entryPoint.categoryRepository
                 .observeByType(categoryType).first().filter { !it.archived }.take(4)
             val accounts     = accountRepo.observeActive().first()
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->

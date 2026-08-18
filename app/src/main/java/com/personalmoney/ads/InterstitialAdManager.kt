@@ -8,13 +8,9 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.personalmoney.BuildConfig
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class InterstitialAdManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+class InterstitialAdManager constructor(
+    private val context: Context,
     private val consent: AdsConsentManager
 ) {
     private var ad: InterstitialAd? = null

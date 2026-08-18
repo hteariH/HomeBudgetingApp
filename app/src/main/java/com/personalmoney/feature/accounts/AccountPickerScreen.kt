@@ -27,17 +27,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.R
 import com.personalmoney.core.ui.components.IconCircle
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountPickerScreen(
     onPick: (Long) -> Unit,
     onBack: () -> Unit,
-    viewModel: AccountPickerViewModel = hiltViewModel()
+    viewModel: AccountPickerViewModel = koinViewModel()
 ) {
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val selectedId = viewModel.selectedId

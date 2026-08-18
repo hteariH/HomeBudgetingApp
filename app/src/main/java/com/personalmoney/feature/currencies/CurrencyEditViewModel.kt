@@ -5,13 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.repository.CurrencyRepository
 import com.personalmoney.core.database.entity.CurrencyEntity
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class CurrencyEditUiState(
     val originalCode: String? = null,
@@ -34,8 +32,7 @@ data class CurrencyEditUiState(
 private val codeRegex = Regex("^[A-Za-z0-9_]{2,8}$")
 private fun isCodeValid(code: String) = codeRegex.matches(code)
 
-@HiltViewModel
-class CurrencyEditViewModel @Inject constructor(
+class CurrencyEditViewModel constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: CurrencyRepository
 ) : ViewModel() {

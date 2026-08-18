@@ -5,12 +5,9 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Where the access and refresh tokens live.
@@ -22,9 +19,8 @@ import javax.inject.Singleton
  * The signed-in state is exposed as a flow so the UI can react to a session ending -
  * for instance when the server rejects a refresh.
  */
-@Singleton
-class TokenStore @Inject constructor(
-    @ApplicationContext private val context: Context
+class TokenStore constructor(
+    private val context: Context
 ) {
     private val prefs: SharedPreferences by lazy { openPrefs() }
 

@@ -2,19 +2,13 @@ package com.personalmoney.core.sync
 
 import android.content.Context
 import android.util.Log
-import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkerParameters
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Runs a sync pass in the background.
@@ -23,10 +17,9 @@ import javax.inject.Singleton
  * A failed pass returns `retry()` rather than `failure()`: the usual reason is no
  * network or a server restart, and the pending rows are still safely on the device.
  */
-@HiltWorker
-class SyncWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted params: WorkerParameters,
+class SyncWorker constructor(
+    context: Context,
+    params: WorkerParameters,
     private val syncEngine: SyncEngine
 ) : CoroutineWorker(context, params) {
 
@@ -53,9 +46,8 @@ class SyncWorker @AssistedInject constructor(
  * on the web has nothing on this device to trigger a sync. Immediate pushes after a
  * local write come from [SyncTrigger] instead.
  */
-@Singleton
-class SyncScheduler @Inject constructor(
-    @ApplicationContext private val context: Context
+class SyncScheduler constructor(
+    private val context: Context
 ) {
     fun schedule() {
         val request = PeriodicWorkRequestBuilder<SyncWorker>(6, TimeUnit.HOURS)

@@ -21,7 +21,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -54,6 +53,7 @@ import com.personalmoney.feature.subscriptions.SubscriptionEditScreen
 import com.personalmoney.feature.subscriptions.SubscriptionsScreen
 import com.personalmoney.feature.transactions.TransactionEditScreen
 import com.personalmoney.feature.transactions.TransactionsScreen
+import org.koin.androidx.compose.koinViewModel
 
 private data class BottomNavItem(val route: String, val icon: ImageVector, val label: Int)
 
@@ -173,7 +173,7 @@ fun PersonalMoneyNavHost(
                 val categoryParam = backStackEntry.arguments?.getString("categoryId").orEmpty()
                 val categoryId = categoryParam.toLongOrNull()
 
-                val quickAddViewModel: QuickAddViewModel = hiltViewModel()
+                val quickAddViewModel: QuickAddViewModel = koinViewModel()
                 // Receive the account chosen on the full-screen picker.
                 val pickedAccountId by backStackEntry.savedStateHandle
                     .getStateFlow(Routes.RESULT_PICKED_ACCOUNT_ID, -1L)

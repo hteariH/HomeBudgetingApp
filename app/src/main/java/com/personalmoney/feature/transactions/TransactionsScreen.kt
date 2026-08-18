@@ -50,7 +50,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.R
 import com.personalmoney.ads.BannerAd
@@ -69,6 +68,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import org.koin.androidx.compose.koinViewModel
 
 private enum class PeriodFilter { ALL, TODAY, WEEK, MONTH, YEAR }
 
@@ -77,7 +77,7 @@ private enum class PeriodFilter { ALL, TODAY, WEEK, MONTH, YEAR }
 fun TransactionsScreen(
     onBack: (() -> Unit)? = null,
     onEdit: (Long) -> Unit = {},
-    viewModel: TransactionsViewModel = hiltViewModel()
+    viewModel: TransactionsViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showSearch by remember { mutableStateOf(false) }

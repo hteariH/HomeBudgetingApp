@@ -11,8 +11,6 @@ import com.personalmoney.core.data.repository.CurrencyRepository
 import com.personalmoney.core.database.entity.CurrencyEntity
 import com.personalmoney.feature.settings.backup.BackupManager
 import com.personalmoney.feature.settings.backup.BackupPreview
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class SettingsUiState(
     val baseCurrency: String = "USD",
@@ -32,9 +29,8 @@ data class SettingsUiState(
     val message: String? = null
 )
 
-@HiltViewModel
-class SettingsViewModel @Inject constructor(
-    @ApplicationContext private val appContext: Context,
+class SettingsViewModel constructor(
+    private val appContext: Context,
     private val preferences: UserPreferences,
     currencyRepository: CurrencyRepository,
     private val backupManager: BackupManager

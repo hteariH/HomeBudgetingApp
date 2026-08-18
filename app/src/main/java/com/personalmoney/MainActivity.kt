@@ -23,17 +23,15 @@ import com.personalmoney.core.security.BiometricGate
 import com.personalmoney.core.security.LockScreen
 import com.personalmoney.core.ui.theme.PersonalMoneyTheme
 import com.personalmoney.navigation.PersonalMoneyNavHost
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import org.koin.android.ext.android.inject
 
-@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    @Inject lateinit var consentManager: AdsConsentManager
-    @Inject lateinit var adsInitializer: AdsInitializer
-    @Inject lateinit var interstitialManager: InterstitialAdManager
-    @Inject lateinit var preferences: UserPreferences
-    @Inject lateinit var tokenStore: TokenStore
+    private val consentManager: AdsConsentManager by inject()
+    private val adsInitializer: AdsInitializer by inject()
+    private val interstitialManager: InterstitialAdManager by inject()
+    private val preferences: UserPreferences by inject()
+    private val tokenStore: TokenStore by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()

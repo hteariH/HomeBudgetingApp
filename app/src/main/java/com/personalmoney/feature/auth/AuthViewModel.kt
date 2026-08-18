@@ -5,13 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.auth.AuthRepository
 import com.personalmoney.core.auth.AuthResult
 import com.personalmoney.core.sync.SyncTrigger
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class AuthUiState(
     val email: String = "",
@@ -38,8 +36,7 @@ data class AuthUiState(
     }
 }
 
-@HiltViewModel
-class AuthViewModel @Inject constructor(
+class AuthViewModel constructor(
     private val authRepository: AuthRepository,
     private val syncTrigger: SyncTrigger
 ) : ViewModel() {

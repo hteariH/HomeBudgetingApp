@@ -10,7 +10,6 @@ import com.personalmoney.core.database.entity.SubscriptionEntity
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.SubscriptionFrequency
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -19,7 +18,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
-import javax.inject.Inject
 
 data class SubscriptionsUiState(
     val subscriptions: List<SubscriptionEntity> = emptyList(),
@@ -31,8 +29,7 @@ data class SubscriptionsUiState(
     val perYear: Money get() = Money(perYearMinor, CurrencyCode(baseCurrency))
 }
 
-@HiltViewModel
-class SubscriptionsViewModel @Inject constructor(
+class SubscriptionsViewModel constructor(
     private val repository: SubscriptionRepository,
     userPreferences: UserPreferences,
     exchangeRateRepository: ExchangeRateRepository

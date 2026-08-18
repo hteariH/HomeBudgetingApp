@@ -7,12 +7,9 @@ import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /** Public surface unchanged; writes now mark rows for sync and deletes leave tombstones. */
-@Singleton
-class TransactionRepository @Inject constructor(
+class TransactionRepository constructor(
     private val dao: TransactionDao,
     private val syncTrigger: SyncTrigger
 ) {

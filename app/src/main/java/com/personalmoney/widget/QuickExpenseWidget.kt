@@ -38,7 +38,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.personalmoney.R
 import com.personalmoney.core.domain.CategoryType
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 
 class QuickExpenseWidget : GlanceAppWidget() {
@@ -47,17 +46,15 @@ class QuickExpenseWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            context.applicationContext, WidgetEntryPoint::class.java
-        )
+        val entryPoint = WidgetDependencies
 
         // Read existing prefs to preserve user's type/account selection
         val currentPrefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
         val isIncome = currentPrefs[KEY_TYPE] == "INCOME"
         val categoryType = if (isIncome) CategoryType.INCOME else CategoryType.EXPENSE
 
-        val accounts   = entryPoint.accountRepository().observeActive().first()
-        val categories = entryPoint.categoryRepository()
+        val accounts   = entryPoint.accountRepository.observeActive().first()
+        val categories = entryPoint.categoryRepository
             .observeByType(categoryType).first().filter { !it.archived }.take(4)
 
         // Preserve selected account if still active, otherwise fallback to first

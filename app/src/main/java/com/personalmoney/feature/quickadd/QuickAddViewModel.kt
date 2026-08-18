@@ -15,7 +15,6 @@ import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.NumpadKey
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +31,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import java.math.BigDecimal
-import javax.inject.Inject
 
 data class QuickAddUiState(
     val type: TransactionType = TransactionType.EXPENSE,
@@ -57,8 +55,7 @@ data class QuickAddUiState(
 private fun currentDate(): LocalDate =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
-@HiltViewModel
-class QuickAddViewModel @Inject constructor(
+class QuickAddViewModel constructor(
     savedStateHandle: SavedStateHandle,
     private val accountRepository: AccountRepository,
     private val categoryRepository: CategoryRepository,

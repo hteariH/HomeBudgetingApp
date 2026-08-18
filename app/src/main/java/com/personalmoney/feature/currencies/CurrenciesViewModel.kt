@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.repository.CurrencyRepository
 import com.personalmoney.core.database.entity.CurrencyEntity
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +12,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class CurrenciesUiState(
     val query: String = "",
@@ -23,8 +21,7 @@ data class CurrenciesUiState(
     val errorMessage: String? = null
 )
 
-@HiltViewModel
-class CurrenciesViewModel @Inject constructor(
+class CurrenciesViewModel constructor(
     private val repository: CurrencyRepository,
     private val preferences: UserPreferences
 ) : ViewModel() {

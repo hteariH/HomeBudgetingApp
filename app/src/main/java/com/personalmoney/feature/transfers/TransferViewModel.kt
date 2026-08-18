@@ -14,8 +14,6 @@ import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.NumpadKey
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +24,6 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.Currency
 import java.util.UUID
-import javax.inject.Inject
 
 /** Which transfer amount field the numpad currently edits. */
 enum class TransferAmountField { FROM, TO, FEE }
@@ -55,9 +52,8 @@ data class TransferUiState(
                 amountFrom.isNotBlank() && !saving
 }
 
-@HiltViewModel
-class TransferViewModel @Inject constructor(
-    @ApplicationContext private val appContext: Context,
+class TransferViewModel constructor(
+    private val appContext: Context,
     accountRepository: AccountRepository,
     exchangeRateRepository: ExchangeRateRepository,
     private val transactionRepository: TransactionRepository

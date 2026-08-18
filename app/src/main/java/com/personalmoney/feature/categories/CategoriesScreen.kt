@@ -30,13 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.R
 import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.ui.components.EmptyState
 import com.personalmoney.core.ui.components.IconCircle
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +44,7 @@ fun CategoriesScreen(
     onAdd: (CategoryType) -> Unit,
     onEdit: (Long) -> Unit,
     onBack: () -> Unit,
-    viewModel: CategoriesViewModel = hiltViewModel()
+    viewModel: CategoriesViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val tabIndex = if (state.selectedTab == CategoryType.EXPENSE) 0 else 1

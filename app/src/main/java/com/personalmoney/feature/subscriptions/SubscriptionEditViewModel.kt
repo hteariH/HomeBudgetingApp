@@ -13,8 +13,6 @@ import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.database.entity.SubscriptionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.SubscriptionFrequency
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +27,6 @@ import kotlinx.datetime.toLocalDateTime
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.Currency
-import javax.inject.Inject
 
 data class SubscriptionEditUiState(
     val id: Long? = null,
@@ -56,9 +53,8 @@ data class SubscriptionEditUiState(
 private fun today(): LocalDate =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
-@HiltViewModel
-class SubscriptionEditViewModel @Inject constructor(
-    @ApplicationContext private val appContext: Context,
+class SubscriptionEditViewModel constructor(
+    private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val subscriptionRepository: SubscriptionRepository,
     accountRepository: AccountRepository,

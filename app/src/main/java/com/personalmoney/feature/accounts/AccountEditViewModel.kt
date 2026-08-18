@@ -8,7 +8,6 @@ import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.CurrencyRepository
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.CurrencyEntity
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +19,6 @@ import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.Currency
-import javax.inject.Inject
 
 data class AccountEditUiState(
     val id: Long? = null,
@@ -42,8 +40,7 @@ data class AccountEditUiState(
     val canSave: Boolean get() = name.isNotBlank() && currencyCode.isNotBlank() && !saving
 }
 
-@HiltViewModel
-class AccountEditViewModel @Inject constructor(
+class AccountEditViewModel constructor(
     savedStateHandle: SavedStateHandle,
     private val accountRepository: AccountRepository,
     private val currencyRepository: CurrencyRepository,

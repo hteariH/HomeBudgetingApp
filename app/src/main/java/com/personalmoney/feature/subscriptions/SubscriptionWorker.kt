@@ -1,25 +1,21 @@
 package com.personalmoney.feature.subscriptions
 
 import android.content.Context
-import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.personalmoney.core.data.repository.SubscriptionRepository
 import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
-@HiltWorker
-class SubscriptionWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted params: WorkerParameters,
+class SubscriptionWorker constructor(
+    context: Context,
+    params: WorkerParameters,
     private val subscriptionRepository: SubscriptionRepository,
     private val transactionRepository: TransactionRepository
 ) : CoroutineWorker(context, params) {

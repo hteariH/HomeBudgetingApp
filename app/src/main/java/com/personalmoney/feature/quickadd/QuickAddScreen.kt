@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.R
 import com.personalmoney.core.calc.Calculator
@@ -62,6 +61,7 @@ import com.personalmoney.feature.quickadd.components.SelectedAccountBar
 import com.personalmoney.feature.transfers.TransferAmountField
 import com.personalmoney.feature.transfers.TransferViewModel
 import java.util.Currency
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,8 +71,8 @@ fun QuickAddScreen(
     onClose: () -> Unit,
     onSaved: () -> Unit,
     onPickAccount: (Long?) -> Unit,
-    viewModel: QuickAddViewModel = hiltViewModel(),
-    transferViewModel: TransferViewModel = hiltViewModel()
+    viewModel: QuickAddViewModel = koinViewModel(),
+    transferViewModel: TransferViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val transferState by transferViewModel.uiState.collectAsStateWithLifecycle()
