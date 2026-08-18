@@ -74,6 +74,16 @@ kotlin {
             // wasm, so every user-facing string lives in composeResources instead of
             // res/values - see the note on the compose.resources block below.
             implementation(compose.components.resources)
+            // ViewModel, navigation and Koin's Compose bindings, in their multiplatform
+            // form. These are what let a feature package live in commonMain: the same
+            // `viewModel()` / `NavHost` / `koinViewModel()` calls compile for Android and
+            // for wasm, rather than being an androidx dependency the browser cannot see.
+            implementation(libs.lifecycle.viewmodel)
+            implementation(libs.lifecycle.viewmodel.compose)
+            implementation(libs.lifecycle.runtime.compose)
+            implementation(libs.navigation.compose)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
 
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)

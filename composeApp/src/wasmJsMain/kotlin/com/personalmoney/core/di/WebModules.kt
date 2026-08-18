@@ -5,7 +5,12 @@ import com.personalmoney.core.auth.BrowserTokenStore
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.BrowserKeyValueStore
 import com.personalmoney.core.data.CurrencyRepository
+import com.personalmoney.core.data.KeyValueStore
+import com.personalmoney.core.data.UserPreferences
+import com.personalmoney.core.sync.NoOpSyncTrigger
+import com.personalmoney.core.sync.SyncTrigger
 import com.personalmoney.core.data.ExchangeRateRepository
 import com.personalmoney.core.data.RestExchangeRateRepository
 import com.personalmoney.core.data.RestSubscriptionRepository
@@ -43,6 +48,9 @@ val webModule = module {
     single { createJson() }
     single<HttpClientEngine> { Js.create() }
     singleOf(::BrowserTokenStore) bind TokenStore::class
+    singleOf(::BrowserKeyValueStore) bind KeyValueStore::class
+    singleOf(::UserPreferences)
+    single<SyncTrigger> { NoOpSyncTrigger }
     singleOf(::RestAccountRepository) bind AccountRepository::class
     singleOf(::RestCategoryRepository) bind CategoryRepository::class
     singleOf(::RestTransactionRepository) bind TransactionRepository::class

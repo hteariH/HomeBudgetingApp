@@ -27,6 +27,11 @@ kotlinxSerialization = "1.7.3"
 kotlinxDatetime = "0.8.0-0.6.x-compat"
 kotlinxCoroutines = "1.9.0"
 composeMultiplatform = "1.11.1"
+# JetBrains' multiplatform forks of the AndroidX libraries. Versioned separately from the
+# androidx.* ones above, which stay for the Android-only parts (WorkManager, Glance).
+# These track the Compose Multiplatform release, not the AndroidX one.
+lifecycleMultiplatform = "2.9.4"
+navigationMultiplatform = "2.9.2"
 bignum = "0.3.10"
 
 ktor = "3.5.2"
@@ -68,6 +73,13 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
+# Multiplatform lifecycle & navigation - the same APIs, resolving to the androidx
+# artifacts on Android and to Kotlin/Wasm implementations in the browser.
+lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycleMultiplatform" }
+lifecycle-viewmodel-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleMultiplatform" }
+lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleMultiplatform" }
+navigation-compose = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version.ref = "navigationMultiplatform" }
+
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
@@ -85,6 +97,8 @@ koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = 
 koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
 koin-androidx-workmanager = { group = "io.insert-koin", name = "koin-androidx-workmanager", version.ref = "koin" }
 koin-test = { group = "io.insert-koin", name = "koin-test", version.ref = "koin" }
+koin-compose = { group = "io.insert-koin", name = "koin-compose", version.ref = "koin" }
+koin-compose-viewmodel = { group = "io.insert-koin", name = "koin-compose-viewmodel", version.ref = "koin" }
 
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 

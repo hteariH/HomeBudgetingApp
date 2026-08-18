@@ -35,6 +35,13 @@ class RestCategoryRepository(private val api: RestApi) : CategoryRepository {
         refresh()
     }
 
+    /**
+     * Asks the ledger endpoint for one row and reads the total off the page, rather than
+     * pulling every transaction in the category to count them.
+     */
+    override suspend fun usageCount(id: Long): Int =
+        api.transactions(categoryId = id, size = 1).totalElements.toInt()
+
     override suspend fun setArchived(id: Long, archived: Boolean) {
         // No archive field on the REST create/update body, so archiving is a delete on the
         // server side; it keeps the row and its history, exactly as the web client does.

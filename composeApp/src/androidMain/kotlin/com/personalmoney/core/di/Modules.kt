@@ -13,6 +13,8 @@ import com.personalmoney.core.currency.FrankfurterApi
 import com.personalmoney.core.currency.FxRefreshWorker
 import com.personalmoney.core.currency.FxScheduler
 import com.personalmoney.core.data.AccountRepository as SharedAccountRepository
+import com.personalmoney.core.data.DataStoreKeyValueStore
+import com.personalmoney.core.data.KeyValueStore
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.CategoryRepository as SharedCategoryRepository
 import com.personalmoney.core.data.CurrencyRepository as SharedCurrencyRepository
@@ -123,6 +125,7 @@ val networkModule = module {
 }
 
 val dataModule = module {
+    singleOf(::DataStoreKeyValueStore) bind KeyValueStore::class
     singleOf(::UserPreferences)
     singleOf(::AndroidTokenStore) bind TokenStore::class
     singleOf(::AuthRepository)

@@ -17,6 +17,14 @@ interface CategoryRepository {
 
     suspend fun update(category: Category)
 
+    /**
+     * How many ledger rows still point at this category.
+     *
+     * Callers use it to choose between archiving and deleting: a category with history
+     * cannot simply go, because the transactions that reference it would lose their label.
+     */
+    suspend fun usageCount(id: Long): Int
+
     suspend fun setArchived(id: Long, archived: Boolean)
 
     suspend fun delete(id: Long)

@@ -24,6 +24,8 @@ class RoomCategoryRepository(
 
     override suspend fun update(category: Category) = delegate.update(category.toEntity())
 
+    override suspend fun usageCount(id: Long): Int = delegate.usageCount(id)
+
     override suspend fun setArchived(id: Long, archived: Boolean) =
         delegate.setArchived(id, archived)
 
