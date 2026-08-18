@@ -1,10 +1,11 @@
 package com.personalmoney.core.auth
 
-import android.util.Log
+import com.personalmoney.core.util.AppLog
 import com.personalmoney.core.network.HomeBudgetApi
 import com.personalmoney.core.network.LoginRequestDto
 import com.personalmoney.core.network.RegisterRequestDto
 import io.ktor.client.plugins.ResponseException
+import kotlinx.io.IOException
 import kotlinx.coroutines.flow.StateFlow
 
 /** What went wrong, in terms the UI can act on. */
@@ -55,7 +56,7 @@ class AuthRepository constructor(
         try {
             api.logout()
         } catch (e: Exception) {
-            Log.w(TAG, "Server logout failed, clearing locally anyway: ${e.message}")
+            AppLog.w(TAG, "Server logout failed, clearing locally anyway: ${e.message}")
         }
         tokenStore.clear()
     }
@@ -64,7 +65,7 @@ class AuthRepository constructor(
         block()
     } catch (e: ResponseException) {
         AuthResult.Failure(describeHttp(e.response.status.value))
-    } catch (e: java.io.IOException) {
+    } catch (e: IOException) {
         AuthResult.Failure(e.message ?: "Network error", isNetwork = true)
     } catch (e: Exception) {
         AuthResult.Failure(e.message ?: "Unexpected error")

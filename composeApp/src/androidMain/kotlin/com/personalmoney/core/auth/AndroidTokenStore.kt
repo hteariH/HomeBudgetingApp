@@ -19,31 +19,31 @@ import kotlinx.coroutines.flow.asStateFlow
  * The signed-in state is exposed as a flow so the UI can react to a session ending -
  * for instance when the server rejects a refresh.
  */
-class TokenStore constructor(
+class AndroidTokenStore(
     private val context: Context
-) {
+) : TokenStore {
     private val prefs: SharedPreferences by lazy { openPrefs() }
 
     private val _signedIn = MutableStateFlow(false)
-    val signedIn: StateFlow<Boolean> = _signedIn.asStateFlow()
+    override val signedIn: StateFlow<Boolean> = _signedIn.asStateFlow()
 
     init {
         _signedIn.value = accessToken != null
     }
 
-    var accessToken: String?
+    override var accessToken: String?
         get() = prefs.getString(KEY_ACCESS, null)
         set(value) = prefs.edit().putString(KEY_ACCESS, value).apply()
 
-    var refreshToken: String?
+    override var refreshToken: String?
         get() = prefs.getString(KEY_REFRESH, null)
         set(value) = prefs.edit().putString(KEY_REFRESH, value).apply()
 
-    var email: String?
+    override var email: String?
         get() = prefs.getString(KEY_EMAIL, null)
         set(value) = prefs.edit().putString(KEY_EMAIL, value).apply()
 
-    fun save(access: String, refresh: String, email: String?) {
+    override fun save(access: String, refresh: String, email: String?) {
         prefs.edit()
             .putString(KEY_ACCESS, access)
             .putString(KEY_REFRESH, refresh)
@@ -52,7 +52,7 @@ class TokenStore constructor(
         _signedIn.value = true
     }
 
-    fun clear() {
+    override fun clear() {
         prefs.edit().clear().apply()
         _signedIn.value = false
     }
@@ -87,7 +87,7 @@ class TokenStore constructor(
     }
 
     private companion object {
-        const val TAG = "TokenStore"
+        const val TAG = "AndroidTokenStore"
         const val FILE_NAME = "auth_tokens"
         const val KEY_ACCESS = "access_token"
         const val KEY_REFRESH = "refresh_token"

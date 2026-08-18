@@ -7,6 +7,7 @@ import com.personalmoney.ads.AdsConsentManager
 import com.personalmoney.ads.AdsInitializer
 import com.personalmoney.ads.InterstitialAdManager
 import com.personalmoney.core.auth.AuthRepository
+import com.personalmoney.core.auth.AndroidTokenStore
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.currency.FrankfurterApi
 import com.personalmoney.core.currency.FxRefreshWorker
@@ -111,7 +112,7 @@ val networkModule = module {
 
 val dataModule = module {
     singleOf(::UserPreferences)
-    singleOf(::TokenStore)
+    singleOf(::AndroidTokenStore) bind TokenStore::class
     singleOf(::AuthRepository)
     singleOf(::AccountRepository)
     singleOf(::CategoryRepository)
