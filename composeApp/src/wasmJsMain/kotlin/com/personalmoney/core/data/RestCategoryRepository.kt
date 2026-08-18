@@ -79,18 +79,3 @@ private fun Category.toRequest() = CreateCategoryRequest(
         minor.toDecimalString(2)
     },
 )
-
-/** The server stores colours as "#RRGGBB"; the model carries the ARGB value Compose wants. */
-private fun String.parseColorOrDefault(): Long {
-    val hex = removePrefix("#")
-    if (hex.length != 6) return DEFAULT_COLOR
-    val rgb = hex.toLongOrNull(16) ?: return DEFAULT_COLOR
-    return 0xFF000000L or rgb
-}
-
-private fun Long.toHexColor(): String {
-    val rgb = this and 0xFFFFFFL
-    return "#" + rgb.toString(16).padStart(6, '0')
-}
-
-private const val DEFAULT_COLOR = 0xFF4F46E5L

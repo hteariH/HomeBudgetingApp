@@ -90,6 +90,28 @@ class RestApi(private val client: HttpClient) {
 
     suspend fun deleteTransfer(id: Long) { client.delete("api/transfers/$id") }
 
+    // ── subscriptions ────────────────────────────────────────────────────────
+    suspend fun subscriptions(): List<RestSubscription> =
+        client.get("api/subscriptions").body()
+
+    suspend fun subscription(id: Long): RestSubscription =
+        client.get("api/subscriptions/$id").body()
+
+    suspend fun createSubscription(body: CreateSubscriptionRequest): RestSubscription =
+        client.post("api/subscriptions") { jsonBody(body) }.body()
+
+    suspend fun updateSubscription(id: Long, body: UpdateSubscriptionRequest): RestSubscription =
+        client.put("api/subscriptions/$id") { jsonBody(body) }.body()
+
+    suspend fun deleteSubscription(id: Long) { client.delete("api/subscriptions/$id") }
+
+    // ── fx ───────────────────────────────────────────────────────────────────
+    /**
+     * The rates the server refreshed overnight. Read-only by design: rates are per-install,
+     * not per-client, so nothing here writes one.
+     */
+    suspend fun fxRates(): List<RestFxRate> = client.get("api/fx/rates").body()
+
     // ── currencies ───────────────────────────────────────────────────────────
     suspend fun currencies(): List<RestCurrency> = client.get("api/currencies").body()
 

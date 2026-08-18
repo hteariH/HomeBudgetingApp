@@ -1,6 +1,7 @@
 package com.personalmoney.core.network
 
 import com.personalmoney.core.domain.CategoryType
+import com.personalmoney.core.domain.SubscriptionFrequency
 import com.personalmoney.core.domain.TransactionType
 import kotlinx.serialization.Serializable
 
@@ -92,6 +93,42 @@ data class RestTransaction(
 )
 
 @Serializable
+data class RestSubscription(
+    val id: Long,
+    val uuid: String,
+    val name: String,
+    val account: RestAccount,
+    val category: RestCategory? = null,
+    val amount: String,
+    val currencyCode: String,
+    val frequency: SubscriptionFrequency,
+    val intervalCount: Int = 1,
+    val nextChargeDate: String,
+    val startDate: String,
+    val endDate: String? = null,
+    val active: Boolean = true,
+    val reminderMinutesBefore: Int? = null,
+    val icon: String = "subscriptions",
+    val color: String = "#008080",
+    val note: String? = null,
+)
+
+/**
+ * A stored rate from `/api/fx/rates`.
+ *
+ * `rate` is a BigDecimal on the server and therefore a string here, like every other
+ * amount - see the note at the top of this file.
+ */
+@Serializable
+data class RestFxRate(
+    val baseCode: String,
+    val quoteCode: String,
+    val rate: String,
+    val rateDate: String,
+    val source: String,
+)
+
+@Serializable
 data class RestTransfer(
     val id: Long,
     val transferGroupId: String,
@@ -165,4 +202,38 @@ data class CreateTransferRequest(
     val fee: String? = null,
     val date: String,
     val description: String? = null,
+)
+
+@Serializable
+data class CreateSubscriptionRequest(
+    val name: String,
+    val accountId: Long,
+    val categoryId: Long? = null,
+    val amount: String,
+    val frequency: SubscriptionFrequency,
+    val intervalCount: Int = 1,
+    val startDate: String,
+    val nextChargeDate: String? = null,
+    val endDate: String? = null,
+    val reminderMinutesBefore: Int? = 24 * 60,
+    val icon: String = "subscriptions",
+    val color: String = "#008080",
+    val note: String? = null,
+)
+
+/** Every field optional: the server patches only what is present. */
+@Serializable
+data class UpdateSubscriptionRequest(
+    val name: String? = null,
+    val categoryId: Long? = null,
+    val amount: String? = null,
+    val frequency: SubscriptionFrequency? = null,
+    val intervalCount: Int? = null,
+    val nextChargeDate: String? = null,
+    val endDate: String? = null,
+    val active: Boolean? = null,
+    val reminderMinutesBefore: Int? = null,
+    val icon: String? = null,
+    val color: String? = null,
+    val note: String? = null,
 )

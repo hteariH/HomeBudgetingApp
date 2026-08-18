@@ -34,9 +34,12 @@ import com.personalmoney.core.auth.AuthResult
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.ExchangeRateRepository
+import com.personalmoney.core.data.SubscriptionRepository
 import com.personalmoney.core.data.TransactionRepository
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Subscription
 import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.toDecimalString
@@ -66,6 +69,8 @@ fun WebApp() {
     val accountsRepo = remember { koin.get<AccountRepository>() }
     val categoriesRepo = remember { koin.get<CategoryRepository>() }
     val transactionsRepo = remember { koin.get<TransactionRepository>() }
+    val subscriptionsRepo = remember { koin.get<SubscriptionRepository>() }
+    val ratesRepo = remember { koin.get<ExchangeRateRepository>() }
     val tokens = remember { koin.get<TokenStore>() }
 
     val signedIn by tokens.signedIn.collectAsState()
@@ -81,6 +86,7 @@ fun WebApp() {
                 if (signedIn) {
                     AccountsPane(accountsRepo, auth)
                     TransactionsPane(transactionsRepo, categoriesRepo)
+                    SubscriptionsPane(subscriptionsRepo, ratesRepo)
                 } else {
                     SignInPane(auth)
                 }
@@ -235,6 +241,67 @@ private fun TransactionsPane(
                         color = if (signed < 0) MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.primary,
                     )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Recurring charges and the stored rates, the last two contracts to be split.
+ *
+ * `/api/subscriptions` has never had a client - the React app skipped the screen - so this
+ * is the first thing to read it in a browser. The rate count is here rather than on screen
+ * for its own sake: it is the only way to see that `/api/fx/rates` decodes, given a fresh
+ * install has no rates until the server's nightly job has run once.
+ */
+@Composable
+private fun SubscriptionsPane(
+    subscriptions: SubscriptionRepository,
+    rates: ExchangeRateRepository,
+) {
+    var rows by remember { mutableStateOf<List<Subscription>>(emptyList()) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        runCatching {
+            subscriptions.refresh()
+            rates.refresh()
+        }.onFailure {
+            AppLog.w("WebApp", "Loading subscriptions failed: ${it.message}")
+            error = it.message ?: getString(Res.string.common_load_failed)
+        }
+    }
+    LaunchedEffect(subscriptions) {
+        subscriptions.observeActive().collect {
+            rows = it
+            AppLog.d("WebApp", "subscriptions: ${it.size}")
+        }
+    }
+    // Logged rather than drawn: a rate count is not something a user asked to see, and a
+    // label for it would be UI text with no home in the string table.
+    LaunchedEffect(rates) { rates.observeAll().collect { AppLog.d("WebApp", "fx rates: ${it.size}") } }
+
+    Text(
+        stringResource(Res.string.subscriptions_title),
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.fillMaxWidth().widthIn(max = 640.dp).padding(top = 8.dp),
+    )
+    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+
+    LazyColumn(
+        Modifier.fillMaxWidth().widthIn(max = 640.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(rows) { sub ->
+            val decimals = CurrencyRegistry.decimalsOrFallback(sub.currencyCode)
+            Card(Modifier.fillMaxWidth()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("${sub.name} · ${sub.nextChargeDate}")
+                    Text("${sub.amountMinor.toDecimalString(decimals)} ${sub.currencyCode}")
                 }
             }
         }

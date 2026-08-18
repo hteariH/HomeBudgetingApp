@@ -16,7 +16,11 @@ import com.personalmoney.core.data.AccountRepository as SharedAccountRepository
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.CategoryRepository as SharedCategoryRepository
 import com.personalmoney.core.data.CurrencyRepository as SharedCurrencyRepository
+import com.personalmoney.core.data.ExchangeRateRepository as SharedExchangeRateRepository
+import com.personalmoney.core.data.SubscriptionRepository as SharedSubscriptionRepository
 import com.personalmoney.core.data.repository.RoomCurrencyRepository
+import com.personalmoney.core.data.repository.RoomExchangeRateRepository
+import com.personalmoney.core.data.repository.RoomSubscriptionRepository
 import com.personalmoney.core.data.TransactionRepository as SharedTransactionRepository
 import com.personalmoney.core.data.repository.RoomAccountRepository
 import com.personalmoney.core.data.repository.RoomCategoryRepository
@@ -129,6 +133,8 @@ val dataModule = module {
     singleOf(::RoomCategoryRepository) bind SharedCategoryRepository::class
     singleOf(::RoomTransactionRepository) bind SharedTransactionRepository::class
     singleOf(::RoomCurrencyRepository) bind SharedCurrencyRepository::class
+    singleOf(::RoomSubscriptionRepository) bind SharedSubscriptionRepository::class
+    singleOf(::RoomExchangeRateRepository) bind SharedExchangeRateRepository::class
     singleOf(::CategoryRepository)
     singleOf(::CurrencyRepository)
     singleOf(::ExchangeRateRepository)

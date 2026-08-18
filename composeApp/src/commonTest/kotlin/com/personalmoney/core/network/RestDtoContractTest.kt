@@ -1,5 +1,6 @@
 package com.personalmoney.core.network
 
+import com.personalmoney.core.domain.SubscriptionFrequency
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,6 +39,59 @@ class RestDtoContractTest {
         // Money must survive as text. A Double here would already have lost the point.
         assertEquals("1250.75", account.balance)
         assertNull(account.bankConnectionId)
+    }
+
+    @Test
+    fun `decodes a real subscription payload`() {
+        val payload = """
+            {"id":1,"uuid":"aab937a9-032d-44d8-be4d-4eb4b68373cc","name":"Netflix",
+             "account":{"id":1,"uuid":"ed4a0c0a-b74c-411d-927c-d331a5da55d7","name":"Checking",
+                        "type":"CHECKING","balance":"3694.26","initialBalance":"1250.75",
+                        "currency":{"id":1,"code":"USD","name":"US Dollar","symbol":"${'$'}",
+                                    "decimals":2,"sortOrder":0,"exchangeRateToBase":"1.000000",
+                                    "isBase":true,"createdAt":"2026-08-18T17:24:07.658552"},
+                        "icon":"wallet","color":"#4F46E5","archived":false,"sortOrder":0,
+                        "includeInTotal":true,"createdAt":"2026-08-18T15:24:51.162992",
+                        "updatedAt":"2026-08-18T13:24:51.163Z"},
+             "category":{"id":6,"uuid":"3092d75c-74a7-48a8-8019-838a1b343471",
+                         "name":"Entertainment","type":"EXPENSE","icon":"film","color":"#EC4899",
+                         "archived":false,"sortOrder":5,"isDefault":true,"mccCodes":[],
+                         "createdAt":"2026-08-18T15:24:25.15747"},
+             "amount":"15.99","currencyCode":"USD","frequency":"MONTHLY","intervalCount":1,
+             "nextChargeDate":"2026-09-01","startDate":"2026-08-01","active":true,
+             "reminderMinutesBefore":1440,"icon":"subscriptions","color":"#008080",
+             "note":"family plan","createdAt":"2026-08-19T00:49:47.372695",
+             "updatedAt":"2026-08-18T22:49:47.373Z"}
+        """.trimIndent()
+
+        val subscription = json.decodeFromString<RestSubscription>(payload)
+
+        assertEquals("Netflix", subscription.name)
+        assertEquals(SubscriptionFrequency.MONTHLY, subscription.frequency)
+        assertEquals("15.99", subscription.amount)
+        // The account and category arrive nested, not as ids - the shared model flattens them.
+        assertEquals(1L, subscription.account.id)
+        assertEquals(6L, subscription.category?.id)
+        // endDate is simply absent when the subscription never ends, rather than null.
+        assertNull(subscription.endDate)
+        assertEquals("2026-09-01", subscription.nextChargeDate)
+    }
+
+    @Test
+    fun `decodes an fx rate payload`() {
+        // Hand-built from FxController.FxRateResponse rather than captured: the rate table
+        // is filled by a nightly job, so a fresh install has none to capture. Five plain
+        // fields, and `rate` is a BigDecimal - hence a string, like every other amount.
+        val payload =
+            """[{"baseCode":"USD","quoteCode":"EUR","rate":"0.857100",
+                 "rateDate":"2026-08-18","source":"FRANKFURTER"}]"""
+
+        val rates = json.decodeFromString<List<RestFxRate>>(payload)
+
+        assertEquals(1, rates.size)
+        assertEquals("USD", rates[0].baseCode)
+        assertEquals("0.857100", rates[0].rate)
+        assertEquals("FRANKFURTER", rates[0].source)
     }
 
     @Test
