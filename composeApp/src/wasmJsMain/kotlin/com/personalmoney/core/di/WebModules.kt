@@ -4,7 +4,11 @@ import com.personalmoney.core.auth.AuthRepository
 import com.personalmoney.core.auth.BrowserTokenStore
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
 import com.personalmoney.core.data.RestAccountRepository
+import com.personalmoney.core.data.RestCategoryRepository
+import com.personalmoney.core.data.RestTransactionRepository
+import com.personalmoney.core.data.TransactionRepository
 import com.personalmoney.core.network.HomeBudgetApi
 import com.personalmoney.core.network.RestApi
 import com.personalmoney.core.network.createBackendClient
@@ -34,6 +38,8 @@ val webModule = module {
     single<HttpClientEngine> { Js.create() }
     singleOf(::BrowserTokenStore) bind TokenStore::class
     singleOf(::RestAccountRepository) bind AccountRepository::class
+    singleOf(::RestCategoryRepository) bind CategoryRepository::class
+    singleOf(::RestTransactionRepository) bind TransactionRepository::class
 
     single<HttpClient> { createBackendClient(get(), get(), pageOrigin(), get()) }
     single { RestApi(get()) }

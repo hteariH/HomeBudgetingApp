@@ -14,7 +14,11 @@ import com.personalmoney.core.currency.FxRefreshWorker
 import com.personalmoney.core.currency.FxScheduler
 import com.personalmoney.core.data.AccountRepository as SharedAccountRepository
 import com.personalmoney.core.data.UserPreferences
+import com.personalmoney.core.data.CategoryRepository as SharedCategoryRepository
+import com.personalmoney.core.data.TransactionRepository as SharedTransactionRepository
 import com.personalmoney.core.data.repository.RoomAccountRepository
+import com.personalmoney.core.data.repository.RoomCategoryRepository
+import com.personalmoney.core.data.repository.RoomTransactionRepository
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.CategoryRepository
 import com.personalmoney.core.data.repository.CurrencyRepository
@@ -120,6 +124,8 @@ val dataModule = module {
     // The shared contract the migrating screens use; the entity-level repository above
     // still serves the Android screens that have not moved yet.
     singleOf(::RoomAccountRepository) bind SharedAccountRepository::class
+    singleOf(::RoomCategoryRepository) bind SharedCategoryRepository::class
+    singleOf(::RoomTransactionRepository) bind SharedTransactionRepository::class
     singleOf(::CategoryRepository)
     singleOf(::CurrencyRepository)
     singleOf(::ExchangeRateRepository)
