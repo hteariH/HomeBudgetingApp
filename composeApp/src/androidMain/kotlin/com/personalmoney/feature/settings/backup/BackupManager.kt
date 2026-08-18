@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
-import java.math.BigDecimal
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import com.personalmoney.core.domain.toMajorUnits
 
 class BackupManager constructor(
     private val context: Context,
@@ -52,7 +53,7 @@ class BackupManager constructor(
             val account = accounts[t.accountId]?.name.orEmpty()
             val category = t.categoryId?.let { categories[it]?.name }.orEmpty()
             val decimals = CurrencyRegistry.decimalsOrFallback(t.currencyCode)
-            val amount = BigDecimal(t.accountAmountMinor).movePointLeft(decimals).toPlainString()
+            val amount = t.accountAmountMinor.toMajorUnits(decimals).toStringExpanded()
             sb.append(
                 listOf(date, t.type.name, account, category, amount, t.currencyCode, t.note.orEmpty())
                     .joinToString(",") { csvEscape(it) }

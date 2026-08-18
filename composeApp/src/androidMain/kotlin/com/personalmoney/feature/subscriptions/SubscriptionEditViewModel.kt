@@ -24,9 +24,10 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import java.math.BigDecimal
-import java.math.RoundingMode
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import java.util.Currency
+import com.personalmoney.core.domain.toMinorUnits
+import com.personalmoney.core.domain.toMajorUnits
 
 data class SubscriptionEditUiState(
     val id: Long? = null,
@@ -85,7 +86,7 @@ class SubscriptionEditViewModel constructor(
                     internal.value = SubscriptionEditUiState(
                         id = s.id,
                         name = s.name,
-                        amount = BigDecimal(s.amountMinor).movePointLeft(decimals).toPlainString(),
+                        amount = s.amountMinor.toMajorUnits(decimals).toStringExpanded(),
                         currencyCode = s.currencyCode,
                         accountId = s.accountId,
                         categoryId = s.categoryId,
@@ -117,7 +118,7 @@ class SubscriptionEditViewModel constructor(
         if (!s.canSave) return
         val decimals = currencyDecimals(s.currencyCode)
         val amountMinor = runCatching {
-            BigDecimal(s.amount).movePointRight(decimals).setScale(0, RoundingMode.HALF_UP).toLong()
+            BigDecimal.parseString(s.amount).toMinorUnits(decimals)
         }.getOrElse {
             internal.update { it.copy(error = appContext.getString(R.string.subscriptions_invalid_amount)) }; return
         }

@@ -18,6 +18,8 @@ import com.personalmoney.core.domain.TransactionType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import com.personalmoney.core.domain.toMinorUnits
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 
 // ── Preference keys ───────────────────────────────────────────────────────────
 
@@ -156,8 +158,8 @@ class SaveWidgetExpenseAction : ActionCallback {
             java.util.Currency.getInstance(account.currencyCode).defaultFractionDigits
         }.getOrDefault(2)
         val amount = Calculator.evaluate(expr, decimals) ?: return
-        if (amount.compareTo(java.math.BigDecimal.ZERO) <= 0) return
-        val amountMinor = amount.movePointRight(decimals).toLong()
+        if (amount <= BigDecimal.ZERO) return
+        val amountMinor = amount.toMinorUnits(decimals)
         val now = Clock.System.now()
 
         runCatching {

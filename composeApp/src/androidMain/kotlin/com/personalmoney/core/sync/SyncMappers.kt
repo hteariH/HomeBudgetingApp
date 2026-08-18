@@ -15,8 +15,9 @@ import com.personalmoney.core.network.SyncSubscriptionDto
 import com.personalmoney.core.network.SyncTransactionDto
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
-import java.math.BigDecimal
-import java.math.RoundingMode
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import com.personalmoney.core.domain.toMinorUnits
+import com.personalmoney.core.domain.toDecimalString
 
 /**
  * Translation between Room rows and the sync wire format.
@@ -33,10 +34,10 @@ import java.math.RoundingMode
 object SyncMappers {
 
     fun minorToDecimalString(minor: Long, decimals: Int): String =
-        BigDecimal.valueOf(minor).movePointLeft(decimals).setScale(decimals).toPlainString()
+        minor.toDecimalString(decimals)
 
     fun decimalStringToMinor(value: String, decimals: Int): Long =
-        BigDecimal(value).movePointRight(decimals).setScale(0, RoundingMode.HALF_UP).toLong()
+        BigDecimal.parseString(value).toMinorUnits(decimals)
 
     /** Server instants are ISO-8601; 0 locally means "never synced", which sends null. */
     fun stampToIso(stamp: Long): String? =

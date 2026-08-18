@@ -1,14 +1,19 @@
 package com.personalmoney.core.currency
 
-import com.personalmoney.core.database.entity.ExchangeRateEntity
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import com.ionspin.kotlin.bignum.decimal.RoundingMode
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
-import java.math.BigDecimal
-import java.math.RoundingMode
+
+/** One stored rate, independent of how it is persisted. */
+data class FxRate(val baseCode: String, val quoteCode: String, val rate: Double)
 
 /**
  * Stateless snapshot of exchange rates. Build with [from] and use for synchronous conversions
  * inside flow combine blocks.
+ *
+ * Takes [FxRate] rather than the Room entity so it can live in shared code: the web client
+ * reads rates over REST and has no database at all.
  */
 class FxSnapshot private constructor(
     private val byPair: Map<Pair<String, String>, Double>
@@ -32,16 +37,17 @@ class FxSnapshot private constructor(
 
     fun convert(money: Money, target: CurrencyCode): Money? {
         val r = rate(money.currency.value, target.value) ?: return null
-        val decimals = runCatching {
-            java.util.Currency.getInstance(target.value).defaultFractionDigits
-        }.getOrDefault(2).coerceAtLeast(0)
-        val major = money.toBigDecimal().multiply(BigDecimal(r))
-            .setScale(decimals, RoundingMode.HALF_UP)
+        val decimals = CurrencyRegistry.decimalsOrFallback(target.value)
+        val major = (money.toBigDecimal() * BigDecimal.fromDouble(r))
+            .roundToDigitPositionAfterDecimalPoint(
+                decimals.toLong(),
+                RoundingMode.ROUND_HALF_AWAY_FROM_ZERO,
+            )
         return Money.fromDecimal(major, target)
     }
 
     companion object {
-        fun from(rates: List<ExchangeRateEntity>): FxSnapshot =
+        fun from(rates: List<FxRate>): FxSnapshot =
             FxSnapshot(
                 rates.filter { it.rate.isFinite() && it.rate > 0.0 }
                     .associate { (it.baseCode to it.quoteCode) to it.rate }

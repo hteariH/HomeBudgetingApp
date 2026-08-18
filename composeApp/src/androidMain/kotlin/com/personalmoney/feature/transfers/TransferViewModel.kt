@@ -19,11 +19,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import java.math.BigDecimal
-import java.math.RoundingMode
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import java.util.Currency
 import java.util.UUID
 import com.personalmoney.core.calc.NumpadKey
+import com.personalmoney.core.currency.toFxRates
+import com.personalmoney.core.domain.toMinorUnits
+import com.personalmoney.core.domain.roundTo
+import com.personalmoney.core.domain.toTrimmedString
+import com.personalmoney.core.domain.toFixedString
 
 /** Which transfer amount field the numpad currently edits. */
 enum class TransferAmountField { FROM, TO, FEE }
@@ -80,7 +84,7 @@ class TransferViewModel constructor(
         }
         viewModelScope.launch {
             exchangeRateRepository.observeAll().collect { rates ->
-                fxSnapshot = FxSnapshot.from(rates)
+                fxSnapshot = FxSnapshot.from(rates.toFxRates())
                 recomputeDestination()
             }
         }
@@ -163,13 +167,13 @@ class TransferViewModel constructor(
         if (expr.isBlank()) return ""
         val fromMajor = Calculator.evaluate(expr, currencyDecimals(from)) ?: return ""
         val rate = fxSnapshot.rate(from, to)
-        val toMajor = if (rate != null) fromMajor.multiply(BigDecimal.valueOf(rate)) else fromMajor
-        return toMajor.setScale(currencyDecimals(to), RoundingMode.HALF_UP).toPlainString()
+        val toMajor = if (rate != null) fromMajor.times(BigDecimal.fromDouble(rate)) else fromMajor
+        return toMajor.toFixedString(currencyDecimals(to))
     }
 
     private fun formatRate(from: String, to: String): String {
         val rate = fxSnapshot.rate(from, to) ?: return ""
-        val shown = BigDecimal.valueOf(rate).setScale(4, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+        val shown = BigDecimal.fromDouble(rate).roundTo(4).toTrimmedString()
         return "1 $from ≈ $shown $to"
     }
 
@@ -189,7 +193,7 @@ class TransferViewModel constructor(
         } else if (s.amountTo.isBlank()) {
             // No destination entered (e.g. no FX rate to auto-fill) — convert the source, or 1:1 as last resort.
             val rate = fxSnapshot.rate(from.currencyCode, to.currencyCode)
-            if (rate != null) amountFromBd.multiply(BigDecimal.valueOf(rate)) else amountFromBd
+            if (rate != null) amountFromBd.times(BigDecimal.fromDouble(rate)) else amountFromBd
         } else {
             Calculator.evaluate(s.amountTo, toDecimals) ?: run {
                 internalState.update { it.copy(error = appContext.getString(R.string.transfer_invalid_destination)) }; return
@@ -198,9 +202,9 @@ class TransferViewModel constructor(
         val feeBd = if (s.feeFrom.isBlank()) BigDecimal.ZERO
         else Calculator.evaluate(s.feeFrom, fromDecimals) ?: BigDecimal.ZERO
 
-        val amountFromMinor = amountFromBd.movePointRight(fromDecimals).setScale(0, RoundingMode.HALF_UP).toLong()
-        val amountToMinor = amountToBd.movePointRight(toDecimals).setScale(0, RoundingMode.HALF_UP).toLong()
-        val feeMinor = feeBd.movePointRight(fromDecimals).setScale(0, RoundingMode.HALF_UP).toLong()
+        val amountFromMinor = amountFromBd.toMinorUnits(fromDecimals)
+        val amountToMinor = amountToBd.toMinorUnits(toDecimals)
+        val feeMinor = feeBd.toMinorUnits(fromDecimals)
 
         val now = Clock.System.now()
         val groupId = UUID.randomUUID().toString()

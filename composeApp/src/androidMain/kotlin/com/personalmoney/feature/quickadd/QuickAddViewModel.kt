@@ -29,8 +29,9 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
-import java.math.BigDecimal
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.personalmoney.core.calc.NumpadKey
+import com.personalmoney.core.domain.toMinorUnits
 
 data class QuickAddUiState(
     val type: TransactionType = TransactionType.EXPENSE,
@@ -121,7 +122,7 @@ class QuickAddViewModel constructor(
         QuickAddUiState(
             type = type,
             expression = expr,
-            previewResult = if (showPreview) evaluated!!.toPlainString() else null,
+            previewResult = if (showPreview) evaluated!!.toStringExpanded() else null,
             isAmountValid = evaluated != null && evaluated.compareTo(BigDecimal.ZERO) > 0,
             accounts = accounts,
             selectedAccount = accounts.firstOrNull { it.id == accId } ?: accounts.firstOrNull(),
@@ -204,7 +205,7 @@ class QuickAddViewModel constructor(
             java.util.Currency.getInstance(account.currencyCode).defaultFractionDigits
         }.getOrDefault(2)
         val amount = Calculator.evaluate(state.expression, decimals) ?: return
-        val amountMinor = amount.movePointRight(decimals).toLong()
+        val amountMinor = amount.toMinorUnits(decimals)
         val now = Clock.System.now()
         val occurredAt = run {
             val tz = TimeZone.currentSystemDefault()

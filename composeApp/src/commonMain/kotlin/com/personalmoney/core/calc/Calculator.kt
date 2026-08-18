@@ -1,7 +1,8 @@
 package com.personalmoney.core.calc
 
-import java.math.BigDecimal
-import java.math.RoundingMode
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import com.ionspin.kotlin.bignum.decimal.DecimalMode
+import com.ionspin.kotlin.bignum.decimal.RoundingMode
 
 /**
  * Stateless evaluator for amount-input expressions:
@@ -21,7 +22,10 @@ object Calculator {
         if (tokens.isEmpty()) return null
         val firstPass = applyMulDiv(tokens) ?: return null
         val result = applyAddSub(firstPass) ?: return null
-        return result.setScale(decimals.coerceAtLeast(0), RoundingMode.HALF_UP)
+        return result.roundToDigitPositionAfterDecimalPoint(
+            decimals.coerceAtLeast(0).toLong(),
+            RoundingMode.ROUND_HALF_AWAY_FROM_ZERO,
+        )
     }
 
     private fun tokenize(expr: String): List<Token>? {
@@ -50,7 +54,7 @@ object Calculator {
                         j++
                     }
                     val numStr = normalized.substring(i, j)
-                    val value = runCatching { BigDecimal(numStr) }.getOrNull() ?: return null
+                    val value = runCatching { BigDecimal.parseString(numStr) }.getOrNull() ?: return null
                     tokens.add(Token.Num(value))
                     i = j
                     prevWasOp = false
@@ -86,10 +90,13 @@ object Calculator {
                 val left = result.removeAt(result.lastIndex) as? Token.Num ?: return null
                 val right = tokens[i + 1] as? Token.Num ?: return null
                 val v = when (tk.symbol) {
-                    '*' -> left.value.multiply(right.value)
+                    '*' -> left.value * right.value
                     '/' -> {
                         if (right.value.compareTo(BigDecimal.ZERO) == 0) return null
-                        left.value.divide(right.value, 12, RoundingMode.HALF_UP)
+                        left.value.divide(
+                            right.value,
+                            DecimalMode(30, RoundingMode.ROUND_HALF_AWAY_FROM_ZERO, 12),
+                        )
                     }
                     else -> return null
                 }
@@ -111,8 +118,8 @@ object Calculator {
             val op = (tokens[i] as? Token.Op)?.symbol ?: return null
             val right = (tokens.getOrNull(i + 1) as? Token.Num)?.value ?: return null
             acc = when (op) {
-                '+' -> acc.add(right)
-                '-' -> acc.subtract(right)
+                '+' -> acc + right
+                '-' -> acc - right
                 else -> return null
             }
             i += 2

@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.math.BigDecimal
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import com.personalmoney.core.domain.toMajorUnits
 
 data class CategoryEditUiState(
     val id: Long? = null,
@@ -66,7 +67,7 @@ class CategoryEditViewModel constructor(
                             color = c.color,
                             archived = c.archived,
                             budgetLimit = c.budgetLimitMinor?.let { minor ->
-                                BigDecimal(minor).movePointLeft(decimals).toPlainString()
+                                minor.toMajorUnits(decimals).toStringExpanded()
                             } ?: ""
                         )
                     }

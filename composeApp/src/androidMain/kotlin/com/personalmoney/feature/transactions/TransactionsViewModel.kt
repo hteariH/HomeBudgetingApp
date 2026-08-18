@@ -25,6 +25,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
+import com.personalmoney.core.domain.toMajorUnits
+import com.personalmoney.core.domain.toDecimalString
 
 data class TransactionsFilter(
     val from: LocalDate? = null,
@@ -119,7 +121,7 @@ class TransactionsViewModel constructor(
     private fun amountMatches(t: TransactionEntity, q: String): Boolean {
         if (q.none { it.isDigit() }) return false
         val decimals = CurrencyRegistry.decimalsOrFallback(t.currencyCode)
-        val plain = java.math.BigDecimal(t.accountAmountMinor).movePointLeft(decimals).abs().toPlainString()
+        val plain = t.accountAmountMinor.toDecimalString(decimals).removePrefix("-")
         return plain.contains(q)
     }
 

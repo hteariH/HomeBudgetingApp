@@ -48,7 +48,9 @@ class PersonalMoneyApplication : Application() {
             syncScheduler.schedule()
         }
         appScope.launch {
-            currencyRepository.observeAll().collect { CurrencyRegistry.update(it) }
+            currencyRepository.observeAll().collect { CurrencyRegistry.update(
+                it.map { c -> CurrencyRegistry.Info(c.code, c.symbol, c.decimals) }
+            ) }
         }
     }
 }

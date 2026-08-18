@@ -25,6 +25,7 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
+import com.personalmoney.core.currency.toFxRates
 
 data class MonthlyBar(
     val label: String,
@@ -77,7 +78,7 @@ class AnalyticsViewModel constructor(
 ) : ViewModel() {
 
     private val monthCount = 6
-    private val fxFlow = exchangeRateRepository.observeAll().map { FxSnapshot.from(it) }
+    private val fxFlow = exchangeRateRepository.observeAll().map { FxSnapshot.from(it.toFxRates()) }
 
     val uiState: StateFlow<AnalyticsUiState> = userPreferences.baseCurrency.flatMapLatest { base ->
         val zone = TimeZone.currentSystemDefault()

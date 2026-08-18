@@ -30,8 +30,12 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
-import java.math.BigDecimal
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.personalmoney.core.calc.NumpadKey
+import com.personalmoney.core.domain.toMinorUnits
+import com.personalmoney.core.domain.toMajorUnits
+import com.personalmoney.core.domain.toTrimmedString
+import com.personalmoney.core.domain.toFixedString
 
 data class TransactionEditUiState(
     val loading: Boolean = true,
@@ -130,7 +134,7 @@ class TransactionEditViewModel constructor(
             original = original,
             type = type,
             expression = expr,
-            previewResult = if (showPreview) evaluated!!.toPlainString() else null,
+            previewResult = if (showPreview) evaluated!!.toFixedString(decimals) else null,
             isAmountValid = evaluated != null && evaluated.compareTo(BigDecimal.ZERO) > 0,
             accounts = accounts,
             selectedAccount = selectedAccount,
@@ -166,8 +170,8 @@ class TransactionEditViewModel constructor(
             val decimals = account?.let {
                 runCatching { java.util.Currency.getInstance(it.currencyCode).defaultFractionDigits }.getOrDefault(2)
             } ?: 2
-            val amount = BigDecimal(tx.accountAmountMinor).movePointLeft(decimals)
-            expressionFlow.value = amount.stripTrailingZeros().toPlainString()
+            val amount = tx.accountAmountMinor.toMajorUnits(decimals)
+            expressionFlow.value = amount.toTrimmedString()
 
             loadingFlow.value = false
         }
@@ -270,7 +274,7 @@ class TransactionEditViewModel constructor(
                         java.util.Currency.getInstance(account.currencyCode).defaultFractionDigits
                     }.getOrDefault(2)
                     val amount = Calculator.evaluate(state.expression, decimals) ?: return@runCatching
-                    val amountMinor = amount.movePointRight(decimals).toLong()
+                    val amountMinor = amount.toMinorUnits(decimals)
 
                     transactionRepository.update(
                         original.copy(

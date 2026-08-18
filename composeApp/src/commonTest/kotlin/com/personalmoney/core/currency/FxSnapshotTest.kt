@@ -1,23 +1,16 @@
 package com.personalmoney.core.currency
 
-import com.personalmoney.core.database.entity.ExchangeRateEntity
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertNotNull
+
 import com.personalmoney.core.domain.CurrencyCode
-import com.personalmoney.core.domain.ExchangeRateSource
 import com.personalmoney.core.domain.Money
-import kotlinx.datetime.LocalDate
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Test
 
 class FxSnapshotTest {
 
-    private fun rate(base: String, quote: String, rate: Double) = ExchangeRateEntity(
-        baseCode = base, quoteCode = quote, rate = rate,
-        date = LocalDate(2026, 5, 1),
-        source = ExchangeRateSource.MANUAL,
-        updatedAtEpochMs = 0
-    )
+    private fun rate(base: String, quote: String, rate: Double) = FxRate(base, quote, rate)
 
     @Test fun `same currency returns 1`() {
         val fx = FxSnapshot.from(emptyList())

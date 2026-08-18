@@ -31,6 +31,7 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
+import com.personalmoney.core.currency.toFxRates
 
 data class CategorySlice(
     val categoryId: Long?,
@@ -91,7 +92,7 @@ class DashboardViewModel constructor(
         }
     }
 
-    private val fxSnapshotFlow = exchangeRateRepository.observeAll().map { FxSnapshot.from(it) }
+    private val fxSnapshotFlow = exchangeRateRepository.observeAll().map { FxSnapshot.from(it.toFxRates()) }
 
     val uiState: StateFlow<DashboardUiState> = combine(
         userPreferences.baseCurrency,

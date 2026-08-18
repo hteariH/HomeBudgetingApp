@@ -16,9 +16,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.math.BigDecimal
-import java.math.RoundingMode
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import java.util.Currency
+import com.personalmoney.core.domain.roundTo
+import com.personalmoney.core.domain.toDecimalString
+import com.personalmoney.core.domain.toMinorUnits
 
 data class AccountEditUiState(
     val id: Long? = null,
@@ -77,8 +79,7 @@ class AccountEditViewModel constructor(
                         id = acc.id,
                         name = acc.name,
                         currencyCode = acc.currencyCode,
-                        initialBalance = BigDecimal(acc.initialBalanceMinor)
-                            .movePointLeft(decimals).toPlainString(),
+                        initialBalance = acc.initialBalanceMinor.toDecimalString(decimals),
                         icon = acc.icon,
                         color = acc.color,
                         includeInTotal = acc.includeInTotal,
@@ -112,9 +113,8 @@ class AccountEditViewModel constructor(
         viewModelScope.launch {
             runCatching {
                 val decimals = currencyDecimals(st.currencyCode)
-                val balanceMinor = (BigDecimal(st.initialBalance.ifBlank { "0" })
-                    .setScale(decimals, RoundingMode.HALF_UP)
-                    .movePointRight(decimals)).toLong()
+                val balanceMinor = BigDecimal.parseString(st.initialBalance.ifBlank { "0" })
+                    .toMinorUnits(decimals)
 
                 if (st.id == null) {
                     val newId = accountRepository.create(
