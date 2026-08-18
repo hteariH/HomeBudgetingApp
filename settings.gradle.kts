@@ -25,4 +25,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "PersonalMoney"
-include(":app")
+include(":composeApp")
