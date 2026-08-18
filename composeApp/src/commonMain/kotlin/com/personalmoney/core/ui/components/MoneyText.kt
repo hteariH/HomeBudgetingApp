@@ -11,7 +11,6 @@ import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.MoneyFormatter
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.theme.LocalFinanceColors
-import java.util.Locale
 
 @Composable
 fun MoneyText(
@@ -20,7 +19,6 @@ fun MoneyText(
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     type: TransactionType? = null,
     showSign: Boolean = false,
-    locale: Locale = Locale.getDefault(),
     color: Color = LocalContentColor.current
 ) {
     val finance = LocalFinanceColors.current
@@ -33,7 +31,7 @@ fun MoneyText(
     val text = buildString {
         if (showSign && type == TransactionType.INCOME && !money.isZero()) append('+')
         if (showSign && type == TransactionType.EXPENSE && !money.isZero()) append('−')
-        append(MoneyFormatter.format(money, locale))
+        append(MoneyFormatter.format(money))
     }
     Text(text = text, style = style, color = resolvedColor, modifier = modifier)
 }

@@ -6,16 +6,10 @@ import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
 
-/**
- * Locale-aware money formatting.
- *
- * Still Android-only on purpose. [Money] itself is shared, but this leans on ICU through
- * NumberFormat and java.util.Currency, and swapping that for a hand-rolled formatter would
- * quietly change what every existing user sees. It moves to shared code when the UI does,
- * behind an expect/actual that keeps this exact implementation on Android.
- */
-object MoneyFormatter {
-    fun format(money: Money, locale: Locale = Locale.getDefault()): String {
+actual object MoneyFormatter {
+
+    actual fun format(money: Money): String {
+        val locale = Locale.getDefault()
         // 1) User-configured currency in the registry: format with the chosen symbol.
         val info = CurrencyRegistry.lookup(money.currency.value)
         if (info != null) {
@@ -29,34 +23,31 @@ object MoneyFormatter {
             val decimals = money.decimals
             nf.maximumFractionDigits = decimals
             nf.minimumFractionDigits = decimals
-            return nf.format(money.toJavaBigDecimal())
+            return nf.format(money.toBigDecimal().toJava())
         }
         // 3) Last resort: prefix the raw code so the value remains unambiguous.
         return prefixFormat(money.currency.value, money.toBigDecimal(), money.decimals, locale)
     }
 
-    fun formatPlain(money: Money, locale: Locale = Locale.getDefault()): String {
-        val nf = NumberFormat.getNumberInstance(locale)
+    actual fun formatPlain(money: Money): String {
+        val nf = NumberFormat.getNumberInstance(Locale.getDefault())
         nf.maximumFractionDigits = money.decimals
         nf.minimumFractionDigits = money.decimals
-        return nf.format(money.toJavaBigDecimal())
+        return nf.format(money.toBigDecimal().toJava())
     }
 
     private fun prefixFormat(
         symbol: String,
         value: BigDecimal,
         decimals: Int,
-        locale: Locale
+        locale: Locale,
     ): String {
         val nf = NumberFormat.getNumberInstance(locale)
         nf.maximumFractionDigits = decimals
         nf.minimumFractionDigits = decimals
-        return "$symbol ${nf.format(value.toJavaBigDecimal())}"
+        return "$symbol ${nf.format(value.toJava())}"
     }
 }
 
-/** Bridge to the JVM decimal type that ICU needs. */
-private fun BigDecimal.toJavaBigDecimal(): java.math.BigDecimal =
-    java.math.BigDecimal(toStringExpanded())
-
-private fun Money.toJavaBigDecimal(): java.math.BigDecimal = toBigDecimal().toJavaBigDecimal()
+/** Bridge to the JVM decimal type ICU needs. */
+private fun BigDecimal.toJava(): java.math.BigDecimal = java.math.BigDecimal(toStringExpanded())

@@ -1,17 +1,14 @@
 package com.personalmoney.core.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
 private val LightColors = lightColorScheme(
     primary = Indigo40,
@@ -65,6 +62,17 @@ private val DarkColors = darkColorScheme(
     outline = Indigo60
 )
 
+/**
+ * Material You, where the platform has it.
+ *
+ * Returns null when the platform cannot supply a scheme, which is every platform except
+ * Android 12 and up - the caller then falls back to the palette above. Expressed as a
+ * nullable return rather than a boolean capability check so the call site reads the same
+ * everywhere.
+ */
+@Composable
+expect fun platformDynamicColorScheme(darkTheme: Boolean): ColorScheme?
+
 data class FinanceSemanticColors(
     val expense: Color,
     val income: Color,
@@ -81,14 +89,8 @@ fun PersonalMoneyTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val ctx = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
-    }
+    val colorScheme = (if (dynamicColor) platformDynamicColorScheme(darkTheme) else null)
+        ?: if (darkTheme) DarkColors else LightColors
     val financeColors = FinanceSemanticColors(
         expense = ExpenseRed,
         income = IncomeGreen,

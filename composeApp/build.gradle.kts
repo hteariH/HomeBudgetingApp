@@ -67,6 +67,9 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            // IconLibrary maps ~29 icons by name. The set is large, but only the icons
+            // actually referenced survive dead-code elimination in the wasm bundle.
+            implementation(compose.materialIconsExtended)
 
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
