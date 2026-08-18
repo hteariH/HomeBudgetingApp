@@ -12,7 +12,9 @@ import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.currency.FrankfurterApi
 import com.personalmoney.core.currency.FxRefreshWorker
 import com.personalmoney.core.currency.FxScheduler
+import com.personalmoney.core.data.AccountRepository as SharedAccountRepository
 import com.personalmoney.core.data.UserPreferences
+import com.personalmoney.core.data.repository.RoomAccountRepository
 import com.personalmoney.core.data.repository.AccountRepository
 import com.personalmoney.core.data.repository.CategoryRepository
 import com.personalmoney.core.data.repository.CurrencyRepository
@@ -115,6 +117,9 @@ val dataModule = module {
     singleOf(::AndroidTokenStore) bind TokenStore::class
     singleOf(::AuthRepository)
     singleOf(::AccountRepository)
+    // The shared contract the migrating screens use; the entity-level repository above
+    // still serves the Android screens that have not moved yet.
+    singleOf(::RoomAccountRepository) bind SharedAccountRepository::class
     singleOf(::CategoryRepository)
     singleOf(::CurrencyRepository)
     singleOf(::ExchangeRateRepository)

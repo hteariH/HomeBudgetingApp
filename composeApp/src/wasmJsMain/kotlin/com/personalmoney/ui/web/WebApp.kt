@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.dp
 import com.personalmoney.core.auth.AuthRepository
 import com.personalmoney.core.auth.AuthResult
 import com.personalmoney.core.auth.TokenStore
-import com.personalmoney.core.network.RestAccount
-import com.personalmoney.core.network.RestApi
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.toDecimalString
+import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.util.AppLog
 import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
@@ -53,7 +55,7 @@ import org.koin.core.context.GlobalContext
 fun WebApp() {
     val koin = remember { GlobalContext.get() }
     val auth = remember { koin.get<AuthRepository>() }
-    val api = remember { koin.get<RestApi>() }
+    val accountsRepo = remember { koin.get<AccountRepository>() }
     val tokens = remember { koin.get<TokenStore>() }
 
     val signedIn by tokens.signedIn.collectAsState()
@@ -66,7 +68,7 @@ fun WebApp() {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text("PersonalMoney", style = MaterialTheme.typography.headlineMedium)
-                if (signedIn) AccountsPane(api, auth) else SignInPane(auth)
+                if (signedIn) AccountsPane(accountsRepo, auth) else SignInPane(auth)
             }
         }
     }
@@ -109,18 +111,21 @@ private fun SignInPane(auth: AuthRepository) {
 }
 
 @Composable
-private fun AccountsPane(api: RestApi, auth: AuthRepository) {
-    var accounts by remember { mutableStateOf<List<RestAccount>?>(null) }
+private fun AccountsPane(repository: AccountRepository, auth: AuthRepository) {
+    var accounts by remember { mutableStateOf<List<Account>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        runCatching { api.accounts() }
-            .onSuccess { accounts = it }
+        runCatching { repository.refresh() }
             .onFailure {
                 AppLog.w("WebApp", "Loading accounts failed: ${it.message}")
                 error = it.message ?: "Could not load accounts"
             }
+    }
+    // Collected rather than assigned once: the repository republishes after every write.
+    LaunchedEffect(repository) {
+        repository.observeActive().collect { accounts = it }
     }
 
     Row(
@@ -146,8 +151,9 @@ private fun AccountsPane(api: RestApi, auth: AuthRepository) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(account.name)
-                        // Balance stays a string end to end; it is never a Double.
-                        Text("${account.balance} ${account.currency.code}")
+                        // Minor units all the way; formatted only at the edge.
+                        val decimals = CurrencyRegistry.decimalsOrFallback(account.currencyCode)
+                        Text("${account.balanceMinor.toDecimalString(decimals)} ${account.currencyCode}")
                     }
                 }
             }
