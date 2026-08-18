@@ -1,8 +1,7 @@
 package com.personalmoney.core.calc
 
-import com.personalmoney.core.ui.components.NumpadKey
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /** Regression guard for the shared numpad-expression sanitizer used by quick-add and transfer. */
 class ExpressionInputTest {

@@ -11,7 +11,6 @@ import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
-import com.personalmoney.core.ui.components.NumpadKey
 import com.personalmoney.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -29,6 +28,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import com.personalmoney.core.calc.NumpadKey
 
 @Suppress("LargeClass")
 class TransactionEditViewModelTest {

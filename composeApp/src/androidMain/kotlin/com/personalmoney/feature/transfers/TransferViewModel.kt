@@ -13,7 +13,6 @@ import com.personalmoney.core.data.repository.TransactionRepository
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.TransactionType
-import com.personalmoney.core.ui.components.NumpadKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +23,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.Currency
 import java.util.UUID
+import com.personalmoney.core.calc.NumpadKey
 
 /** Which transfer amount field the numpad currently edits. */
 enum class TransferAmountField { FROM, TO, FEE }

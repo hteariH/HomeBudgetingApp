@@ -10,7 +10,6 @@ import com.personalmoney.core.database.entity.ExchangeRateEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.ExchangeRateSource
 import com.personalmoney.core.domain.TransactionType
-import com.personalmoney.core.ui.components.NumpadKey
 import com.personalmoney.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -25,6 +24,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import com.personalmoney.core.calc.NumpadKey
 
 /** Verifies that numpad-driven transfer entry builds a correct debit/credit pair. */
 class TransferViewModelKeyTest {

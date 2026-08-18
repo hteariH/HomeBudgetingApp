@@ -14,7 +14,6 @@ import com.personalmoney.core.database.entity.CategoryEntity
 import com.personalmoney.core.database.entity.TransactionEntity
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
-import com.personalmoney.core.ui.components.NumpadKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +30,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import java.math.BigDecimal
+import com.personalmoney.core.calc.NumpadKey
 
 data class QuickAddUiState(
     val type: TransactionType = TransactionType.EXPENSE,

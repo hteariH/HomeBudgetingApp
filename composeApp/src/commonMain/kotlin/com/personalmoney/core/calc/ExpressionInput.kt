@@ -1,6 +1,5 @@
 package com.personalmoney.core.calc
 
-import com.personalmoney.core.ui.components.NumpadKey
 
 /**
  * Pure numpad-key-to-expression appender shared by the quick-add and transfer flows so that

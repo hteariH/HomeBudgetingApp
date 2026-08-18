@@ -1,10 +1,12 @@
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
@@ -40,7 +42,55 @@ kotlin {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
 
+    // iOS targets are deliberately absent: Kotlin/Native cannot build Apple targets on a
+    // Windows host, so declaring them here would only add tasks that can never run. They
+    // go in when the build moves to a Mac. Shared code is written to iOS constraints
+    // regardless - no JVM types in commonMain - so adding them stays a one-liner.
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        outputModuleName.set("personalmoney")
+        browser {
+            commonWebpackConfig { outputFileName = "personalmoney.js" }
+        }
+        // No nodejs() runner: skiko is on the test classpath via Compose, and it needs a
+        // real browser. wasm tests therefore run under Karma and want CHROME_BIN pointing at
+        // a Chromium build (Edge works) - so they stay out of the routine build gate.
+        binaries.executable()
+    }
+
     sourceSets {
+        commonMain.dependencies {
+            // Compose Multiplatform, not the androidx artifacts: the Compose compiler plugin
+            // runs for every target, so the runtime has to exist on the wasm classpath too.
+            // On Android these resolve to the same androidx artifacts underneath.
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.datetime)
+            // Multiplatform BigDecimal. Money is Long minor units, so this is only needed
+            // for FX multiplication and for parsing decimal strings off the wire - the
+            // server sends every BigDecimal as a string.
+            implementation(libs.bignum)
+            implementation(libs.koin.core)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.auth)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
+
         androidMain.dependencies {
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.appcompat)
