@@ -63,7 +63,23 @@ one set of values works everywhere: `SSH_HOST`, `SSH_USER`, `SSH_KEY` and option
 `SSH_PORT`. Nothing about the application is stored there any more, so the older
 `DB_*`, `JWT_SECRET`, `CRYPTO_SECRET` and `MAIL_*` repository secrets can be deleted.
 
-### 4. The database must be created fresh
+### 4. The web bundle token
+
+The Compose client under `/app` is built in the private `AndroidPersonalMoney` repository
+and attached to a release there as `web-dist.zip`. The deploy downloads it, so it needs a
+credential for *that* repository - this repository's own `GITHUB_TOKEN` cannot read it.
+
+Create a fine-grained personal access token with **Contents: read-only** on
+`hteariH/AndroidPersonalMoney` and nothing else, and store it here as the
+`WEB_BUNDLE_TOKEN` repository secret. The deploy fails with a named error if it is
+missing, rather than shipping a server whose `/app` answers 500 on every request.
+
+Which release ships is pinned by `<web.bundle.tag>` in `pom.xml`, so a server and the
+client it serves move together: rolling this repository back rolls the web client back
+with it. To publish a new one, tag the client repository `web-vX.Y.Z` - its `web-bundle`
+workflow builds, tests and attaches the archive - then bump the property here.
+
+### 5. The database must be created fresh
 
 The schema is not compatible with whatever the pre-Flyway deployment left behind: money
 changed type, the `transfers` table is gone, and constraint names differ. Flyway is

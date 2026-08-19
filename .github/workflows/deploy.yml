@@ -46,6 +46,38 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # The Compose/WebAssembly client, from the release this repository pins. It is
+      # fetched here rather than inside the Docker build so the token never reaches the
+      # image: AndroidPersonalMoney is private, and a build-arg credential lives on in
+      # the build history.
+      - name: Fetch the web bundle
+        env:
+          GH_TOKEN: ${{ secrets.WEB_BUNDLE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::WEB_BUNDLE_TOKEN is not set - see deploy/README.md" >&2
+            exit 1
+          fi
+
+          tag=$(sed -n 's|.*<web[.]bundle[.]tag>\(.*\)</web[.]bundle[.]tag>.*|\1|p' pom.xml)
+          if [ -z "$tag" ]; then
+            echo "::error::no <web.bundle.tag> in pom.xml" >&2
+            exit 1
+          fi
+          echo "Web bundle: $tag"
+
+          gh release download "$tag" \
+            --repo ${{ github.repository_owner }}/AndroidPersonalMoney \
+            --pattern web-dist.zip \
+            --output web-dist.zip
+          unzip -q -o web-dist.zip -d web-dist
+
+          # A missing shell would deploy a server whose /app answers 500 on every
+          # request, and nothing downstream of here would notice.
+          test -f web-dist/index.html || { echo "::error::web-dist.zip has no index.html" >&2; exit 1; }
+          echo "Unpacked $(du -sh web-dist | cut -f1)"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:

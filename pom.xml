@@ -32,6 +32,16 @@
         <!-- `-Dfrontend.skip=true` runs backend-only builds without downloading Node
              and rebuilding the React bundle. Packaging must leave this at false. -->
         <frontend.skip>false</frontend.skip>
+
+        <!-- Which release of the Compose/WebAssembly client to ship under /app.
+             Built in the AndroidPersonalMoney repository (its `web-bundle.yml` workflow)
+             and attached to that release as web-dist.zip; the deploy workflow downloads it
+             into ./web-dist before the image is built.
+
+             Pinned here rather than resolved to "latest" so that a server and the client
+             it serves are one deployable thing: rolling this repository back rolls the
+             web client back with it, instead of pairing an old API with a new UI. -->
+        <web.bundle.tag>web-v0.1.0</web.bundle.tag>
     </properties>
 
     <dependencies>
