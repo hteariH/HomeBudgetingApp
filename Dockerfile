@@ -3,13 +3,12 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-# The Compose/WebAssembly client, built in the AndroidPersonalMoney repository and
-# downloaded into ./web-dist by the deploy workflow (see .github/workflows/deploy.yml).
+# The Compose/WebAssembly client, built by the `client` job of the deploy workflow from
+# ./client in this repository and handed over as a build artifact.
 #
-# Downloaded there rather than here on purpose: that repository is private, so fetching a
-# release asset needs a credential, and a credential passed into a Docker build is a
-# credential in the build's history. This way the token never enters the image at all and
-# the Dockerfile stays buildable by anyone who drops a bundle into ./web-dist.
+# Built there rather than here because this image has no Android SDK: the client has an
+# Android target, so Gradle configures AGP even for a wasm-only task, and pulling that
+# toolchain into a backend image would be a heavy price for a directory of static files.
 #
 # Empty in a plain local build, which leaves /app unserved and the rest of the app intact.
 # WebConfig serves this from classpath:/static/app/, so it has to be in place before the

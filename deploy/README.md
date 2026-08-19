@@ -63,23 +63,7 @@ one set of values works everywhere: `SSH_HOST`, `SSH_USER`, `SSH_KEY` and option
 `SSH_PORT`. Nothing about the application is stored there any more, so the older
 `DB_*`, `JWT_SECRET`, `CRYPTO_SECRET` and `MAIL_*` repository secrets can be deleted.
 
-### 4. The web bundle token
-
-The Compose client under `/app` is built in the private `AndroidPersonalMoney` repository
-and attached to a release there as `web-dist.zip`. The deploy downloads it, so it needs a
-credential for *that* repository - this repository's own `GITHUB_TOKEN` cannot read it.
-
-Create a fine-grained personal access token with **Contents: read-only** on
-`hteariH/AndroidPersonalMoney` and nothing else, and store it here as the
-`WEB_BUNDLE_TOKEN` repository secret. The deploy fails with a named error if it is
-missing, rather than shipping a server whose `/app` answers 500 on every request.
-
-Which release ships is pinned by `<web.bundle.tag>` in `pom.xml`, so a server and the
-client it serves move together: rolling this repository back rolls the web client back
-with it. To publish a new one, tag the client repository `web-vX.Y.Z` - its `web-bundle`
-workflow builds, tests and attaches the archive - then bump the property here.
-
-### 5. The database must be created fresh
+### 4. The database must be created fresh
 
 The schema is not compatible with whatever the pre-Flyway deployment left behind: money
 changed type, the `transfers` table is gone, and constraint names differ. Flyway is
@@ -90,9 +74,19 @@ Drop the old database once, before the first deploy of this version.
 
 ## What the deploy does
 
-On push to `master`: run the backend tests, build and push the image to GHCR, copy
-`docker-compose.yml` to `~/homebudget` and `deploy/personalmoney.caddy` to
-`/opt/edge/conf.d/`, then bring the stack up and reload the shared Caddy.
+On push to `master`: run the backend tests and, in parallel, the client's tests and its
+WebAssembly bundle; build and push the image to GHCR; copy `docker-compose.yml` to
+`~/homebudget` and `deploy/personalmoney.caddy` to `/opt/edge/conf.d/`; then bring the
+stack up and reload the shared Caddy.
+
+The client under `client/` is built in its own job and handed to the image build as an
+artifact, because the backend image has no Android SDK and adding one would be a heavy
+price for a directory of static files. It travels within the run rather than through a
+release, so the server and the web client it serves are always the same commit - there is
+no version to pin and nothing to keep in step by hand.
+
+Every push to `master` therefore rebuilds both. That is deliberate: a change to either
+side has to reach production as one image, so there are no path filters to get wrong.
 
 The app joins the external `edge` network as `personalmoney-app`; the database stays on
 the stack's own network and is never reachable from the proxy or the internet.

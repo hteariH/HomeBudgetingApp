@@ -1,6 +1,14 @@
 # Home Budgeting App
 
-A personal home budgeting web application built with Spring Boot (Kotlin) and React (TypeScript).
+PersonalMoney: a personal finance service, and every client that talks to it.
+
+- The repository root is the **server** — Spring Boot (Kotlin), plus the React landing page.
+- [`client/`](client) is the **Compose Multiplatform client** — one codebase serving the
+  Android app and the web app at `/app`.
+
+They live together because they share an API contract: a change to a DTO is one commit on
+both sides, and a deploy ships a server and the web client it serves as the same image.
+There is no version to pin between them and nothing to keep in step by hand.
 
 ## Overview
 

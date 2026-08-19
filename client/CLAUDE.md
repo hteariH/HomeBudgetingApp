@@ -5,7 +5,8 @@ Guidance for Claude Code when working in this repo. Keep this file current.
 ## What this is
 
 **PersonalMoney** — an offline-first Android personal-finance app, and a client of the
-HomeBudgeting server (`../HomeBudgetingApp`). Data lives in Room on-device and converges on the
+HomeBudgeting server, which lives in the parent directory of this one: `client/` holds
+every client (Android and web), the repository root holds the server. Data lives in Room on-device and converges on the
 server through two-way sync, so the app keeps working with no network at all. Monetised with
 AdMob. Trilingual UI (en / ru / uk). The core value is fast, frictionless expense entry
 (including a home-screen widget).
@@ -27,7 +28,8 @@ Package `com.personalmoney` (debug app id `com.personalmoney.debug`).
 
 ## Build / test / run
 
-Gradle needs the Android Studio JBR. From the repo root:
+Gradle needs the Android Studio JBR. From `client/` (not the repository root, which
+is the Maven server build):
 
 ```powershell
 $env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
