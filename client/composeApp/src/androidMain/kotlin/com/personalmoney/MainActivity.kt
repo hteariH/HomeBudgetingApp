@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val themeMode by preferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
-            val dynamicColor by preferences.dynamicColor.collectAsState(initial = true)
+            val dynamicColor by preferences.dynamicColor.collectAsState(initial = false)
             val biometricLockEnabled by preferences.biometricLockEnabled.collectAsState(initial = false)
             val systemDark = isSystemInDarkTheme()
             val darkTheme = when (themeMode) {

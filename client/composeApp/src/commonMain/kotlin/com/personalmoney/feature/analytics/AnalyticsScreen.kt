@@ -42,8 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.core.ui.components.MoneyText
-import com.personalmoney.core.ui.theme.ExpenseRed
-import com.personalmoney.core.ui.theme.IncomeGreen
+import com.personalmoney.core.ui.theme.LocalFinanceColors
 import com.personalmoney.core.ui.theme.LocalFinanceColors
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -248,6 +247,7 @@ private fun MonthlyBarChart(
     maxValue: Long,
     modifier: Modifier = Modifier
 ) {
+    val finance = LocalFinanceColors.current
     val chartHeight = 160.dp
 
     Row(
@@ -280,7 +280,7 @@ private fun MonthlyBarChart(
                             .weight(1f)
                             .fillMaxHeight(expAnim)
                             .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            .background(ExpenseRed)
+                            .background(finance.expense)
                     )
                     // Income bar
                     Box(
@@ -288,7 +288,7 @@ private fun MonthlyBarChart(
                             .weight(1f)
                             .fillMaxHeight(incAnim)
                             .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            .background(IncomeGreen)
+                            .background(finance.income)
                     )
                 }
                 Spacer(Modifier.height(4.dp))

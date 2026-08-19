@@ -234,6 +234,8 @@
     <string name="onboarding_step_of">Крок %1$d з %2$d</string>
 
     <!-- Auth & sync -->
+    <string name="auth_login_title">З поверненням</string>
+    <string name="auth_register_title">Створення акаунта</string>
     <string name="auth_login_subtitle">Увійдіть, щоб синхронізувати фінанси між пристроями</string>
     <string name="auth_register_subtitle">Створіть акаунт для синхронізації між пристроями</string>
     <string name="auth_email">Електронна пошта</string>

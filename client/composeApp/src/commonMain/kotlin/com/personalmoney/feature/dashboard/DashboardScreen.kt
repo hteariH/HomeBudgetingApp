@@ -5,8 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
-import com.personalmoney.core.ui.theme.ExpenseRed
-import com.personalmoney.core.ui.theme.IncomeGreen
+import com.personalmoney.core.ui.theme.LocalFinanceColors
 import com.personalmoney.feature.quickadd.QuickEntryPanel
 import org.jetbrains.compose.resources.pluralStringResource
 import androidx.compose.ui.draw.clip
@@ -413,6 +412,7 @@ private val WIDE_DASHBOARD = 900.dp
  */
 @Composable
 private fun StatCardRow(state: DashboardUiState) {
+    val finance = LocalFinanceColors.current
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -420,21 +420,21 @@ private fun StatCardRow(state: DashboardUiState) {
         StatCard(
             label = stringResource(Res.string.dashboard_month_income),
             money = state.monthIncome,
-            valueColor = IncomeGreen,
+            valueColor = finance.income,
             sub = stringResource(Res.string.dashboard_current_month),
             modifier = Modifier.weight(1f),
         )
         StatCard(
             label = stringResource(Res.string.dashboard_month_expenses),
             money = state.monthExpenses,
-            valueColor = ExpenseRed,
+            valueColor = finance.expense,
             sub = stringResource(Res.string.dashboard_current_month),
             modifier = Modifier.weight(1f),
         )
         StatCard(
             label = stringResource(Res.string.dashboard_net_this_month),
             money = state.monthNet,
-            valueColor = if (state.monthNet.minor >= 0) IncomeGreen else ExpenseRed,
+            valueColor = if (state.monthNet.minor >= 0) finance.income else finance.expense,
             sub = stringResource(Res.string.dashboard_income_minus_expenses),
             modifier = Modifier.weight(1f),
         )
@@ -485,6 +485,7 @@ private fun StatCard(
  */
 @Composable
 private fun MonthlyFlowCard(state: DashboardUiState) {
+    val finance = LocalFinanceColors.current
     val flow = state.monthlyFlow
     if (flow.isEmpty()) return
     val peak = flow.maxOf { maxOf(it.incomeMinor, it.expenseMinor) }.coerceAtLeast(1L)
@@ -511,9 +512,9 @@ private fun MonthlyFlowCard(state: DashboardUiState) {
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.Bottom,
                         ) {
-                            FlowBar(month.incomeMinor, peak, IncomeGreen)
+                            FlowBar(month.incomeMinor, peak, finance.income)
                             Spacer(Modifier.size(4.dp))
-                            FlowBar(month.expenseMinor, peak, ExpenseRed)
+                            FlowBar(month.expenseMinor, peak, finance.expense)
                         }
                         Spacer(Modifier.size(6.dp))
                         Text(
@@ -526,8 +527,8 @@ private fun MonthlyFlowCard(state: DashboardUiState) {
             }
             Spacer(Modifier.size(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                LegendSwatch(IncomeGreen, stringResource(Res.string.common_income))
-                LegendSwatch(ExpenseRed, stringResource(Res.string.common_expense))
+                LegendSwatch(finance.income, stringResource(Res.string.common_income))
+                LegendSwatch(finance.expense, stringResource(Res.string.common_expense))
             }
         }
     }

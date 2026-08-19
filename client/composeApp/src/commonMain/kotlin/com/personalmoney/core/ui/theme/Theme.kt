@@ -1,7 +1,9 @@
 package com.personalmoney.core.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -9,58 +11,103 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+
+/**
+ * The web app's four surface layers, mapped onto Material's slots.
+ *
+ * Material names its containers by elevation; the web app names them by what sits in them.
+ * They line up: `background` is the page, `surface` is the chrome around it,
+ * `surfaceContainer` is a card, `surfaceContainerHigh` is a card being hovered. Keeping
+ * that mapping explicit here means the screens can keep using ordinary Material slots and
+ * still come out looking like the web app.
+ */
+private val DarkColors = darkColorScheme(
+    primary = AccentLight,
+    onPrimary = Color.White,
+    primaryContainer = AccentDark,
+    onPrimaryContainer = Color.White,
+    // The accent again rather than a second hue: the web app has one accent, and inventing
+    // a secondary here would show up as a colour that exists nowhere in the design.
+    secondary = Accent,
+    onSecondary = Color.White,
+    secondaryContainer = DarkHover,
+    onSecondaryContainer = DarkTextPrimary,
+    tertiary = StatusCyan,
+    onTertiary = Color.White,
+    tertiaryContainer = DarkHover,
+    onTertiaryContainer = DarkTextPrimary,
+    error = StatusRed,
+    onError = Color.White,
+    errorContainer = Color(0xFF3A1D1D),
+    onErrorContainer = Color(0xFFFCA5A5),
+    background = DarkBase,
+    onBackground = DarkTextPrimary,
+    surface = DarkSurface,
+    onSurface = DarkTextPrimary,
+    surfaceVariant = DarkHover,
+    onSurfaceVariant = DarkTextSecondary,
+    surfaceContainerLowest = DarkBase,
+    surfaceContainerLow = DarkSurface,
+    surfaceContainer = DarkCard,
+    surfaceContainerHigh = DarkHover,
+    surfaceContainerHighest = DarkHover,
+    outline = DarkBorderLight,
+    outlineVariant = DarkBorder,
+)
 
 private val LightColors = lightColorScheme(
-    primary = Indigo40,
+    primary = Accent,
     onPrimary = Color.White,
-    primaryContainer = Indigo90,
-    onPrimaryContainer = Indigo10,
-    secondary = Teal40,
+    primaryContainer = Color(0xFFE0E7FF),
+    onPrimaryContainer = AccentDark,
+    secondary = AccentDark,
     onSecondary = Color.White,
-    secondaryContainer = Teal90,
-    onSecondaryContainer = Teal10,
-    tertiary = Amber40,
+    secondaryContainer = LightHover,
+    onSecondaryContainer = LightTextPrimary,
+    tertiary = Color(0xFF0891B2),
     onTertiary = Color.White,
-    tertiaryContainer = Amber90,
-    onTertiaryContainer = Amber10,
-    error = Red40,
+    tertiaryContainer = LightHover,
+    onTertiaryContainer = LightTextPrimary,
+    error = Color(0xFFDC2626),
     onError = Color.White,
-    errorContainer = Red90,
-    onErrorContainer = Red10,
-    background = Neutral99,
-    onBackground = Neutral10,
-    surface = Neutral99,
-    onSurface = Neutral10,
-    surfaceVariant = Neutral95,
-    onSurfaceVariant = Neutral20,
-    outline = Indigo60
+    errorContainer = Color(0xFFFEE2E2),
+    onErrorContainer = Color(0xFF991B1B),
+    background = LightBase,
+    onBackground = LightTextPrimary,
+    surface = LightSurface,
+    onSurface = LightTextPrimary,
+    surfaceVariant = LightHover,
+    onSurfaceVariant = LightTextSecondary,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = LightBase,
+    surfaceContainer = LightCard,
+    surfaceContainerHigh = LightHover,
+    surfaceContainerHighest = LightHover,
+    outline = LightBorderLight,
+    outlineVariant = LightBorder,
 )
 
-private val DarkColors = darkColorScheme(
-    primary = Indigo80,
-    onPrimary = Indigo10,
-    primaryContainer = Indigo20,
-    onPrimaryContainer = Indigo90,
-    secondary = Teal80,
-    onSecondary = Teal10,
-    secondaryContainer = Teal40,
-    onSecondaryContainer = Teal90,
-    tertiary = Amber80,
-    onTertiary = Amber10,
-    tertiaryContainer = Amber40,
-    onTertiaryContainer = Amber90,
-    error = Red80,
-    onError = Red10,
-    errorContainer = Red40,
-    onErrorContainer = Red90,
-    background = Neutral10,
-    onBackground = Neutral90,
-    surface = Neutral10,
-    onSurface = Neutral90,
-    surfaceVariant = Neutral20,
-    onSurfaceVariant = Neutral90,
-    outline = Indigo60
+/**
+ * The web app's radii: 6, 10, 16, 24.
+ *
+ * Material's default scale is rounder (up to 28dp) and reads as a different product.
+ * Cards, sheets, dialogs and text fields pick these up on their own.
+ *
+ * Buttons do not: Material 3 pins them to a pill regardless of this scale, so a button
+ * that should look like the web app's has to say `shape = MaterialTheme.shapes.small` for
+ * itself. [PmButtonShape] is that value under a name, so the reason is written down once.
+ */
+val PersonalMoneyShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(6.dp),
+    medium = RoundedCornerShape(10.dp),
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(24.dp),
 )
+
+/** The web app's `--radius-sm`, which is what every button and input there uses. */
+val PmButtonShape = RoundedCornerShape(6.dp)
 
 /**
  * Material You, where the platform has it.
@@ -73,33 +120,71 @@ private val DarkColors = darkColorScheme(
 @Composable
 expect fun platformDynamicColorScheme(darkTheme: Boolean): ColorScheme?
 
+/**
+ * The colours Material has no slot for.
+ *
+ * [muted] is the web app's third text step, used for placeholders and the quiet half of a
+ * two-line row. [border] is its `--border`: Material's `outlineVariant` carries the same
+ * value, but a border is drawn often enough here to deserve a name that says so.
+ */
 data class FinanceSemanticColors(
     val expense: Color,
     val income: Color,
-    val transfer: Color
+    val transfer: Color,
+    val muted: Color,
+    val border: Color,
 )
 
 val LocalFinanceColors = staticCompositionLocalOf {
-    FinanceSemanticColors(expense = ExpenseRed, income = IncomeGreen, transfer = TransferBlue)
+    FinanceSemanticColors(
+        expense = ExpenseRedDark,
+        income = IncomeGreenDark,
+        transfer = TransferBlueDark,
+        muted = DarkTextMuted,
+        border = DarkBorder,
+    )
 }
 
 @Composable
 fun PersonalMoneyTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    /**
+     * Off by default now. Material You repaints the whole app from the phone's wallpaper,
+     * which is the opposite of what this palette is for - the point is that the phone and
+     * the browser show one product. The Android setting still exists for anyone who
+     * prefers their wallpaper's colours; it simply no longer wins by default.
+     */
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = (if (dynamicColor) platformDynamicColorScheme(darkTheme) else null)
         ?: if (darkTheme) DarkColors else LightColors
-    val financeColors = FinanceSemanticColors(
-        expense = ExpenseRed,
-        income = IncomeGreen,
-        transfer = TransferBlue
-    )
+
+    // Per theme, not fixed: the money colours have to stay readable as text on both a
+    // near-black card and a white one. See Color.kt for the contrast measurements.
+    val financeColors = if (darkTheme) {
+        FinanceSemanticColors(
+            expense = ExpenseRedDark,
+            income = IncomeGreenDark,
+            transfer = TransferBlueDark,
+            muted = DarkTextMuted,
+            border = DarkBorder,
+        )
+    } else {
+        FinanceSemanticColors(
+            expense = ExpenseRedLight,
+            income = IncomeGreenLight,
+            transfer = TransferBlueLight,
+            muted = LightTextMuted,
+            border = LightBorder,
+        )
+    }
+
     CompositionLocalProvider(LocalFinanceColors provides financeColors) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = PersonalMoneyTypography,
+            shapes = PersonalMoneyShapes,
             content = content
         )
     }

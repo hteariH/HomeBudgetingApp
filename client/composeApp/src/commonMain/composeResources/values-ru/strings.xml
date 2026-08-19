@@ -234,6 +234,8 @@
     <string name="onboarding_step_of">Шаг %1$d из %2$d</string>
 
     <!-- Auth & sync -->
+    <string name="auth_login_title">С возвращением</string>
+    <string name="auth_register_title">Создание аккаунта</string>
     <string name="auth_login_subtitle">Войдите, чтобы синхронизировать финансы между устройствами</string>
     <string name="auth_register_subtitle">Создайте аккаунт для синхронизации между устройствами</string>
     <string name="auth_email">Электронная почта</string>

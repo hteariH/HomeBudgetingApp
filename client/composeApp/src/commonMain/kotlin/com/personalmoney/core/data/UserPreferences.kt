@@ -27,7 +27,15 @@ class UserPreferences(private val store: KeyValueStore) {
     val language: Flow<String?> = store.observeString(Keys.LANGUAGE)
     val defaultAccountId: Flow<Long?> = store.observeLong(Keys.DEFAULT_ACCOUNT)
     val onboarded: Flow<Boolean> = store.observeBoolean(Keys.ONBOARDED).map { it ?: false }
-    val dynamicColor: Flow<Boolean> = store.observeBoolean(Keys.DYNAMIC_COLOR).map { it ?: true }
+    /**
+     * Off unless the user asks for it.
+     *
+     * Material You repaints the app from the phone's wallpaper, which undoes the palette
+     * the web and Android clients now share - and the point of one codebase is that they
+     * look like one product. Anyone who preferred their wallpaper's colours can still turn
+     * it back on; it just no longer wins by default.
+     */
+    val dynamicColor: Flow<Boolean> = store.observeBoolean(Keys.DYNAMIC_COLOR).map { it ?: false }
     val fxLastRefreshMs: Flow<Long> = store.observeLong(Keys.FX_LAST_REFRESH_MS).map { it ?: 0L }
     val transactionSaveCount: Flow<Long> =
         store.observeLong(Keys.TRANSACTION_SAVE_COUNT).map { it ?: 0L }

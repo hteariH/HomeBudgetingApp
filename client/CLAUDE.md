@@ -76,6 +76,16 @@ Tests: JUnit + MockK + Turbine, with a `MainDispatcherRule` (UnconfinedTestDispa
   optimistic via `baseUpdatedAt`. **uuid is the identity across clients — server ids are not
   portable.** Tokens live in `core/auth/TokenStore` (EncryptedSharedPreferences); refresh is
   handled once, under a mutex, by `TokenAuthenticator` — never refresh at a call site.
+- **Design:** the palette, radii and type scale come from the React client's tokens
+  (`../src/main/frontend/src/index.css`), ported in `core/ui/theme/`. Colours are named by
+  role (`DarkCard`, `Accent`, `IncomeGreenDark`), never by hue, and screens read Material
+  slots - `surfaceContainer` is a card, `outlineVariant` is a 1px border. Money colours and
+  the third text step come from `LocalFinanceColors`, which differs per theme: `#10B981`
+  as text on white is 2.47:1, so light mode uses a darker step. **Never hardcode a colour
+  in a screen** - if a slot is missing, add it to `FinanceSemanticColors`. Material 3 pins
+  buttons to a pill regardless of `MaterialTheme.shapes`, so a button that should match the
+  web app passes `shape = PmButtonShape`. Material You is off by default: it repaints the
+  app from the wallpaper, which is the opposite of one product on two platforms.
 - **i18n:** strings live in **`composeApp/src/commonMain/composeResources/values{,-ru,-uk}/
   strings.xml`**, not in `res/values*` - the Android resource table cannot be read from wasm.
   Read them with `stringResource(Res.string.x)` (composable) or the **suspend**

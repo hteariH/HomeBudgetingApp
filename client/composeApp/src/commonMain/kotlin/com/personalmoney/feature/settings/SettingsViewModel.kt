@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 data class SettingsUiState(
     val baseCurrency: String = "USD",
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
     val biometricLockEnabled: Boolean = false,
     val numpadPhoneLayout: Boolean = false,
     val currencies: List<Currency> = emptyList(),
