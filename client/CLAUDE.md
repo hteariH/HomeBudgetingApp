@@ -51,6 +51,31 @@ $adb="$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 
 Tests: JUnit + MockK + Turbine, with a `MainDispatcherRule` (UnconfinedTestDispatcher) + `runTest`.
 
+Web checks (headless — no visible window needed, unlike a real browser tab, which stops
+rendering the moment it goes to the background):
+
+```powershell
+# 1. build and stage the bundle where the local server serves /app from
+./gradlew.bat wasmJsBrowserDistribution --no-daemon
+Copy-Item "composeApp\build\dist\wasmJs\productionExecutable\*" `
+          "..\src\main\resources\static\app" -Recurse -Force
+# 2. run the server from classes (mvnw spring-boot:run, or `mvn package` then the jar)
+# 3. shoot it at any width
+& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new `
+  --enable-unsafe-swiftshader --hide-scrollbars --window-size=1440,900 `
+  --virtual-time-budget=40000 --screenshot="$env:TEMP\web.png" `
+  --user-data-dir="$env:TEMP\hlprofile" "http://localhost:8085/app/"
+```
+
+`--enable-unsafe-swiftshader` is the load-bearing flag: Compose draws through WebGL, and
+without software rasterisation the page renders its rectangles and none of its text.
+`--disable-gpu` is *not* a substitute - it produces exactly that half-drawn result.
+
+This is the only way to see the web build's actual pixels. Unit tests cannot: the two bugs
+that shipped anyway - a hryvnia rendering as a blank box, and a horizontal scrollbar caused
+by the vertical one - were both invisible to 177 green tests and to the Android emulator.
+
+
 ## Architecture & conventions
 
 - Unidirectional flow: `ViewModel(StateFlow)` → Compose. Hilt for DI. Room + Flow for reactive reads.

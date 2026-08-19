@@ -183,7 +183,7 @@ fun PersonalMoneyTheme(
     CompositionLocalProvider(LocalFinanceColors provides financeColors) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = PersonalMoneyTypography,
+            typography = personalMoneyTypography(),
             shapes = PersonalMoneyShapes,
             content = content
         )

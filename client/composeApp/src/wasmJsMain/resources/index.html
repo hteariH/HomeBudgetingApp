@@ -6,7 +6,11 @@
     <title>PersonalMoney</title>
     <link rel="icon" href="/favicon.ico" sizes="any">
     <style>
-        html, body { margin: 0; padding: 0; height: 100%; background: #0D0F14; }
+        /* `overflow: hidden` because the page itself must never scroll: Compose fills the
+           viewport and scrolls inside its own containers. Without it the app sizes itself
+           to window.innerWidth, which counts the scrollbar, so the page ended up 15px
+           wider than it could show - a horizontal scrollbar caused by the vertical one. */
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0D0F14; }
         /* The wasm bundle is measured in megabytes, so the first frame is not instant.
            This placeholder is replaced by Compose on its first composition. */
         #loading { position: fixed; inset: 0; display: grid; place-items: center;
