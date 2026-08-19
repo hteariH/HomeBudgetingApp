@@ -151,13 +151,12 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
+            // Each of these draws its own trailing divider, and draws nothing at all on a
+            // platform that lacks the capability - so the screen must not add separators
+            // around them, or the web would show dividers with nothing between them.
             LanguageSection()
 
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-
             BiometricLockSection(viewModel, state.biometricLockEnabled)
-
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             BackupSection(snackbar)
 
