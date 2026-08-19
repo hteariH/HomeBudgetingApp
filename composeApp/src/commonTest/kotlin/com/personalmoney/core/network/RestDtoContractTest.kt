@@ -95,6 +95,27 @@ class RestDtoContractTest {
     }
 
     @Test
+    fun `decodes a real bank provider payload`() {
+        val payload = """
+            [{"id":"MONOBANK","displayName":"Monobank","helpUrl":"https://api.monobank.ua",
+              "credentialFields":[{"name":"token","label":"Personal API token","type":"SECRET",
+                "placeholder":"u1cx...","helpText":"Open api.monobank.ua, confirm in the Monobank app, and copy the token.",
+                "required":true}]}]
+        """.trimIndent()
+
+        val providers = json.decodeFromString<List<RestBankProvider>>(payload)
+
+        assertEquals(1, providers.size)
+        // The credential form is built from this list rather than hardcoded per provider,
+        // so a new field on the server reaches the UI without a client change.
+        val field = providers[0].credentialFields.single()
+        assertEquals("token", field.name)
+        // SECRET, not "password" - the server's own vocabulary, and what decides masking.
+        assertEquals("SECRET", field.type)
+        assertTrue(field.required)
+    }
+
+    @Test
     fun `decodes an empty transaction page`() {
         val payload = """{"content":[],"page":0,"size":1,"totalElements":0,"totalPages":0}"""
 

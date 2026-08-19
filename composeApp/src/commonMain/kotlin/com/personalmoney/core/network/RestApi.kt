@@ -105,6 +105,45 @@ class RestApi(private val client: HttpClient) {
 
     suspend fun deleteSubscription(id: Long) { client.delete("api/subscriptions/$id") }
 
+    // ── banks ────────────────────────────────────────────────────────────────
+    /**
+     * Bank connections. The only part of the API that talks to a third party on the user's
+     * behalf - see BankDtos for why credentials only ever travel upwards.
+     */
+    suspend fun bankProviders(): List<RestBankProvider> =
+        client.get("api/bank/providers").body()
+
+    suspend fun bankConnections(): List<RestBankConnection> =
+        client.get("api/bank/connections").body()
+
+    suspend fun connectBank(body: CreateConnectionRequest): RestBankConnection =
+        client.post("api/bank/connections") { jsonBody(body) }.body()
+
+    /** Re-checks stored credentials against the bank, and refreshes the connection status. */
+    suspend fun verifyBank(id: Long): RestBankConnection =
+        client.post("api/bank/connections/$id/verify").body()
+
+    suspend fun updateBankCredentials(id: Long, body: UpdateCredentialsRequest): RestBankConnection =
+        client.put("api/bank/connections/$id/credentials") { jsonBody(body) }.body()
+
+    suspend fun disconnectBank(id: Long) { client.delete("api/bank/connections/$id") }
+
+    suspend fun remoteAccounts(connectionId: Long): List<RestRemoteAccount> =
+        client.get("api/bank/connections/$connectionId/accounts").body()
+
+    suspend fun linkAccount(connectionId: Long, accountId: Long, body: LinkAccountRequest) {
+        client.post("api/bank/connections/$connectionId/accounts/$accountId/link") { jsonBody(body) }
+    }
+
+    suspend fun unlinkAccount(accountId: Long) { client.delete("api/bank/accounts/$accountId/link") }
+
+    /** Reads the statement without writing anything - the user confirms afterwards. */
+    suspend fun previewBankImport(body: ImportPreviewRequest): List<RestPendingImport> =
+        client.post("api/bank/import/preview") { jsonBody(body) }.body()
+
+    suspend fun confirmBankImport(body: ImportConfirmRequest): RestImportResult =
+        client.post("api/bank/import/confirm") { jsonBody(body) }.body()
+
     // ── fx ───────────────────────────────────────────────────────────────────
     /**
      * The rates the server refreshed overnight. Read-only by design: rates are per-install,
