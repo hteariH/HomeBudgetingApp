@@ -151,6 +151,13 @@ fun BanksScreen(
                 ImportCard(state, viewModel)
             }
 
+            // Always offered, unlike the bank import above: a file needs no connection,
+            // which is the whole point of it - it reaches the banks with no API at all.
+            CsvImportCard(
+                accounts = state.accounts,
+                categories = state.categories,
+                onImported = viewModel::onLedgerChanged,
+            )
         }
     }
 

@@ -6,11 +6,15 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 
 /**
@@ -143,6 +147,52 @@ class RestApi(private val client: HttpClient) {
 
     suspend fun confirmBankImport(body: ImportConfirmRequest): RestImportResult =
         client.post("api/bank/import/confirm") { jsonBody(body) }.body()
+
+    // ── csv import ───────────────────────────────────────────────────────────
+    /**
+     * Reads a statement file without importing it.
+     *
+     * The mapping travels as query parameters rather than in the body because the body is
+     * the file - that is the server's shape, not a choice made here. Sending only some of
+     * the columns is pointless: the server honours a mapping only when both `date` and
+     * `description` are present, and otherwise re-detects and returns its own guess.
+     */
+    suspend fun previewCsv(
+        accountId: Long,
+        fileName: String,
+        bytes: ByteArray,
+        mapping: RestCsvMapping? = null,
+    ): RestCsvPreview = client.post("api/import/csv/preview") {
+        parameter("accountId", accountId)
+        mapping?.let {
+            parameter("date", it.date)
+            parameter("description", it.description)
+            it.amount?.let { v -> parameter("amount", v) }
+            it.debit?.let { v -> parameter("debit", v) }
+            it.credit?.let { v -> parameter("credit", v) }
+            it.currency?.let { v -> parameter("currency", v) }
+            it.dateFormat?.let { v -> parameter("dateFormat", v) }
+        }
+        setBody(
+            MultiPartFormDataContent(
+                formData {
+                    append(
+                        "file",
+                        bytes,
+                        Headers.build {
+                            append(HttpHeaders.ContentType, "text/csv")
+                            // The server reads the part by name, but a filename is what
+                            // makes Spring treat this as an uploaded file at all.
+                            append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                        },
+                    )
+                }
+            )
+        )
+    }.body()
+
+    suspend fun confirmCsv(body: CsvConfirmRequest): RestImportResult =
+        client.post("api/import/csv/confirm") { jsonBody(body) }.body()
 
     // ── fx ───────────────────────────────────────────────────────────────────
     /**

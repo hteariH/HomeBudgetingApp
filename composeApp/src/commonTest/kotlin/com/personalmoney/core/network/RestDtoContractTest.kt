@@ -1,6 +1,7 @@
 package com.personalmoney.core.network
 
 import com.personalmoney.core.domain.SubscriptionFrequency
+import com.personalmoney.core.domain.TransactionType
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -134,6 +135,45 @@ class RestDtoContractTest {
         // (`default-property-inclusion: non_null`), so every optional field here has to
         // carry a default rather than merely be nullable.
         assertNull(connection.lastVerifiedAt)
+    }
+
+    @Test
+    fun `decodes a real csv preview payload`() {
+        val payload = """
+            {"headers":["Date","Description","Amount","Currency"],
+             "mapping":{"date":"Date","description":"Description","amount":"Amount","currency":"Currency"},
+             "rows":[{"externalId":"csv:299586ed9ab50e5077ece49c","occurredAt":"2026-08-01T00:00:00Z",
+                      "date":"2026-08-01","description":"Coffee shop","amountMinor":450,
+                      "currencyCode":"USD","type":"EXPENSE","alreadyImported":false},
+                     {"externalId":"csv:2019495562d78fff3201ee66","occurredAt":"2026-08-02T00:00:00Z",
+                      "date":"2026-08-02","description":"Salary","amountMinor":200000,
+                      "currencyCode":"USD","type":"INCOME","alreadyImported":false}],
+             "skipped":["unparseable date 'not-a-date'"],"currencyMismatch":[]}
+        """.trimIndent()
+
+        val preview = json.decodeFromString<RestCsvPreview>(payload)
+
+        // Detection filled in all four; `debit`, `credit` and `dateFormat` are absent from
+        // the JSON, which is why every one of them needs a default and not just a nullable
+        // type - the server omits nulls entirely.
+        assertEquals("Date", preview.mapping.date)
+        assertEquals("Amount", preview.mapping.amount)
+        assertNull(preview.mapping.debit)
+        assertNull(preview.mapping.dateFormat)
+
+        val expense = preview.rows.first()
+        // Positive magnitude with the direction in `type`, the same convention the rest of
+        // the app uses - not a negative number.
+        assertEquals(450L, expense.amountMinor)
+        assertEquals(TransactionType.EXPENSE, expense.type)
+        assertEquals(TransactionType.INCOME, preview.rows[1].type)
+        // Kept as text and handed straight back on confirm; parsing it would only risk
+        // returning something subtly different.
+        assertEquals("2026-08-01T00:00:00Z", expense.occurredAt)
+        assertNull(expense.suggestedCategoryId)
+
+        // The reason, not just a count - which is what makes showing these lines useful.
+        assertEquals(listOf("unparseable date 'not-a-date'"), preview.skipped)
     }
 
     @Test
