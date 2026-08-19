@@ -16,12 +16,9 @@ import com.google.android.gms.ads.AdView
 import com.personalmoney.BuildConfig
 
 @Composable
-fun BannerAd(
-    modifier: Modifier = Modifier,
-    adUnitId: String = BuildConfig.ADMOB_BANNER_UNIT_ID,
-    enabled: Boolean = true
-) {
+actual fun BannerAd(modifier: Modifier, enabled: Boolean) {
     if (!enabled) return
+    val adUnitId = BuildConfig.ADMOB_BANNER_UNIT_ID
     val context = LocalContext.current
     val adView = remember {
         AdView(context).apply {
