@@ -1,0 +1,91 @@
+name: Web bundle
+
+# Publishes the Compose/WebAssembly client as a release asset.
+#
+# The backend lives in another repository and builds in a Docker image that has no Android
+# SDK - and pulling one in just so Gradle can configure this project would be a heavy price
+# for a directory of static files. So the bundle is built here, where the toolchain already
+# is, and travels to the backend as `web-dist.zip` on a release.
+#
+# The backend pins which release it wants (`web.bundle.tag` in its pom.xml), so a rollback
+# of the backend rolls the web client back with it rather than silently pairing an old
+# server with a new client.
+
+on:
+  push:
+    tags:
+      # Deliberately not every tag: an APK release should not republish the web client.
+      - 'web-v*'
+  workflow_dispatch:
+
+jobs:
+  bundle:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # The project has an Android target, so Gradle configures AGP even for a wasm-only
+      # task. compileSdk 36 is newer than the runner's preinstalled platforms.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # The web bundle is made of commonMain, and these are the tests that guard it.
+      # Publishing a bundle that has not passed them would defeat the point of a gate.
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Build the bundle
+        run: ./gradlew wasmJsBrowserDistribution
+
+      - name: Package
+        id: package
+        run: |
+          set -euo pipefail
+          dist=composeApp/build/dist/wasmJs/productionExecutable
+          test -f "$dist/index.html" || { echo "::error::no index.html in $dist"; exit 1; }
+          # Zipped from inside the directory so index.html sits at the archive root and
+          # the backend can unzip it straight into static/app.
+          (cd "$dist" && zip -qr "$GITHUB_WORKSPACE/web-dist.zip" .)
+          echo "raw=$(du -sh "$dist" | cut -f1)" >> "$GITHUB_OUTPUT"
+          echo "zip=$(du -h web-dist.zip | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      # Size is the number this migration is judged on - the wasm bundle is megabytes
+      # where the React one was hundreds of kilobytes - so it goes in the release notes
+      # rather than in a log nobody reads.
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/web-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" web-dist.zip \
+            --title "Web bundle $GITHUB_REF_NAME" \
+            --notes "Compose/WebAssembly client, built from \`$GITHUB_SHA\`.
+
+          Unpacked ${{ steps.package.outputs.raw }}, archive ${{ steps.package.outputs.zip }}.
+
+          Consumed by HomeBudgetingApp: set \`<web.bundle.tag>$GITHUB_REF_NAME</web.bundle.tag>\` in its \`pom.xml\`."
+
+      # Without a tag there is nothing to pin, so the bundle is kept as a workflow
+      # artifact instead - enough to look at, not enough to deploy by accident.
+      - name: Upload for inspection
+        if: ${{ !startsWith(github.ref, 'refs/tags/web-v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web-dist.zip
+          retention-days: 7
