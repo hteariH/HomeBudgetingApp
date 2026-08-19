@@ -29,8 +29,17 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
 
     private val recent = MutableStateFlow<List<Transaction>>(emptyList())
 
+    /**
+     * See [LazyRefresh]. The screens are written against Room's guarantee - collect and
+     * rows arrive - and a REST cache is empty until something asks the server.
+     */
+    private val lazyLoad = LazyRefresh { refresh() }
+
+    /** The cache, but collecting it fetches first if nothing has yet. */
+    private val loaded get() = recent.loadingOnce(lazyLoad)
+
     override fun observeRecent(limit: Int): Flow<List<Transaction>> =
-        recent.map { it.take(limit) }
+        loaded.map { it.take(limit) }
 
     override fun observeFiltered(
         accountId: Long?,
@@ -55,7 +64,7 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
     }
 
     override fun observeById(id: Long): Flow<Transaction?> =
-        recent.map { rows -> rows.firstOrNull { it.id == id } }
+        loaded.map { rows -> rows.firstOrNull { it.id == id } }
 
     override suspend fun findTransferPair(groupId: String): List<Transaction> =
         recent.value.filter { it.transferGroupId == groupId }

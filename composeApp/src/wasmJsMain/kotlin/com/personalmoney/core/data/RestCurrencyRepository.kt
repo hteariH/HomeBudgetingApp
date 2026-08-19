@@ -18,10 +18,19 @@ class RestCurrencyRepository(private val api: RestApi) : CurrencyRepository {
 
     private val cache = MutableStateFlow<List<Currency>>(emptyList())
 
-    override fun observeActive(): Flow<List<Currency>> =
-        cache.map { all -> all.filter { it.active }.sortedBy { it.sortOrder } }
+    /**
+     * See [LazyRefresh]. The screens are written against Room's guarantee - collect and
+     * rows arrive - and a REST cache is empty until something asks the server.
+     */
+    private val lazyLoad = LazyRefresh { refresh() }
 
-    override fun observeAll(): Flow<List<Currency>> = cache
+    /** The cache, but collecting it fetches first if nothing has yet. */
+    private val loaded get() = cache.loadingOnce(lazyLoad)
+
+    override fun observeActive(): Flow<List<Currency>> =
+        loaded.map { all -> all.filter { it.active }.sortedBy { it.sortOrder } }
+
+    override fun observeAll(): Flow<List<Currency>> = loaded
 
     override suspend fun findByCode(code: String): Currency? =
         cache.value.firstOrNull { it.code == code }

@@ -18,7 +18,16 @@ class RestExchangeRateRepository(private val api: RestApi) : ExchangeRateReposit
 
     private val cache = MutableStateFlow<List<FxRate>>(emptyList())
 
-    override fun observeAll(): Flow<List<FxRate>> = cache
+    /**
+     * See [LazyRefresh]. The screens are written against Room's guarantee - collect and
+     * rows arrive - and a REST cache is empty until something asks the server.
+     */
+    private val lazyLoad = LazyRefresh { refresh() }
+
+    /** The cache, but collecting it fetches first if nothing has yet. */
+    private val loaded get() = cache.loadingOnce(lazyLoad)
+
+    override fun observeAll(): Flow<List<FxRate>> = loaded
 
     override suspend fun refresh() {
         cache.value = api.fxRates().mapNotNull { it.toFxRate() }

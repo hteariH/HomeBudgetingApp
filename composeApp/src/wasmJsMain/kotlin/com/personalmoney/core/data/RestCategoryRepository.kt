@@ -18,13 +18,22 @@ class RestCategoryRepository(private val api: RestApi) : CategoryRepository {
 
     private val cache = MutableStateFlow<List<Category>>(emptyList())
 
+    /**
+     * See [LazyRefresh]. The screens are written against Room's guarantee - collect and
+     * rows arrive - and a REST cache is empty until something asks the server.
+     */
+    private val lazyLoad = LazyRefresh { refresh() }
+
+    /** The cache, but collecting it fetches first if nothing has yet. */
+    private val loaded get() = cache.loadingOnce(lazyLoad)
+
     /** categoryId -> how many recent transactions use it; filled by [refresh]. */
     private val recentUses = MutableStateFlow<Map<Long, Int>>(emptyMap())
 
     override fun observeByType(type: CategoryType): Flow<List<Category>> =
-        cache.map { all -> all.filter { it.type == type && !it.archived }.sortedBy { it.sortOrder } }
+        loaded.map { all -> all.filter { it.type == type && !it.archived }.sortedBy { it.sortOrder } }
 
-    override fun observeAll(): Flow<List<Category>> = cache
+    override fun observeAll(): Flow<List<Category>> = loaded
 
     /**
      * Ordered by how often each category appears in the recent ledger, then by name.
@@ -34,7 +43,7 @@ class RestCategoryRepository(private val api: RestApi) : CategoryRepository {
      * same intent - the chips put what the user actually uses within reach.
      */
     override fun observeMostUsed(type: CategoryType, limit: Int): Flow<List<Category>> =
-        combine(cache, recentUses) { all, uses ->
+        combine(loaded, recentUses) { all, uses ->
             all.asSequence()
                 .filter { it.type == type && !it.archived }
                 .sortedWith(compareByDescending<Category> { uses[it.id] ?: 0 }.thenBy { it.name })

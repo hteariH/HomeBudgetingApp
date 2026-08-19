@@ -28,3 +28,7 @@ actual fun BackupSection(snackbar: SnackbarHostState) = Unit
 /** Nothing to draw - see the shared declaration for why the web has no biometric lock. */
 @Composable
 actual fun BiometricLockSection(viewModel: SettingsViewModel, enabled: Boolean) = Unit
+
+/** Nothing to draw - see the shared declaration for why the web has no Material You. */
+@Composable
+actual fun DynamicColorSection(viewModel: SettingsViewModel, enabled: Boolean) = Unit

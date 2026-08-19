@@ -46,28 +46,10 @@ import com.personalmoney.core.sync.SyncScheduler
 import com.personalmoney.core.sync.SyncTrigger
 import com.personalmoney.core.sync.SyncWorker
 import com.personalmoney.core.sync.WorkManagerSyncTrigger
-import com.personalmoney.feature.accounts.AccountEditViewModel
-import com.personalmoney.feature.accounts.AccountPickerViewModel
-import com.personalmoney.feature.accounts.AccountsViewModel
-import com.personalmoney.feature.analytics.AnalyticsViewModel
-import com.personalmoney.feature.auth.AuthViewModel
-import com.personalmoney.feature.categories.CategoriesViewModel
-import com.personalmoney.feature.categories.CategoryEditViewModel
-import com.personalmoney.feature.currencies.CurrenciesViewModel
-import com.personalmoney.feature.currencies.CurrencyEditViewModel
-import com.personalmoney.feature.dashboard.DashboardViewModel
-import com.personalmoney.feature.onboarding.OnboardingViewModel
-import com.personalmoney.feature.quickadd.QuickAddViewModel
 import com.personalmoney.feature.settings.BackupViewModel
-import com.personalmoney.feature.settings.SettingsViewModel
 import com.personalmoney.feature.settings.backup.BackupManager
-import com.personalmoney.feature.subscriptions.SubscriptionEditViewModel
 import com.personalmoney.feature.subscriptions.SubscriptionWorkScheduler
 import com.personalmoney.feature.subscriptions.SubscriptionWorker
-import com.personalmoney.feature.subscriptions.SubscriptionsViewModel
-import com.personalmoney.feature.transactions.TransactionEditViewModel
-import com.personalmoney.feature.transactions.TransactionsViewModel
-import com.personalmoney.feature.transfers.TransferViewModel
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.android.ext.koin.androidContext
@@ -166,26 +148,14 @@ val workerModule = module {
     workerOf(::SubscriptionWorker)
 }
 
+/**
+ * The shared registrations plus the one that could not be shared: BackupViewModel takes
+ * android.net.Uri through its signatures, because a storage-access picker is where its
+ * work starts.
+ */
 val viewModelModule = module {
-    viewModelOf(::AccountEditViewModel)
-    viewModelOf(::AccountPickerViewModel)
-    viewModelOf(::AccountsViewModel)
-    viewModelOf(::AnalyticsViewModel)
-    viewModelOf(::AuthViewModel)
-    viewModelOf(::CategoriesViewModel)
-    viewModelOf(::CategoryEditViewModel)
-    viewModelOf(::CurrenciesViewModel)
-    viewModelOf(::CurrencyEditViewModel)
-    viewModelOf(::DashboardViewModel)
-    viewModelOf(::OnboardingViewModel)
-    viewModelOf(::QuickAddViewModel)
-    viewModelOf(::SettingsViewModel)
+    includes(sharedViewModelModule)
     viewModelOf(::BackupViewModel)
-    viewModelOf(::SubscriptionEditViewModel)
-    viewModelOf(::SubscriptionsViewModel)
-    viewModelOf(::TransactionEditViewModel)
-    viewModelOf(::TransactionsViewModel)
-    viewModelOf(::TransferViewModel)
 }
 
 /**

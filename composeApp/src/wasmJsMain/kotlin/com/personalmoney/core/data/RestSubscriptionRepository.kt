@@ -25,10 +25,19 @@ class RestSubscriptionRepository(private val api: RestApi) : SubscriptionReposit
 
     private val cache = MutableStateFlow<List<Subscription>>(emptyList())
 
-    override fun observeAll(): Flow<List<Subscription>> = cache
+    /**
+     * See [LazyRefresh]. The screens are written against Room's guarantee - collect and
+     * rows arrive - and a REST cache is empty until something asks the server.
+     */
+    private val lazyLoad = LazyRefresh { refresh() }
+
+    /** The cache, but collecting it fetches first if nothing has yet. */
+    private val loaded get() = cache.loadingOnce(lazyLoad)
+
+    override fun observeAll(): Flow<List<Subscription>> = loaded
 
     override fun observeActive(): Flow<List<Subscription>> =
-        cache.map { all -> all.filter { it.active } }
+        loaded.map { all -> all.filter { it.active } }
 
     override suspend fun findById(id: Long): Subscription? =
         cache.value.firstOrNull { it.id == id } ?: api.subscription(id).toSubscription()

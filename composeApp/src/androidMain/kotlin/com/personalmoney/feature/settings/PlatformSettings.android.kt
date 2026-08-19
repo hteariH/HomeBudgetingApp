@@ -153,3 +153,15 @@ actual fun BiometricLockSection(viewModel: SettingsViewModel, enabled: Boolean) 
 
     HorizontalDivider(Modifier.padding(vertical = 8.dp))
 }
+
+@Composable
+actual fun DynamicColorSection(viewModel: SettingsViewModel, enabled: Boolean) {
+    ToggleRow(
+        title = stringResource(Res.string.settings_dynamic_color),
+        subtitle = stringResource(Res.string.settings_dynamic_color_subtitle),
+        checked = enabled,
+        onCheckedChange = viewModel::setDynamicColor,
+    )
+
+    HorizontalDivider(Modifier.padding(vertical = 8.dp))
+}

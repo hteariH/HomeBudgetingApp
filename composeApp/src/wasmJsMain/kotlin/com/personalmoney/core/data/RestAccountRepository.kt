@@ -26,14 +26,23 @@ class RestAccountRepository(private val api: RestApi) : AccountRepository {
 
     private val cache = MutableStateFlow<List<Account>>(emptyList())
 
+    /**
+     * See [LazyRefresh]. The screens are written against Room's guarantee - collect and
+     * rows arrive - and a REST cache is empty until something asks the server.
+     */
+    private val lazyLoad = LazyRefresh { refresh() }
+
+    /** The cache, but collecting it fetches first if nothing has yet. */
+    private val loaded get() = cache.loadingOnce(lazyLoad)
+
     // The server keys accounts to a currency row rather than a code, so creating one needs
     // an id. Learned from whatever the server has already sent.
     private val currencyIds = mutableMapOf<String, Long>()
 
     override fun observeActive(): Flow<List<Account>> =
-        cache.map { accounts -> accounts.filter { !it.archived }.sortedBy { it.sortOrder } }
+        loaded.map { accounts -> accounts.filter { !it.archived }.sortedBy { it.sortOrder } }
 
-    override fun observeAll(): Flow<List<Account>> = cache
+    override fun observeAll(): Flow<List<Account>> = loaded
 
     override suspend fun findById(id: Long): Account? =
         cache.value.firstOrNull { it.id == id } ?: api.account(id).toAccount()

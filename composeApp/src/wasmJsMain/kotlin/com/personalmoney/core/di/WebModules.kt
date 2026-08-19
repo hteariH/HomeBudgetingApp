@@ -45,6 +45,7 @@ private external fun pageOrigin(): String
  * app that owns /api, which is also why no CORS configuration is needed.
  */
 val webModule = module {
+    includes(sharedViewModelModule)
     single { createJson() }
     single<HttpClientEngine> { Js.create() }
     singleOf(::BrowserTokenStore) bind TokenStore::class

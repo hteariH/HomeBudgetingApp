@@ -87,7 +87,9 @@ class MainActivity : AppCompatActivity() {
                     )
                 } else {
                     PersonalMoneyNavHost(
-                        deepLinkIntent = intent,
+                        // The nav host takes a URI, not an Intent: only Android
+                        // wraps a deep link in one.
+                        deepLink = intent?.data?.toString(),
                         userPreferences = preferences,
                         tokenStore = tokenStore
                     )

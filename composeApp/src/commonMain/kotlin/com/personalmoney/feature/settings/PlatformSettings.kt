@@ -59,3 +59,14 @@ expect fun BiometricLockSection(viewModel: SettingsViewModel, enabled: Boolean)
  */
 @Composable
 expect fun LanguageSection()
+
+/**
+ * The Material You toggle.
+ *
+ * Android only, because dynamic colour means one specific thing: a palette derived from the
+ * user's wallpaper, which Android 12 exposes and a browser has no equivalent of. Its own
+ * subtitle says "(Android 12+)" - offering it on the web would be offering a switch that
+ * changes nothing.
+ */
+@Composable
+expect fun DynamicColorSection(viewModel: SettingsViewModel, enabled: Boolean)
