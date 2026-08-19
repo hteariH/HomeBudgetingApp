@@ -1,12 +1,9 @@
 package com.personalmoney.feature.settings
 
-import android.content.Intent
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -39,18 +35,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.BuildConfig
 import com.personalmoney.core.data.ThemeMode
-import com.personalmoney.core.locale.LocaleManager
-import com.personalmoney.core.security.BiometricGate
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,58 +53,7 @@ fun SettingsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val biometricAvailability = remember { BiometricGate.availability(context) }
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        if (uri != null) {
-            viewModel.exportTo(uri) { msg -> scope.launch { snackbar.showSnackbar(msg) } }
-        }
-    }
-    val importLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            viewModel.requestImport(uri) { msg -> scope.launch { snackbar.showSnackbar(msg) } }
-        }
-    }
-    val exportCsvLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/csv")
-    ) { uri ->
-        if (uri != null) {
-            viewModel.exportCsv(uri) { msg -> scope.launch { snackbar.showSnackbar(msg) } }
-        }
-    }
-
-    val importRequest by viewModel.importRequest.collectAsStateWithLifecycle()
-    importRequest?.let { req ->
-        val p = req.preview
-        AlertDialog(
-            onDismissRequest = viewModel::cancelImport,
-            title = { Text(stringResource(Res.string.settings_import_confirm_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        Res.string.settings_import_confirm_message,
-                        p.accounts, p.categories, p.transactions, p.subscriptions
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.confirmImport { msg -> scope.launch { snackbar.showSnackbar(msg) } }
-                }) { Text(stringResource(Res.string.settings_import_replace)) }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::cancelImport) {
-                    Text(stringResource(Res.string.action_cancel))
-                }
-            }
-        )
-    }
-
+    val openUrl = rememberUrlOpener()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -138,7 +78,7 @@ fun SettingsScreen(
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 items(state.currencies.filter { it.active }) { currency ->
                     FilterChip(
@@ -161,7 +101,7 @@ fun SettingsScreen(
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 val themes = listOf(
                     ThemeMode.SYSTEM to Res.string.settings_theme_system,
@@ -191,7 +131,7 @@ fun SettingsScreen(
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 item {
                     FilterChip(
@@ -211,103 +151,24 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            // Language picker
-            SectionLabel(stringResource(Res.string.settings_language))
-            var currentLangTag by remember { mutableStateOf(LocaleManager.currentTag()) }
-            val availableLangs = remember(currentLangTag) { LocaleManager.availableLanguages() }
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = currentLangTag == null,
-                        onClick = {
-                            LocaleManager.apply(null)
-                            currentLangTag = null
-                        },
-                        label = { Text(stringResource(Res.string.settings_language_system)) }
-                    )
-                }
-                items(availableLangs) { lang ->
-                    FilterChip(
-                        selected = currentLangTag.equals(lang.tag, ignoreCase = true),
-                        onClick = {
-                            LocaleManager.apply(lang.tag)
-                            currentLangTag = lang.tag
-                        },
-                        label = { Text(stringResource(lang.labelRes)) }
-                    )
-                }
-            }
+            LanguageSection()
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            // Biometric lock
-            val biometricEnabled = state.biometricLockEnabled
-            // Resolved in composition: BiometricGate takes plain strings and the shared
-            // resource reader is suspend, so it cannot be called from the click lambda.
-            val lockTitle = stringResource(Res.string.lock_prompt_title)
-            val lockSubtitle = stringResource(Res.string.lock_prompt_subtitle)
-            val lockCancel = stringResource(Res.string.action_cancel)
-            val biometricSubtitle = when (biometricAvailability) {
-                BiometricGate.Availability.AVAILABLE -> null
-                BiometricGate.Availability.NOT_ENROLLED -> stringResource(Res.string.settings_biometric_lock_not_enrolled)
-                else -> stringResource(Res.string.settings_biometric_lock_unavailable)
-            }
-            ToggleRow(
-                title = stringResource(Res.string.settings_biometric_lock),
-                subtitle = biometricSubtitle,
-                checked = biometricEnabled,
-                enabled = biometricAvailability == BiometricGate.Availability.AVAILABLE,
-                onCheckedChange = { wantsOn ->
-                    if (wantsOn) {
-                        val activity = context as? FragmentActivity
-                        if (activity != null) {
-                            BiometricGate.authenticate(
-                                activity = activity,
-                                title = lockTitle,
-                                subtitle = lockSubtitle,
-                                cancelLabel = lockCancel,
-                                onSuccess = { viewModel.setBiometricLockEnabled(true) },
-                                onFailure = { _, _ -> }
-                            )
-                        }
-                    } else {
-                        viewModel.setBiometricLockEnabled(false)
-                    }
-                }
-            )
+            BiometricLockSection(viewModel, state.biometricLockEnabled)
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            SettingsItem(
-                title = stringResource(Res.string.settings_export),
-                onClick = { exportLauncher.launch("personalmoney-backup.json") }
-            )
-            SettingsItem(
-                title = stringResource(Res.string.settings_import),
-                onClick = { importLauncher.launch(arrayOf("application/json")) }
-            )
-            SettingsItem(
-                title = stringResource(Res.string.settings_export_csv),
-                onClick = { exportCsvLauncher.launch("personalmoney-transactions.csv") }
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            BackupSection(snackbar)
 
             SettingsItem(
                 title = stringResource(Res.string.settings_privacy_policy),
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.PRIVACY_POLICY_URL))
-                    runCatching { context.startActivity(intent) }
-                }
+                onClick = { openUrl(AppInfo.privacyPolicyUrl) }
             )
 
             SettingsItem(
                 title = stringResource(Res.string.settings_about),
-                subtitle = stringResource(Res.string.settings_version) + " " + BuildConfig.VERSION_NAME,
+                subtitle = stringResource(Res.string.settings_version) + " " + AppInfo.versionName,
                 onClick = { }
             )
         }
@@ -315,7 +176,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SectionLabel(text: String) {
+internal fun SectionLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
@@ -325,7 +186,7 @@ private fun SectionLabel(text: String) {
 }
 
 @Composable
-private fun ToggleRow(
+internal fun ToggleRow(
     title: String,
     subtitle: String? = null,
     checked: Boolean,
@@ -365,7 +226,7 @@ private fun ToggleRow(
 }
 
 @Composable
-private fun SettingsItem(
+internal fun SettingsItem(
     title: String,
     subtitle: String? = null,
     onClick: () -> Unit

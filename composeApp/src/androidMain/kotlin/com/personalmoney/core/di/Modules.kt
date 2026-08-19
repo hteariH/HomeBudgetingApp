@@ -58,6 +58,7 @@ import com.personalmoney.feature.currencies.CurrencyEditViewModel
 import com.personalmoney.feature.dashboard.DashboardViewModel
 import com.personalmoney.feature.onboarding.OnboardingViewModel
 import com.personalmoney.feature.quickadd.QuickAddViewModel
+import com.personalmoney.feature.settings.BackupViewModel
 import com.personalmoney.feature.settings.SettingsViewModel
 import com.personalmoney.feature.settings.backup.BackupManager
 import com.personalmoney.feature.subscriptions.SubscriptionEditViewModel
@@ -179,6 +180,7 @@ val viewModelModule = module {
     viewModelOf(::OnboardingViewModel)
     viewModelOf(::QuickAddViewModel)
     viewModelOf(::SettingsViewModel)
+    viewModelOf(::BackupViewModel)
     viewModelOf(::SubscriptionEditViewModel)
     viewModelOf(::SubscriptionsViewModel)
     viewModelOf(::TransactionEditViewModel)
