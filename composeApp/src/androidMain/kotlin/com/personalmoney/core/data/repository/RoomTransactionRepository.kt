@@ -27,6 +27,14 @@ class RoomTransactionRepository(
         delegate.observeFiltered(from, to, accountId, categoryId, type)
             .map { rows -> rows.map { it.toTransaction() } }
 
+    override fun observeById(id: Long): Flow<Transaction?> =
+        delegate.observeById(id).map { it?.toTransaction() }
+
+    override suspend fun findTransferPair(groupId: String): List<Transaction> =
+        delegate.findTransferPair(groupId).map { it.toTransaction() }
+
+    override suspend fun deleteTransfer(groupId: String) = delegate.deleteTransfer(groupId)
+
     override suspend fun findById(id: Long): Transaction? =
         delegate.findById(id)?.toTransaction()
 
@@ -39,6 +47,11 @@ class RoomTransactionRepository(
         val existingCreatedAt = delegate.findById(transaction.id)?.createdAt
             ?: Clock.System.now()
         delegate.update(transaction.toEntity(createdAt = existingCreatedAt))
+    }
+
+    override suspend fun insertTransferPair(debit: Transaction, credit: Transaction) {
+        val now = Clock.System.now()
+        delegate.insertTransferPair(debit.toEntity(now), credit.toEntity(now))
     }
 
     override suspend fun delete(id: Long) = delegate.delete(id)

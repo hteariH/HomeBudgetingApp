@@ -5,12 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.calc.Calculator
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CategoryEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,15 +39,15 @@ import com.personalmoney.core.domain.toFixedString
 
 data class TransactionEditUiState(
     val loading: Boolean = true,
-    val original: TransactionEntity? = null,
+    val original: Transaction? = null,
     val type: TransactionType = TransactionType.EXPENSE,
     val expression: String = "",
     val previewResult: String? = null,
     val isAmountValid: Boolean = false,
-    val accounts: List<AccountEntity> = emptyList(),
-    val selectedAccount: AccountEntity? = null,
-    val categories: List<CategoryEntity> = emptyList(),
-    val selectedCategory: CategoryEntity? = null,
+    val accounts: List<Account> = emptyList(),
+    val selectedAccount: Account? = null,
+    val categories: List<Category> = emptyList(),
+    val selectedCategory: Category? = null,
     val note: String = "",
     val date: LocalDate = LocalDate(2000, 1, 1),
     val saving: Boolean = false,
@@ -91,7 +91,7 @@ class TransactionEditViewModel constructor(
     private val deletedFlow = MutableStateFlow(false)
     private val errorFlow = MutableStateFlow<String?>(null)
     private val loadingFlow = MutableStateFlow(true)
-    private val originalFlow = MutableStateFlow<TransactionEntity?>(null)
+    private val originalFlow = MutableStateFlow<Transaction?>(null)
 
     private val categoriesFlow = typeFlow.flatMapLatest { type ->
         categoryRepository.observeByType(
@@ -228,8 +228,8 @@ class TransactionEditViewModel constructor(
         }
     }
 
-    fun selectAccount(account: AccountEntity) { selectedAccountIdFlow.value = account.id }
-    fun selectCategory(category: CategoryEntity) { selectedCategoryIdFlow.value = category.id }
+    fun selectAccount(account: Account) { selectedAccountIdFlow.value = account.id }
+    fun selectCategory(category: Category) { selectedCategoryIdFlow.value = category.id }
     fun setNote(value: String) { noteFlow.value = value }
     fun setDate(date: LocalDate) { dateFlow.value = date }
     fun setType(type: TransactionType) {

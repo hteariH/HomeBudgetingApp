@@ -46,7 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.core.database.entity.CurrencyEntity
+import com.personalmoney.core.domain.model.Currency
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,7 +160,7 @@ private fun SectionHeader(text: String) {
 
 @Composable
 private fun CurrencyRow(
-    currency: CurrencyEntity,
+    currency: Currency,
     isBase: Boolean,
     onToggle: () -> Unit,
     onClick: () -> Unit

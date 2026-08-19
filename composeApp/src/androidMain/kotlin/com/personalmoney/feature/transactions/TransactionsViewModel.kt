@@ -2,12 +2,12 @@ package com.personalmoney.feature.transactions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CategoryEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.domain.TransactionType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,11 +39,11 @@ data class TransactionsFilter(
 
 data class TransactionsUiState(
     val filter: TransactionsFilter = TransactionsFilter(),
-    val transactions: List<TransactionEntity> = emptyList(),
-    val accountsById: Map<Long, AccountEntity> = emptyMap(),
-    val categoriesById: Map<Long, CategoryEntity> = emptyMap(),
+    val transactions: List<Transaction> = emptyList(),
+    val accountsById: Map<Long, Account> = emptyMap(),
+    val categoriesById: Map<Long, Category> = emptyMap(),
     /** For a collapsed transfer row, its partner leg (the other side) when both are in the result. */
-    val transferCounterpartsById: Map<Long, TransactionEntity> = emptyMap()
+    val transferCounterpartsById: Map<Long, Transaction> = emptyMap()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -107,7 +107,7 @@ class TransactionsViewModel constructor(
      * list, so each transfer renders as a single "from -> to" row. If only one leg survives the account
      * filter (e.g. filtering by the destination account), that leg is kept.
      */
-    private fun collapseTransfers(list: List<TransactionEntity>): List<TransactionEntity> {
+    private fun collapseTransfers(list: List<Transaction>): List<Transaction> {
         val groupsWithDebit = list.asSequence()
             .filter { it.transferGroupId != null && it.amountMinor < 0 }
             .mapNotNull { it.transferGroupId }
@@ -118,7 +118,7 @@ class TransactionsViewModel constructor(
     }
 
     /** Matches the query against the transaction's amount written in major units (e.g. "15" or "12.50"). */
-    private fun amountMatches(t: TransactionEntity, q: String): Boolean {
+    private fun amountMatches(t: Transaction, q: String): Boolean {
         if (q.none { it.isDigit() }) return false
         val decimals = CurrencyRegistry.decimalsOrFallback(t.currencyCode)
         val plain = t.accountAmountMinor.toDecimalString(decimals).removePrefix("-")
@@ -134,7 +134,7 @@ class TransactionsViewModel constructor(
     }
     fun clearFilters() { filterFlow.value = TransactionsFilter() }
 
-    fun delete(transaction: TransactionEntity) {
+    fun delete(transaction: Transaction) {
         viewModelScope.launch {
             if (transaction.transferGroupId != null) {
                 transactionRepository.deleteTransfer(transaction.transferGroupId)
@@ -145,12 +145,14 @@ class TransactionsViewModel constructor(
     }
 
     /** Quick-repeat: insert a copy of a transaction dated now. Transfers are not duplicated. */
-    fun duplicate(transaction: TransactionEntity) {
+    fun duplicate(transaction: Transaction) {
         if (transaction.transferGroupId != null) return
         viewModelScope.launch {
             val now = Clock.System.now()
             transactionRepository.insert(
-                transaction.copy(id = 0L, occurredAt = now, createdAt = now, subscriptionId = null)
+                // Blank uuid as well as a zero id: a duplicate is a new row, and reusing the
+                // original's uuid would make the server treat it as an edit of that one.
+                transaction.copy(id = 0L, uuid = "", occurredAt = now, subscriptionId = null)
             )
         }
     }

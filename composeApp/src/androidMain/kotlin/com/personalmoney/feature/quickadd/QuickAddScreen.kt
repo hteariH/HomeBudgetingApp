@@ -49,7 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.core.calc.Calculator
-import com.personalmoney.core.database.entity.AccountEntity
+import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.AmountDisplay
 import com.personalmoney.core.ui.components.CategoryChip
@@ -421,8 +421,8 @@ fun QuickAddScreen(
 
 @Composable
 private fun TransferAccountsBlock(
-    fromAccount: AccountEntity?,
-    toAccount: AccountEntity?,
+    fromAccount: Account?,
+    toAccount: Account?,
     onFromClick: () -> Unit,
     onToClick: () -> Unit,
     onSwap: () -> Unit
@@ -451,16 +451,16 @@ private fun TransferAccountsBlock(
 
 @Composable
 private fun CategoriesRow(
-    categories: List<com.personalmoney.core.database.entity.CategoryEntity>,
+    categories: List<com.personalmoney.core.domain.model.Category>,
     recentIds: List<Long>,
     selectedId: Long?,
-    onSelect: (com.personalmoney.core.database.entity.CategoryEntity) -> Unit
+    onSelect: (com.personalmoney.core.domain.model.Category) -> Unit
 ) {
     // Ordered: selected first, then recents, then the rest
     val ordered = remember(categories, recentIds, selectedId) {
         val orderMap = recentIds.withIndex().associate { (i, id) -> id to i }
         categories.sortedWith(
-            compareByDescending<com.personalmoney.core.database.entity.CategoryEntity> { it.id == selectedId }
+            compareByDescending<com.personalmoney.core.domain.model.Category> { it.id == selectedId }
                 .thenBy { orderMap[it.id] ?: Int.MAX_VALUE }
                 .thenBy { it.sortOrder }
                 .thenBy { it.name }

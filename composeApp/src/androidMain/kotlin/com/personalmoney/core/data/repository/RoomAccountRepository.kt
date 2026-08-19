@@ -1,11 +1,15 @@
 package com.personalmoney.core.data.repository
 
+import com.personalmoney.core.data.AccountBalance
 import com.personalmoney.core.data.AccountRepository as SharedAccountRepository
+import com.personalmoney.core.database.entity.newUuid
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.domain.model.Account
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlin.time.Instant
+import kotlinx.coroutines.flow.first
 
 /**
  * The shared account contract, backed by Room.
@@ -34,6 +38,18 @@ class RoomAccountRepository(
 
     override suspend fun setArchived(id: Long, archived: Boolean) =
         delegate.setArchived(id, archived)
+
+    override suspend fun balancesAsOf(asOf: Instant): List<AccountBalance> {
+        val byId = delegate.observeAll().first().associateBy { it.id }
+        return delegate.balancesAsOf(asOf.toEpochMilliseconds()).mapNotNull { row ->
+            val account = byId[row.accountId] ?: return@mapNotNull null
+            AccountBalance(row.accountId, account.currencyCode, row.balanceMinor)
+        }
+    }
+
+    override suspend fun transactionCount(id: Long): Int = delegate.transactionCount(id)
+
+    override suspend fun reorder(ids: List<Long>) = delegate.reorder(ids)
 
     override suspend fun delete(id: Long) = delegate.delete(id)
 
@@ -71,5 +87,8 @@ private fun Account.toEntity(): AccountEntity = AccountEntity(
     sortOrder = sortOrder,
     includeInTotal = includeInTotal,
     note = note,
-    uuid = uuid,
+    // Blank means the model has no identity yet - built by a screen for create(). Minting
+    // here is what gives the row the uuid the server will key on; every other path already
+    // carries one.
+    uuid = uuid.ifBlank { newUuid() },
 )

@@ -3,6 +3,7 @@ package com.personalmoney.core.data
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.domain.model.Account
+import kotlin.time.Instant
 import com.personalmoney.core.domain.toDecimalString
 import com.personalmoney.core.domain.toMinorUnits
 import com.personalmoney.core.network.CreateAccountRequest
@@ -77,6 +78,52 @@ class RestAccountRepository(private val api: RestApi) : AccountRepository {
         refresh()
     }
 
+    /**
+     * Replays the ledger up to [asOf] on top of each account's opening balance.
+     *
+     * The server has no as-of endpoint and the plan says not to add one, so this is the
+     * client-side reconstruction the dashboard's net-worth trend needs. It reads the same
+     * page of recent transactions the dashboard already pulls, which means the number is
+     * only right as far back as that page reaches - and the trend covers six months, so
+     * that is the limit worth knowing about.
+     */
+    override suspend fun balancesAsOf(asOf: Instant): List<AccountBalance> {
+        val accounts = api.accounts()
+        val ledger = api.transactions(size = LEDGER_PAGE).content
+        val movementByAccount = ledger
+            .filter { Instant.parse(it.occurredAt) <= asOf }
+            .groupBy { it.account.id }
+            .mapValues { (_, rows) ->
+                rows.sumOf { row ->
+                    BigDecimal.parseString(row.accountAmount)
+                        .toMinorUnits(row.account.currency.decimals)
+                }
+            }
+        return accounts.map { account ->
+            AccountBalance(
+                accountId = account.id,
+                currencyCode = account.currency.code,
+                balanceMinor = BigDecimal.parseString(account.initialBalance)
+                    .toMinorUnits(account.currency.decimals) + (movementByAccount[account.id] ?: 0L),
+            )
+        }
+    }
+
+    /** One row asked for, the total read off the page - the rows themselves are not wanted. */
+    override suspend fun transactionCount(id: Long): Int =
+        api.transactions(accountId = id, size = 1).totalElements.toInt()
+
+    /**
+     * One request per account. There is no bulk reorder endpoint, and inventing one would
+     * be a server change for a list that is a handful of rows long.
+     */
+    override suspend fun reorder(ids: List<Long>) {
+        ids.forEachIndexed { index, id ->
+            api.updateAccount(id, UpdateAccountRequest(sortOrder = index))
+        }
+        refresh()
+    }
+
     override suspend fun delete(id: Long) {
         api.deleteAccount(id)
         refresh()
@@ -112,3 +159,6 @@ private fun RestAccount.toAccount(): Account {
         note = description,
     )
 }
+
+/** Matches what the dashboard pulls, so the two see the same slice of history. */
+private const val LEDGER_PAGE = 100

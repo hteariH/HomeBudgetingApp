@@ -21,15 +21,15 @@ import androidx.compose.ui.graphics.Color
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import com.personalmoney.core.database.entity.AccountEntity
+import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.ui.components.IconCircle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountPickerSheet(
-    accounts: List<AccountEntity>,
+    accounts: List<Account>,
     selectedId: Long?,
-    onPick: (AccountEntity) -> Unit,
+    onPick: (Account) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)

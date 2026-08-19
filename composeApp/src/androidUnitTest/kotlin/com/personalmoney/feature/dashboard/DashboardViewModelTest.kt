@@ -2,14 +2,14 @@ package com.personalmoney.feature.dashboard
 
 import app.cash.turbine.test
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.data.repository.ExchangeRateRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.dao.AccountBalanceRow
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CategoryEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.ExchangeRateRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.data.AccountBalance
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.util.MainDispatcherRule
@@ -31,14 +31,14 @@ class DashboardViewModelTest {
 
     private val now = Clock.System.now()
 
-    private val testAccount = AccountEntity(
+    private val testAccount = Account(
         id = 1L,
         name = "Cash",
         currencyCode = "USD",
         includeInTotal = true
     )
 
-    private val testCategory = CategoryEntity(
+    private val testCategory = Category(
         id = 100L,
         name = "Food",
         type = CategoryType.EXPENSE,
@@ -56,7 +56,6 @@ class DashboardViewModelTest {
         every { userPreferences.baseCurrency } returns flowOf(baseCurrency)
         every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())
         every { accountRepository.observeActive() } returns flowOf(emptyList())
-        every { accountRepository.observeBalances() } returns flowOf(emptyList())
         every { categoryRepository.observeAll() } returns flowOf(emptyList())
         every { transactionRepository.observeRecent(any()) } returns flowOf(emptyList())
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(emptyList())
@@ -133,9 +132,8 @@ class DashboardViewModelTest {
     fun `total balance sums USD accounts without FX conversion`() = runTest {
         setupDefaultMocks()
         // Account with $100.00 balance (10000 minor units)
-        val balanceRow = AccountBalanceRow(1L, "USD", 10_000L)
-        every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
-        every { accountRepository.observeBalances() } returns flowOf(listOf(balanceRow))
+        every { accountRepository.observeActive() } returns
+            flowOf(listOf(testAccount.copy(balanceMinor = 10_000L)))
 
         val vm = createViewModel()
         vm.uiState.test {
@@ -148,11 +146,13 @@ class DashboardViewModelTest {
     @Test
     fun `total balance sums multiple accounts`() = runTest {
         setupDefaultMocks()
-        val account2 = AccountEntity(id = 2L, name = "Card", currencyCode = "USD", includeInTotal = true)
-        every { accountRepository.observeActive() } returns flowOf(listOf(testAccount, account2))
-        every { accountRepository.observeBalances() } returns flowOf(listOf(
-            AccountBalanceRow(1L, "USD", 5_000L),
-            AccountBalanceRow(2L, "USD", 3_000L)
+        val account2 = Account(
+            id = 2L, name = "Card", currencyCode = "USD",
+            includeInTotal = true, balanceMinor = 3_000L,
+        )
+        every { accountRepository.observeActive() } returns flowOf(listOf(
+            testAccount.copy(balanceMinor = 5_000L),
+            account2
         ))
 
         val vm = createViewModel()
@@ -166,11 +166,13 @@ class DashboardViewModelTest {
     @Test
     fun `account excluded from total when includeInTotal is false`() = runTest {
         setupDefaultMocks()
-        val excludedAccount = testAccount.copy(id = 2L, includeInTotal = false)
-        every { accountRepository.observeActive() } returns flowOf(listOf(testAccount, excludedAccount))
-        every { accountRepository.observeBalances() } returns flowOf(listOf(
-            AccountBalanceRow(1L, "USD", 5_000L),
-            AccountBalanceRow(2L, "USD", 9_999L)   // should be ignored
+        // 9_999 on the excluded account: it must not reach the total.
+        val excludedAccount = testAccount.copy(
+            id = 2L, includeInTotal = false, balanceMinor = 9_999L,
+        )
+        every { accountRepository.observeActive() } returns flowOf(listOf(
+            testAccount.copy(balanceMinor = 5_000L),
+            excludedAccount
         ))
 
         val vm = createViewModel()
@@ -185,10 +187,9 @@ class DashboardViewModelTest {
     fun `account count reflects only include-in-total accounts`() = runTest {
         setupDefaultMocks()
         val excluded = testAccount.copy(id = 2L, includeInTotal = false)
-        every { accountRepository.observeActive() } returns flowOf(listOf(testAccount, excluded))
-        every { accountRepository.observeBalances() } returns flowOf(listOf(
-            AccountBalanceRow(1L, "USD", 0L),
-            AccountBalanceRow(2L, "USD", 0L)
+        every { accountRepository.observeActive() } returns flowOf(listOf(
+            testAccount,
+            excluded
         ))
 
         val vm = createViewModel()
@@ -205,10 +206,10 @@ class DashboardViewModelTest {
     fun `monthly expenses aggregated from current month transactions`() = runTest {
         setupDefaultMocks()
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
-        val expense = TransactionEntity(
+        val expense = Transaction(
             id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = null,
             amountMinor = 2_500L, currencyCode = "USD", accountAmountMinor = 2_500L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(expense))
 
@@ -224,10 +225,10 @@ class DashboardViewModelTest {
     fun `monthly income aggregated from current month transactions`() = runTest {
         setupDefaultMocks()
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
-        val income = TransactionEntity(
+        val income = Transaction(
             id = 2L, type = TransactionType.INCOME, accountId = 1L, categoryId = null,
             amountMinor = 7_000L, currencyCode = "USD", accountAmountMinor = 7_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(income))
 
@@ -243,10 +244,10 @@ class DashboardViewModelTest {
     fun `transfers excluded from monthly stats`() = runTest {
         setupDefaultMocks()
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
-        val transfer = TransactionEntity(
+        val transfer = Transaction(
             id = 3L, type = TransactionType.TRANSFER, accountId = 1L, categoryId = null,
             amountMinor = 5_000L, currencyCode = "USD", accountAmountMinor = 5_000L,
-            occurredAt = now, createdAt = now, transferGroupId = "g1"
+            occurredAt = now, transferGroupId = "g1"
         )
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(transfer))
 
@@ -263,15 +264,15 @@ class DashboardViewModelTest {
     fun `expenses and income tracked separately`() = runTest {
         setupDefaultMocks()
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
-        val expense = TransactionEntity(
+        val expense = Transaction(
             id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = null,
             amountMinor = 3_000L, currencyCode = "USD", accountAmountMinor = 3_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
-        val income = TransactionEntity(
+        val income = Transaction(
             id = 2L, type = TransactionType.INCOME, accountId = 1L, categoryId = null,
             amountMinor = 8_000L, currencyCode = "USD", accountAmountMinor = 8_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(expense, income))
 
@@ -291,10 +292,10 @@ class DashboardViewModelTest {
         setupDefaultMocks()
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         every { categoryRepository.observeAll() } returns flowOf(listOf(testCategory))
-        val expense = TransactionEntity(
+        val expense = Transaction(
             id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = 100L,
             amountMinor = 4_000L, currencyCode = "USD", accountAmountMinor = 4_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(expense))
 
@@ -316,8 +317,12 @@ class DashboardViewModelTest {
         val cat2 = testCategory.copy(id = 101L, name = "Transport")
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         every { categoryRepository.observeAll() } returns flowOf(listOf(testCategory, cat2))
-        val e1 = TransactionEntity(1L, TransactionType.EXPENSE, 1L, 100L, 1_000L, "USD", 1_000L, 1.0, now, now)
-        val e2 = TransactionEntity(2L, TransactionType.EXPENSE, 1L, 101L, 5_000L, "USD", 5_000L, 1.0, now, now)
+        val e1 = Transaction(id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = 100L,
+            amountMinor = 1_000L, currencyCode = "USD", accountAmountMinor = 1_000L,
+            fxRateToAccount = 1.0, occurredAt = now)
+        val e2 = Transaction(id = 2L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = 101L,
+            amountMinor = 5_000L, currencyCode = "USD", accountAmountMinor = 5_000L,
+            fxRateToAccount = 1.0, occurredAt = now)
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(e1, e2))
 
         val vm = createViewModel()
@@ -335,12 +340,16 @@ class DashboardViewModelTest {
     fun `breakdown capped at 6 categories`() = runTest {
         setupDefaultMocks()
         val categories = (1..8).map { i ->
-            CategoryEntity(id = i.toLong(), name = "Cat$i", type = CategoryType.EXPENSE, icon = "x", color = 0xFFL)
+            Category(id = i.toLong(), name = "Cat$i", type = CategoryType.EXPENSE, icon = "x", color = 0xFFL)
         }
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         every { categoryRepository.observeAll() } returns flowOf(categories)
         val txList = categories.mapIndexed { i, cat ->
-            TransactionEntity(i.toLong() + 1, TransactionType.EXPENSE, 1L, cat.id, 1_000L, "USD", 1_000L, 1.0, now, now)
+            Transaction(
+                id = i.toLong() + 1, type = TransactionType.EXPENSE, accountId = 1L,
+                categoryId = cat.id, amountMinor = 1_000L, currencyCode = "USD",
+                accountAmountMinor = 1_000L, occurredAt = now,
+            )
         }
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(txList)
 
@@ -359,10 +368,10 @@ class DashboardViewModelTest {
     @Test
     fun `recent transactions populated from repository`() = runTest {
         setupDefaultMocks()
-        val tx = TransactionEntity(
+        val tx = Transaction(
             id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = null,
             amountMinor = 500L, currencyCode = "USD", accountAmountMinor = 500L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { transactionRepository.observeRecent(any()) } returns flowOf(listOf(tx))
 
@@ -382,7 +391,7 @@ class DashboardViewModelTest {
         setupDefaultMocks()
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         coEvery { accountRepository.balancesAsOf(any()) } returns listOf(
-            AccountBalanceRow(1L, "USD", 5_000L)
+            AccountBalance(1L, "USD", 5_000L)
         )
         val vm = createViewModel()
         vm.uiState.test {
@@ -401,10 +410,10 @@ class DashboardViewModelTest {
         val budgetedCat = testCategory.copy(budgetLimitMinor = 10_000L) // $100 budget
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         every { categoryRepository.observeAll() } returns flowOf(listOf(budgetedCat))
-        val expense = TransactionEntity(
+        val expense = Transaction(
             id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = 100L,
             amountMinor = 2_500L, currencyCode = "USD", accountAmountMinor = 2_500L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(expense))
 
@@ -427,10 +436,10 @@ class DashboardViewModelTest {
         val budgetedCat = testCategory.copy(budgetLimitMinor = 1_000L)
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         every { categoryRepository.observeAll() } returns flowOf(listOf(budgetedCat))
-        val expense = TransactionEntity(
+        val expense = Transaction(
             id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = 100L,
             amountMinor = 5_000L, currencyCode = "USD", accountAmountMinor = 5_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(expense))
 

@@ -6,12 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.calc.Calculator
 import com.personalmoney.core.calc.ExpressionInput
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CategoryEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,11 +38,11 @@ data class QuickAddUiState(
     val expression: String = "",
     val previewResult: String? = null,
     val isAmountValid: Boolean = false,
-    val accounts: List<AccountEntity> = emptyList(),
-    val selectedAccount: AccountEntity? = null,
-    val categories: List<CategoryEntity> = emptyList(),
+    val accounts: List<Account> = emptyList(),
+    val selectedAccount: Account? = null,
+    val categories: List<Category> = emptyList(),
     val recentCategoryIds: List<Long> = emptyList(),
-    val selectedCategory: CategoryEntity? = null,
+    val selectedCategory: Category? = null,
     val note: String = "",
     val date: LocalDate = currentDate(),
     val saving: Boolean = false,
@@ -127,7 +127,7 @@ class QuickAddViewModel constructor(
             accounts = accounts,
             selectedAccount = accounts.firstOrNull { it.id == accId } ?: accounts.firstOrNull(),
             categories = categories,
-            recentCategoryIds = recentRows.map { it.categoryId },
+            recentCategoryIds = recentRows.map { it.id },
             selectedCategory = categories.firstOrNull { it.id == catId },
             note = note,
             date = date,
@@ -168,7 +168,7 @@ class QuickAddViewModel constructor(
         expressionFlow.update { ExpressionInput.append(it, key) }
     }
 
-    fun selectAccount(account: AccountEntity) {
+    fun selectAccount(account: Account) {
         selectedAccountIdFlow.value = account.id
     }
 
@@ -176,7 +176,7 @@ class QuickAddViewModel constructor(
         selectedAccountIdFlow.value = id
     }
 
-    fun selectCategory(category: CategoryEntity) {
+    fun selectCategory(category: Category) {
         selectedCategoryIdFlow.value = category.id
     }
 
@@ -215,7 +215,7 @@ class QuickAddViewModel constructor(
                 time = nowLdt.time
             ).toInstant(tz)
         }
-        val tx = TransactionEntity(
+        val tx = Transaction(
             type = state.type,
             accountId = account.id,
             categoryId = category.id,
@@ -224,7 +224,6 @@ class QuickAddViewModel constructor(
             accountAmountMinor = amountMinor,
             fxRateToAccount = 1.0,
             occurredAt = occurredAt,
-            createdAt = now,
             note = state.note.takeIf { it.isNotBlank() }
         )
 

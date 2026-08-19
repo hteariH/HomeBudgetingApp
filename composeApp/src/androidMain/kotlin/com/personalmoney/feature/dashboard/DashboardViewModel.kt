@@ -4,13 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.currency.FxSnapshot
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.data.repository.ExchangeRateRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CategoryEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.ExchangeRateRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.TransactionType
@@ -31,7 +31,6 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import com.personalmoney.core.currency.toFxRates
 
 data class CategorySlice(
     val categoryId: Long?,
@@ -66,9 +65,9 @@ data class DashboardUiState(
     val moreExpenseCategories: Int = 0,
     val budgets: List<BudgetProgress> = emptyList(),
     val netWorthTrend: List<Long> = emptyList(),
-    val recent: List<TransactionEntity> = emptyList(),
-    val accountsById: Map<Long, AccountEntity> = emptyMap(),
-    val categoriesById: Map<Long, CategoryEntity> = emptyMap()
+    val recent: List<Transaction> = emptyList(),
+    val accountsById: Map<Long, Account> = emptyMap(),
+    val categoriesById: Map<Long, Category> = emptyMap()
 ) {
     val totalBalance: Money get() = Money(totalBalanceMinor, CurrencyCode(baseCurrency))
     val monthExpenses: Money get() = Money(monthExpensesMinor, CurrencyCode(baseCurrency))
@@ -92,7 +91,7 @@ class DashboardViewModel constructor(
         }
     }
 
-    private val fxSnapshotFlow = exchangeRateRepository.observeAll().map { FxSnapshot.from(it.toFxRates()) }
+    private val fxSnapshotFlow = exchangeRateRepository.observeAll().map { FxSnapshot.from(it) }
 
     val uiState: StateFlow<DashboardUiState> = combine(
         userPreferences.baseCurrency,
@@ -107,18 +106,17 @@ class DashboardViewModel constructor(
             val nm = if (m == 12) LocalDate(y + 1, 1, 1) else LocalDate(y, m + 1, 1)
             nm.atStartOfDayIn(zone)
         }
+        // No separate balance query: the shared Account already carries its summed balance.
         combine(
             accountRepository.observeActive(),
-            accountRepository.observeBalances(),
             transactionRepository.observeRecent(10),
             categoryRepository.observeAll(),
             combine(
                 transactionRepository.observeFiltered(from = monthStart, to = nextMonth),
                 fxSnapshotFlow
             ) { tx, fx -> tx to fx }
-        ) { accounts, balances, recent, categories, monthData ->
+        ) { accounts, recent, categories, monthData ->
             val (monthTx, fx) = monthData
-            val balancesById = balances.associateBy { it.accountId }
             val categoriesById = categories.associateBy { it.id }
             val accountsById = accounts.associateBy { it.id }
 
@@ -126,8 +124,7 @@ class DashboardViewModel constructor(
             var convertibleCount = 0
             for (account in accounts) {
                 if (!account.includeInTotal) continue
-                val row = balancesById[account.id] ?: continue
-                val money = Money(row.balanceMinor, CurrencyCode(account.currencyCode))
+                val money = Money(account.balanceMinor, CurrencyCode(account.currencyCode))
                 val converted = fx.convert(money, CurrencyCode(base))
                 if (converted != null) {
                     totalMinor += converted.minor
@@ -186,7 +183,7 @@ class DashboardViewModel constructor(
                 val mStart = currentMonthStart.minus(i, DateTimeUnit.MONTH)
                 val mEndExclusive = mStart.plus(1, DateTimeUnit.MONTH).atStartOfDayIn(zone)
                 val asOf = minOf(mEndExclusive, Clock.System.now())
-                accountRepository.balancesAsOf(asOf.toEpochMilliseconds()).sumOf { row ->
+                accountRepository.balancesAsOf(asOf).sumOf { row ->
                     fx.convert(Money(row.balanceMinor, CurrencyCode(row.currencyCode)), CurrencyCode(base))?.minor ?: 0L
                 }
             }

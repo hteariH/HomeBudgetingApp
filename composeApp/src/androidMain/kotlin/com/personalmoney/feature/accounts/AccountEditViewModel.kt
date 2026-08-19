@@ -3,11 +3,12 @@ package com.personalmoney.feature.accounts
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CurrencyRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CurrencyEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CurrencyRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Currency
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
-import java.util.Currency
 import com.personalmoney.core.domain.roundTo
 import com.personalmoney.core.domain.toDecimalString
 import com.personalmoney.core.domain.toMinorUnits
@@ -32,7 +32,7 @@ data class AccountEditUiState(
     val includeInTotal: Boolean = true,
     val archived: Boolean = false,
     val note: String = "",
-    val availableCurrencies: List<CurrencyEntity> = emptyList(),
+    val availableCurrencies: List<Currency> = emptyList(),
     val transactionCount: Int = 0,
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -118,7 +118,7 @@ class AccountEditViewModel constructor(
 
                 if (st.id == null) {
                     val newId = accountRepository.create(
-                        AccountEntity(
+                        Account(
                             name = st.name.trim(),
                             currencyCode = st.currencyCode,
                             initialBalanceMinor = balanceMinor,
@@ -174,5 +174,5 @@ class AccountEditViewModel constructor(
     }
 
     private fun currencyDecimals(code: String): Int =
-        runCatching { Currency.getInstance(code).defaultFractionDigits }.getOrDefault(2)
+        CurrencyRegistry.decimalsOrFallback(code)
 }

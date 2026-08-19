@@ -3,10 +3,10 @@ package com.personalmoney.feature.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CurrencyRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CurrencyEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CurrencyRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Currency
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,13 +19,13 @@ import kotlin.time.Clock
 data class OnboardingUiState(
     val step: Int = 0,
     val totalSteps: Int = 3,
-    val currencies: List<CurrencyEntity> = emptyList(),
+    val currencies: List<Currency> = emptyList(),
     val selectedCurrencyCode: String = "USD",
     val accountName: String = "",
     val saving: Boolean = false,
     val done: Boolean = false,
     val showAllCurrenciesDialog: Boolean = false,
-    val allCurrencies: List<CurrencyEntity> = emptyList(),
+    val allCurrencies: List<Currency> = emptyList(),
     val currencySearchQuery: String = ""
 ) {
     val canProceed: Boolean get() = when (step) {
@@ -34,7 +34,7 @@ data class OnboardingUiState(
         else -> true
     }
 
-    val filteredAllCurrencies: List<CurrencyEntity> get() {
+    val filteredAllCurrencies: List<Currency> get() {
         if (currencySearchQuery.isBlank()) return allCurrencies
         val q = currencySearchQuery.trim().lowercase()
         return allCurrencies.filter {
@@ -77,8 +77,8 @@ class OnboardingViewModel constructor(
             accountName = primary[2] as String,
             saving = primary[3] as Boolean,
             done = primary[4] as Boolean,
-            currencies = secondary[0] as List<CurrencyEntity>,
-            allCurrencies = secondary[1] as List<CurrencyEntity>,
+            currencies = secondary[0] as List<Currency>,
+            allCurrencies = secondary[1] as List<Currency>,
             showAllCurrenciesDialog = secondary[2] as Boolean,
             currencySearchQuery = secondary[3] as String
         )
@@ -122,7 +122,7 @@ class OnboardingViewModel constructor(
                 userPreferences.setBaseCurrency(state.selectedCurrencyCode)
                 if (state.accountName.isNotBlank()) {
                     accountRepository.create(
-                        AccountEntity(
+                        Account(
                             name = state.accountName,
                             currencyCode = state.selectedCurrencyCode,
                             initialBalanceMinor = 0L,

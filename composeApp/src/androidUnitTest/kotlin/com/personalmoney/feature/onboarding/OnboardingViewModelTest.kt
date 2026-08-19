@@ -2,8 +2,8 @@ package com.personalmoney.feature.onboarding
 
 import app.cash.turbine.test
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CurrencyRepository
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CurrencyRepository
 import com.personalmoney.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify

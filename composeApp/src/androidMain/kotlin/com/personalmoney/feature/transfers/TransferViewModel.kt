@@ -5,11 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.calc.Calculator
 import com.personalmoney.core.calc.ExpressionInput
 import com.personalmoney.core.currency.FxSnapshot
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.ExchangeRateRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.ExchangeRateRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.StringResource
@@ -24,7 +24,6 @@ import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import java.util.Currency
 import java.util.UUID
 import com.personalmoney.core.calc.NumpadKey
-import com.personalmoney.core.currency.toFxRates
 import com.personalmoney.core.domain.toMinorUnits
 import com.personalmoney.core.domain.roundTo
 import com.personalmoney.core.domain.toTrimmedString
@@ -34,9 +33,9 @@ import com.personalmoney.core.domain.toFixedString
 enum class TransferAmountField { FROM, TO, FEE }
 
 data class TransferUiState(
-    val accounts: List<AccountEntity> = emptyList(),
-    val fromAccount: AccountEntity? = null,
-    val toAccount: AccountEntity? = null,
+    val accounts: List<Account> = emptyList(),
+    val fromAccount: Account? = null,
+    val toAccount: Account? = null,
     val amountFrom: String = "",
     val amountTo: String = "",
     /** True once the user has typed the destination amount themselves, so auto-conversion stops overwriting it. */
@@ -84,18 +83,18 @@ class TransferViewModel constructor(
         }
         viewModelScope.launch {
             exchangeRateRepository.observeAll().collect { rates ->
-                fxSnapshot = FxSnapshot.from(rates.toFxRates())
+                fxSnapshot = FxSnapshot.from(rates)
                 recomputeDestination()
             }
         }
     }
 
-    fun setFromAccount(account: AccountEntity) {
+    fun setFromAccount(account: Account) {
         internalState.update { it.copy(fromAccount = account, amountToEdited = false) }
         recomputeDestination()
     }
 
-    fun setToAccount(account: AccountEntity) {
+    fun setToAccount(account: Account) {
         internalState.update { it.copy(toAccount = account, amountToEdited = false) }
         recomputeDestination()
     }
@@ -210,7 +209,7 @@ class TransferViewModel constructor(
         val groupId = UUID.randomUUID().toString()
         val totalFromMinor = amountFromMinor + feeMinor
 
-        val debit = TransactionEntity(
+        val debit = Transaction(
             type = TransactionType.TRANSFER,
             accountId = from.id,
             categoryId = null,
@@ -219,13 +218,12 @@ class TransferViewModel constructor(
             accountAmountMinor = -totalFromMinor,
             fxRateToAccount = 1.0,
             occurredAt = now,
-            createdAt = now,
             note = s.note.takeIf { it.isNotBlank() },
             transferGroupId = groupId,
             transferCounterpartAccountId = to.id,
             transferFeeMinor = if (feeMinor > 0) feeMinor else null
         )
-        val credit = TransactionEntity(
+        val credit = Transaction(
             type = TransactionType.TRANSFER,
             accountId = to.id,
             categoryId = null,
@@ -234,7 +232,6 @@ class TransferViewModel constructor(
             accountAmountMinor = amountToMinor,
             fxRateToAccount = 1.0,
             occurredAt = now,
-            createdAt = now,
             note = s.note.takeIf { it.isNotBlank() },
             transferGroupId = groupId,
             transferCounterpartAccountId = from.id

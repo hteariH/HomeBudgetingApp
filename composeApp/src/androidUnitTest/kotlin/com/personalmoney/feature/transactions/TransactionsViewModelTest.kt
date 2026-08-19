@@ -1,12 +1,12 @@
 package com.personalmoney.feature.transactions
 
 import app.cash.turbine.test
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CategoryEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.util.MainDispatcherRule
@@ -26,16 +26,16 @@ class TransactionsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val now = Clock.System.now()
-    private val account = AccountEntity(id = 1L, name = "Credit Card", currencyCode = "USD")
-    private val category = CategoryEntity(id = 10L, name = "Coffee", type = CategoryType.EXPENSE, icon = "x", color = 0L)
-    private val txCoffee = TransactionEntity(
+    private val account = Account(id = 1L, name = "Credit Card", currencyCode = "USD")
+    private val category = Category(id = 10L, name = "Coffee", type = CategoryType.EXPENSE, icon = "x", color = 0L)
+    private val txCoffee = Transaction(
         id = 1L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = 10L,
-        amountMinor = 1500L, currencyCode = "USD", accountAmountMinor = 1500L, occurredAt = now, createdAt = now,
+        amountMinor = 1500L, currencyCode = "USD", accountAmountMinor = 1500L, occurredAt = now,
         note = "latte"
     )
-    private val txRent = TransactionEntity(
+    private val txRent = Transaction(
         id = 2L, type = TransactionType.EXPENSE, accountId = 1L, categoryId = null,
-        amountMinor = 9900L, currencyCode = "USD", accountAmountMinor = 9900L, occurredAt = now, createdAt = now,
+        amountMinor = 9900L, currencyCode = "USD", accountAmountMinor = 9900L, occurredAt = now,
         note = "rent"
     )
 

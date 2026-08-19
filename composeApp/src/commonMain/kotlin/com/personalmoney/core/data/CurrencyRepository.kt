@@ -15,5 +15,15 @@ interface CurrencyRepository {
 
     suspend fun setActive(code: String, active: Boolean)
 
+    /** Returns the new currency's local id, where the platform has one. */
+    suspend fun create(currency: Currency): Long
+
+    suspend fun update(currency: Currency)
+
+    /** How many accounts and transactions still hold this currency; blocks deleting one in use. */
+    suspend fun usageCount(code: String): Int
+
+    suspend fun delete(code: String)
+
     suspend fun refresh() {}
 }

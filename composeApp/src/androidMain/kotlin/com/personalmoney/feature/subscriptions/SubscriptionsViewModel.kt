@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.currency.FxSnapshot
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.ExchangeRateRepository
-import com.personalmoney.core.data.repository.SubscriptionRepository
-import com.personalmoney.core.database.entity.SubscriptionEntity
+import com.personalmoney.core.data.ExchangeRateRepository
+import com.personalmoney.core.data.SubscriptionRepository
+import com.personalmoney.core.domain.model.Subscription
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.SubscriptionFrequency
@@ -17,14 +17,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
-import com.personalmoney.core.currency.toFxRates
 import com.personalmoney.core.domain.toMinorUnits
 import com.personalmoney.core.domain.toMajorUnits
 import com.ionspin.kotlin.bignum.decimal.DecimalMode
 import com.ionspin.kotlin.bignum.decimal.RoundingMode
 
 data class SubscriptionsUiState(
-    val subscriptions: List<SubscriptionEntity> = emptyList(),
+    val subscriptions: List<Subscription> = emptyList(),
     val baseCurrency: String = "USD",
     val perMonthMinor: Long = 0L,
     val perYearMinor: Long = 0L
@@ -42,7 +41,7 @@ class SubscriptionsViewModel constructor(
     val uiState: StateFlow<SubscriptionsUiState> = combine(
         repository.observeAll(),
         userPreferences.baseCurrency,
-        exchangeRateRepository.observeAll().map { FxSnapshot.from(it.toFxRates()) }
+        exchangeRateRepository.observeAll().map { FxSnapshot.from(it) }
     ) { subs, base, fx ->
         var perMonth = BigDecimal.ZERO
         for (s in subs.filter { it.active }) {

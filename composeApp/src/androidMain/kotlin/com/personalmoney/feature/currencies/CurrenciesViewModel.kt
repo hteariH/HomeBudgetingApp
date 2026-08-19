@@ -3,8 +3,8 @@ package com.personalmoney.feature.currencies
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.CurrencyRepository
-import com.personalmoney.core.database.entity.CurrencyEntity
+import com.personalmoney.core.data.CurrencyRepository
+import com.personalmoney.core.domain.model.Currency
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
 data class CurrenciesUiState(
     val query: String = "",
     val baseCurrency: String = "USD",
-    val active: List<CurrencyEntity> = emptyList(),
-    val available: List<CurrencyEntity> = emptyList(),
+    val active: List<Currency> = emptyList(),
+    val available: List<Currency> = emptyList(),
     val errorMessage: String? = null
 )
 
@@ -52,7 +52,7 @@ class CurrenciesViewModel constructor(
     fun setQuery(value: String) { queryFlow.value = value }
     fun clearError() { errorFlow.value = null }
 
-    fun toggle(currency: CurrencyEntity) {
+    fun toggle(currency: Currency) {
         viewModelScope.launch {
             val base = preferences.baseCurrency.first()
             if (currency.active && currency.code == base) {
@@ -63,7 +63,7 @@ class CurrenciesViewModel constructor(
         }
     }
 
-    fun delete(currency: CurrencyEntity, onUsageBlocked: (Int) -> Unit) {
+    fun delete(currency: Currency, onUsageBlocked: (Int) -> Unit) {
         viewModelScope.launch {
             val uses = repository.usageCount(currency.code)
             if (uses > 0) {

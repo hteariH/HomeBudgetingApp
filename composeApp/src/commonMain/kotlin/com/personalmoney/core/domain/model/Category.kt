@@ -8,10 +8,15 @@ import com.personalmoney.core.domain.CategoryType
  * [budgetLimitMinor] is in *base-currency* minor units, not the category's own - a budget
  * spans accounts that may be in different currencies, so it only means anything once
  * converted to the user's base.
+ *
+ * `id = 0` with a blank uuid means "not persisted yet". A screen building one for
+ * [com.personalmoney.core.data.CategoryRepository.create] cannot invent an identity: on Android
+ * the id comes from Room's autoincrement and the uuid is minted by the repository, and on
+ * the web the server assigns both.
  */
 data class Category(
-    val id: Long,
-    val uuid: String,
+    val id: Long = 0L,
+    val uuid: String = "",
     val name: String,
     val type: CategoryType,
     val icon: String,

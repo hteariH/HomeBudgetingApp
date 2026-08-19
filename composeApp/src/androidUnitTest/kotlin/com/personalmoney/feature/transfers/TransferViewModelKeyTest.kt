@@ -1,12 +1,12 @@
 package com.personalmoney.feature.transfers
 
 import app.cash.turbine.test
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.ExchangeRateRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.ExchangeRateEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.currency.FxRate
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.ExchangeRateRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.ExchangeRateSource
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.util.MainDispatcherRule
@@ -31,22 +31,20 @@ class TransferViewModelKeyTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val cash = AccountEntity(id = 1L, name = "Cash", currencyCode = "USD")
-    private val card = AccountEntity(id = 2L, name = "Card", currencyCode = "USD")
-    private val euro = AccountEntity(id = 3L, name = "Euro", currencyCode = "EUR")
+    private val cash = Account(id = 1L, name = "Cash", currencyCode = "USD")
+    private val card = Account(id = 2L, name = "Card", currencyCode = "USD")
+    private val euro = Account(id = 3L, name = "Euro", currencyCode = "EUR")
 
     private val accountRepository = mockk<AccountRepository>(relaxed = true)
     private val exchangeRateRepository = mockk<ExchangeRateRepository>(relaxed = true)
     private val transactionRepository = mockk<TransactionRepository>(relaxed = true)
 
-    private fun usdToEur(rate: Double) = ExchangeRateEntity(
-        baseCode = "USD", quoteCode = "EUR", rate = rate,
-        date = LocalDate(2026, 5, 1), source = ExchangeRateSource.MANUAL, updatedAtEpochMs = 0
-    )
+    private fun usdToEur(rate: Double) =
+        FxRate(baseCode = "USD", quoteCode = "EUR", rate = rate)
 
     private fun viewModel(
-        accounts: List<AccountEntity> = listOf(cash, card),
-        rates: List<ExchangeRateEntity> = emptyList()
+        accounts: List<Account> = listOf(cash, card),
+        rates: List<FxRate> = emptyList()
     ): TransferViewModel {
         every { accountRepository.observeActive() } returns flowOf(accounts)
         every { exchangeRateRepository.observeAll() } returns flowOf(rates)
@@ -55,11 +53,11 @@ class TransferViewModelKeyTest {
 
     @Test
     fun `same-currency transfer builds a correct debit-credit pair`() = runTest {
-        val debit = slot<TransactionEntity>()
-        val credit = slot<TransactionEntity>()
+        val debit = slot<Transaction>()
+        val credit = slot<Transaction>()
         coEvery {
             transactionRepository.insertTransferPair(capture(debit), capture(credit))
-        } returns (1L to 2L)
+        } returns Unit
 
         val vm = viewModel()
         vm.uiState.test {
@@ -100,10 +98,10 @@ class TransferViewModelKeyTest {
 
     @Test
     fun `fee is added to the source debit`() = runTest {
-        val debit = slot<TransactionEntity>()
+        val debit = slot<Transaction>()
         coEvery {
             transactionRepository.insertTransferPair(capture(debit), any())
-        } returns (1L to 2L)
+        } returns Unit
 
         val vm = viewModel()
         vm.uiState.test {
@@ -123,11 +121,11 @@ class TransferViewModelKeyTest {
 
     @Test
     fun `cross-currency transfer uses both amounts`() = runTest {
-        val debit = slot<TransactionEntity>()
-        val credit = slot<TransactionEntity>()
+        val debit = slot<Transaction>()
+        val credit = slot<Transaction>()
         coEvery {
             transactionRepository.insertTransferPair(capture(debit), capture(credit))
-        } returns (1L to 2L)
+        } returns Unit
 
         val vm = viewModel(listOf(cash, euro))
         vm.uiState.test {
@@ -171,11 +169,11 @@ class TransferViewModelKeyTest {
     /** With a stored rate, the destination amount auto-fills and a transfer saves without manual entry. */
     @Test
     fun `cross-currency auto-converts the destination at the stored rate`() = runTest {
-        val debit = slot<TransactionEntity>()
-        val credit = slot<TransactionEntity>()
+        val debit = slot<Transaction>()
+        val credit = slot<Transaction>()
         coEvery {
             transactionRepository.insertTransferPair(capture(debit), capture(credit))
-        } returns (1L to 2L)
+        } returns Unit
 
         val vm = viewModel(listOf(cash, euro), rates = listOf(usdToEur(0.9)))
         vm.uiState.test {

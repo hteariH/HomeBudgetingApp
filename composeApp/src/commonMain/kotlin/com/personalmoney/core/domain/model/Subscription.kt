@@ -13,10 +13,15 @@ import kotlinx.datetime.LocalDate
  * The amount is in [currencyCode], which is the account's currency at the time the
  * subscription was set up - not necessarily the base currency, and not necessarily the
  * account's currency today.
+ *
+ * `id = 0` with a blank uuid means "not persisted yet". A screen building one for
+ * [com.personalmoney.core.data.SubscriptionRepository.create] cannot invent an identity: on Android
+ * the id comes from Room's autoincrement and the uuid is minted by the repository, and on
+ * the web the server assigns both.
  */
 data class Subscription(
-    val id: Long,
-    val uuid: String,
+    val id: Long = 0L,
+    val uuid: String = "",
     val name: String,
     val accountId: Long,
     val categoryId: Long?,

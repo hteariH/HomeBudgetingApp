@@ -3,8 +3,8 @@ package com.personalmoney.feature.currencies
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.personalmoney.core.data.repository.CurrencyRepository
-import com.personalmoney.core.database.entity.CurrencyEntity
+import com.personalmoney.core.data.CurrencyRepository
+import com.personalmoney.core.domain.model.Currency
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -84,7 +84,7 @@ class CurrencyEditViewModel constructor(
                         return@runCatching
                     }
                     repository.create(
-                        CurrencyEntity(
+                        Currency(
                             code = s.code,
                             name = s.name.trim(),
                             symbol = s.symbol.trim(),

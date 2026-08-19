@@ -3,9 +3,9 @@ package com.personalmoney.feature.accounts
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CurrencyRepository
-import com.personalmoney.core.database.entity.AccountEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CurrencyRepository
+import com.personalmoney.core.domain.model.Account
 import com.personalmoney.util.MainDispatcherRule
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -31,7 +31,7 @@ class AccountEditViewModelTest {
     private fun vm(defaultAccountId: Long? = 5L, txCount: Int = 3): AccountEditViewModel {
         every { currencyRepo.observeActive() } returns flowOf(emptyList())
         every { currencyRepo.observeAll() } returns flowOf(emptyList())
-        coEvery { accountRepo.findById(5L) } returns AccountEntity(id = 5L, name = "Cash", currencyCode = "USD")
+        coEvery { accountRepo.findById(5L) } returns Account(id = 5L, name = "Cash", currencyCode = "USD")
         coEvery { accountRepo.transactionCount(5L) } returns txCount
         coEvery { accountRepo.delete(5L) } just Runs
         every { prefs.defaultAccountId } returns flowOf(defaultAccountId)

@@ -169,7 +169,7 @@ private fun WelcomeStep() {
 
 @Composable
 private fun CurrencyStep(
-    currencies: List<com.personalmoney.core.database.entity.CurrencyEntity>,
+    currencies: List<com.personalmoney.core.domain.model.Currency>,
     selectedCode: String,
     onSelect: (String) -> Unit,
     onNotMyList: () -> Unit
@@ -217,7 +217,7 @@ private fun CurrencyStep(
 
 @Composable
 private fun CurrencyChip(
-    currency: com.personalmoney.core.database.entity.CurrencyEntity,
+    currency: com.personalmoney.core.domain.model.Currency,
     selected: Boolean,
     onSelect: (String) -> Unit
 ) {
@@ -251,7 +251,7 @@ private fun CurrencyChip(
 
 @Composable
 private fun AllCurrenciesDialog(
-    currencies: List<com.personalmoney.core.database.entity.CurrencyEntity>,
+    currencies: List<com.personalmoney.core.domain.model.Currency>,
     searchQuery: String,
     onSearchChange: (String) -> Unit,
     onSelect: (String) -> Unit,

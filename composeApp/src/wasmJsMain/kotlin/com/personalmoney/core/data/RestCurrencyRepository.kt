@@ -31,6 +31,30 @@ class RestCurrencyRepository(private val api: RestApi) : CurrencyRepository {
         // entries on and off, they pick a base currency. Nothing to call here.
     }
 
+    override suspend fun create(currency: Currency): Long = adminOnly()
+
+    override suspend fun update(currency: Currency): Unit = adminOnly()
+
+    override suspend fun delete(code: String): Unit = adminOnly()
+
+    /**
+     * Accounts only. The ledger endpoint has no currency filter, so transactions in a
+     * currency cannot be counted over REST - which does not matter, because [delete] is
+     * unavailable here anyway and this number only ever guards it.
+     */
+    override suspend fun usageCount(code: String): Int =
+        api.accounts().count { it.currency.code == code }
+
+    /**
+     * The server puts `@PreAuthorize("hasRole('ADMIN')")` on every currency write, so a
+     * normal user cannot add one from a browser - while on Android the catalogue is a
+     * local Room table they own outright. That asymmetry is the server's design, not an
+     * oversight here, and failing loudly beats a button that silently does nothing.
+     */
+    private fun adminOnly(): Nothing = throw UnsupportedOperationException(
+        "The currency catalogue is admin-owned on the server; the web client cannot change it"
+    )
+
     override suspend fun refresh() {
         val remote = api.currencies().map { it.toCurrency() }
         CurrencyRegistry.update(

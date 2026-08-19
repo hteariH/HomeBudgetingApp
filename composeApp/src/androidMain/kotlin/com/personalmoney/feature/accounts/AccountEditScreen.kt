@@ -54,7 +54,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.core.database.entity.CurrencyEntity
+import com.personalmoney.core.domain.model.Currency
 import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.core.ui.components.IconCircle
 import com.personalmoney.core.ui.icons.IconLibrary
@@ -212,7 +212,7 @@ fun AccountEditScreen(
 @Composable
 private fun CurrencyDropdown(
     selected: String,
-    currencies: List<CurrencyEntity>,
+    currencies: List<Currency>,
     onPick: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }

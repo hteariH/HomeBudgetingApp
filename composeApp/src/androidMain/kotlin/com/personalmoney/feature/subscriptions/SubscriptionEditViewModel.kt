@@ -3,12 +3,12 @@ package com.personalmoney.feature.subscriptions
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.data.repository.SubscriptionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CategoryEntity
-import com.personalmoney.core.database.entity.SubscriptionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.SubscriptionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Subscription
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.SubscriptionFrequency
 import com.personalmoney.resources.*
@@ -40,8 +40,8 @@ data class SubscriptionEditUiState(
     val interval: Int = 1,
     val nextChargeDate: LocalDate = today(),
     val active: Boolean = true,
-    val accounts: List<AccountEntity> = emptyList(),
-    val categories: List<CategoryEntity> = emptyList(),
+    val accounts: List<Account> = emptyList(),
+    val categories: List<Category> = emptyList(),
     val saving: Boolean = false,
     val saved: Boolean = false,
     val error: String? = null
@@ -132,7 +132,7 @@ class SubscriptionEditViewModel constructor(
             runCatching {
                 if (s.id == null) {
                     subscriptionRepository.create(
-                        SubscriptionEntity(
+                        Subscription(
                             name = s.name.trim(),
                             accountId = s.accountId!!,
                             categoryId = s.categoryId,

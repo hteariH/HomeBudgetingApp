@@ -3,12 +3,12 @@ package com.personalmoney.feature.transactions
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.AccountEntity
-import com.personalmoney.core.database.entity.CategoryEntity
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.util.MainDispatcherRule
@@ -36,13 +36,13 @@ class TransactionEditViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val testAccount = AccountEntity(
+    private val testAccount = Account(
         id = 1L,
         name = "Cash",
         currencyCode = "USD"
     )
 
-    private val testCategory = CategoryEntity(
+    private val testCategory = Category(
         id = 100L,
         name = "Food",
         type = CategoryType.EXPENSE,
@@ -52,7 +52,7 @@ class TransactionEditViewModelTest {
 
     private val now = Clock.System.now()
 
-    private val testTransaction = TransactionEntity(
+    private val testTransaction = Transaction(
         id = 42L,
         type = TransactionType.EXPENSE,
         accountId = 1L,
@@ -60,11 +60,10 @@ class TransactionEditViewModelTest {
         amountMinor = 1500L,    // $15.00
         currencyCode = "USD",
         accountAmountMinor = 1500L,
-        occurredAt = now,
-        createdAt = now
+        occurredAt = now
     )
 
-    private val transferTransaction = TransactionEntity(
+    private val transferTransaction = Transaction(
         id = 42L,
         type = TransactionType.EXPENSE,
         accountId = 1L,
@@ -73,7 +72,6 @@ class TransactionEditViewModelTest {
         currencyCode = "USD",
         accountAmountMinor = 2000L,
         occurredAt = now,
-        createdAt = now,
         transferGroupId = "transfer-group-1"
     )
 
@@ -82,7 +80,7 @@ class TransactionEditViewModelTest {
     private val categoryRepository = mockk<CategoryRepository>(relaxed = true)
     private val userPreferences = mockk<UserPreferences>(relaxed = true)
 
-    private fun setupDefaultMocks(tx: TransactionEntity = testTransaction) {
+    private fun setupDefaultMocks(tx: Transaction = testTransaction) {
         every { transactionRepository.observeById(42L) } returns flowOf(tx)
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         every { categoryRepository.observeByType(CategoryType.EXPENSE) } returns flowOf(listOf(testCategory))
@@ -94,7 +92,7 @@ class TransactionEditViewModelTest {
         coEvery { transactionRepository.deleteTransfer(any()) } just Runs
     }
 
-    private fun createViewModel(tx: TransactionEntity = testTransaction): TransactionEditViewModel {
+    private fun createViewModel(tx: Transaction = testTransaction): TransactionEditViewModel {
         setupDefaultMocks(tx)
         return TransactionEditViewModel(
             savedStateHandle = SavedStateHandle(mapOf("transactionId" to "42")),
@@ -317,7 +315,7 @@ class TransactionEditViewModelTest {
 
     @Test
     fun `selectCategory updates selected category`() = runTest {
-        val anotherCategory = CategoryEntity(
+        val anotherCategory = Category(
             id = 200L, name = "Transport", type = CategoryType.EXPENSE,
             icon = "directions_car", color = 0xFF2196F3L
         )
@@ -342,7 +340,7 @@ class TransactionEditViewModelTest {
 
     @Test
     fun `selectAccount updates selected account`() = runTest {
-        val anotherAccount = AccountEntity(id = 2L, name = "Card", currencyCode = "USD")
+        val anotherAccount = Account(id = 2L, name = "Card", currencyCode = "USD")
         setupDefaultMocks()
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount, anotherAccount))
         val vm = TransactionEditViewModel(

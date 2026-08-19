@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.ads.BannerAd
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.TransactionType
@@ -338,7 +338,7 @@ private fun StatCard(
 
 @Composable
 private fun RecentTransactionRow(
-    transaction: TransactionEntity,
+    transaction: Transaction,
     accountName: String,
     categoryName: String?,
     categoryIcon: String,

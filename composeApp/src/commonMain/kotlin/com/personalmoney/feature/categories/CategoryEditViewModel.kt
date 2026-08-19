@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.calc.Calculator
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.database.entity.CategoryEntity
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
@@ -101,7 +101,9 @@ class CategoryEditViewModel constructor(
             runCatching {
                 if (st.id == null) {
                     repository.create(
-                        CategoryEntity(
+                        // No id or uuid: this is a new category and only the repository
+                        // can give it an identity. See the note on Category.
+                        Category(
                             name = st.name.trim(),
                             type = st.type,
                             icon = st.icon,

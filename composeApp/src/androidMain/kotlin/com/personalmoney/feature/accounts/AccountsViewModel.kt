@@ -3,9 +3,8 @@ package com.personalmoney.feature.accounts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.AccountRepository
-import com.personalmoney.core.database.dao.AccountBalanceRow
-import com.personalmoney.core.database.entity.AccountEntity
+import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,7 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class AccountWithBalance(
-    val account: AccountEntity,
+    val account: Account,
     val balance: Money
 )
 
@@ -30,18 +29,18 @@ class AccountsViewModel constructor(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
+    // No separate balance query: the shared Account already carries the summed balance,
+    // because both stores have to work it out anyway - Room from the ledger, the server
+    // before it answers.
     val uiState: StateFlow<AccountsUiState> = combine(
         accountRepository.observeAll(),
-        accountRepository.observeBalances(),
         userPreferences.baseCurrency
-    ) { all, balances, base ->
-        val balanceMap: Map<Long, AccountBalanceRow> = balances.associateBy { it.accountId }
+    ) { all, base ->
         val withBalance = all.map { account ->
-            val row = balanceMap[account.id]
             AccountWithBalance(
                 account = account,
                 balance = Money(
-                    minor = row?.balanceMinor ?: account.initialBalanceMinor,
+                    minor = account.balanceMinor,
                     currency = CurrencyCode(account.currencyCode)
                 )
             )

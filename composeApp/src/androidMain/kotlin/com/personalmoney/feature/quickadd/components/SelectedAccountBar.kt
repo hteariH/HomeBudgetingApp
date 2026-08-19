@@ -19,12 +19,12 @@ import androidx.compose.ui.graphics.Color
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import com.personalmoney.core.database.entity.AccountEntity
+import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.ui.components.IconCircle
 
 @Composable
 fun SelectedAccountBar(
-    account: AccountEntity?,
+    account: Account?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {

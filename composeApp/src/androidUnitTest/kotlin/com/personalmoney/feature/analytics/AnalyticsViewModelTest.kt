@@ -2,9 +2,9 @@ package com.personalmoney.feature.analytics
 
 import app.cash.turbine.test
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.ExchangeRateRepository
-import com.personalmoney.core.data.repository.TransactionRepository
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.data.ExchangeRateRepository
+import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.TransactionType
@@ -148,11 +148,11 @@ class AnalyticsViewModelTest {
 
     @Test
     fun `expenses aggregated across all 6 months`() = runTest {
-        val expense = TransactionEntity(
+        val expense = Transaction(
             id = 1L, type = TransactionType.EXPENSE,
             accountId = 1L, categoryId = null,
             amountMinor = 5000L, currencyCode = "USD", accountAmountMinor = 5000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { userPreferences.baseCurrency } returns flowOf("USD")
         every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())
@@ -169,11 +169,11 @@ class AnalyticsViewModelTest {
 
     @Test
     fun `income aggregated across all 6 months`() = runTest {
-        val income = TransactionEntity(
+        val income = Transaction(
             id = 2L, type = TransactionType.INCOME,
             accountId = 1L, categoryId = null,
             amountMinor = 10_000L, currencyCode = "USD", accountAmountMinor = 10_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { userPreferences.baseCurrency } returns flowOf("USD")
         every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())
@@ -189,11 +189,11 @@ class AnalyticsViewModelTest {
 
     @Test
     fun `transfer transactions are excluded from totals`() = runTest {
-        val transfer = TransactionEntity(
+        val transfer = Transaction(
             id = 3L, type = TransactionType.TRANSFER,
             accountId = 1L, categoryId = null,
             amountMinor = 5000L, currencyCode = "USD", accountAmountMinor = 5000L,
-            occurredAt = now, createdAt = now, transferGroupId = "g1"
+            occurredAt = now, transferGroupId = "g1"
         )
         every { userPreferences.baseCurrency } returns flowOf("USD")
         every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())
@@ -210,11 +210,11 @@ class AnalyticsViewModelTest {
 
     @Test
     fun `each monthly bar tracks expenses separately`() = runTest {
-        val expense = TransactionEntity(
+        val expense = Transaction(
             id = 1L, type = TransactionType.EXPENSE,
             accountId = 1L, categoryId = null,
             amountMinor = 3_000L, currencyCode = "USD", accountAmountMinor = 3_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { userPreferences.baseCurrency } returns flowOf("USD")
         every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())
@@ -233,11 +233,11 @@ class AnalyticsViewModelTest {
 
     @Test
     fun `maxValue reflects highest bar value`() = runTest {
-        val income = TransactionEntity(
+        val income = Transaction(
             id = 2L, type = TransactionType.INCOME,
             accountId = 1L, categoryId = null,
             amountMinor = 9_999L, currencyCode = "USD", accountAmountMinor = 9_999L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { userPreferences.baseCurrency } returns flowOf("USD")
         every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())
@@ -268,17 +268,17 @@ class AnalyticsViewModelTest {
 
     @Test
     fun `mixed expenses and income tracked correctly per bar`() = runTest {
-        val expense = TransactionEntity(
+        val expense = Transaction(
             id = 1L, type = TransactionType.EXPENSE,
             accountId = 1L, categoryId = null,
             amountMinor = 4_000L, currencyCode = "USD", accountAmountMinor = 4_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
-        val income = TransactionEntity(
+        val income = Transaction(
             id = 2L, type = TransactionType.INCOME,
             accountId = 1L, categoryId = null,
             amountMinor = 6_000L, currencyCode = "USD", accountAmountMinor = 6_000L,
-            occurredAt = now, createdAt = now
+            occurredAt = now
         )
         every { userPreferences.baseCurrency } returns flowOf("USD")
         every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())

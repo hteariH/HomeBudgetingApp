@@ -54,7 +54,7 @@ import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.core.ui.components.IconCircle
 import com.personalmoney.core.ui.icons.IconLibrary
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

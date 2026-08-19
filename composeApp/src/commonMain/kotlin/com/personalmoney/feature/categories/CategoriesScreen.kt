@@ -32,11 +32,11 @@ import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.core.database.entity.CategoryEntity
+import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.ui.components.EmptyState
 import com.personalmoney.core.ui.components.IconCircle
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,7 +102,7 @@ fun CategoriesScreen(
 }
 
 @Composable
-private fun CategoryRow(category: CategoryEntity, onClick: () -> Unit) {
+private fun CategoryRow(category: Category, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

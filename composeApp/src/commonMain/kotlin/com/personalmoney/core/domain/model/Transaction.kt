@@ -13,10 +13,15 @@ import kotlin.time.Instant
  *
  * A transfer is two of these rows sharing [transferGroupId] - a signed debit and a signed
  * credit - rather than a row type of its own.
+ *
+ * `id = 0` with a blank uuid means "not persisted yet". A screen building one for
+ * [com.personalmoney.core.data.TransactionRepository.create] cannot invent an identity: on Android
+ * the id comes from Room's autoincrement and the uuid is minted by the repository, and on
+ * the web the server assigns both.
  */
 data class Transaction(
-    val id: Long,
-    val uuid: String,
+    val id: Long = 0L,
+    val uuid: String = "",
     val type: TransactionType,
     val accountId: Long,
     val categoryId: Long?,

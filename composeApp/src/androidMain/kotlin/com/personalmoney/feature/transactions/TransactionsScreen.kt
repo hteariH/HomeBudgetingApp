@@ -53,7 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.ads.BannerAd
-import com.personalmoney.core.database.entity.TransactionEntity
+import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.TransactionType
@@ -268,10 +268,10 @@ private val dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.get
 private fun TransactionList(
     state: TransactionsUiState,
     onEdit: (Long) -> Unit,
-    onDelete: (TransactionEntity) -> Unit,
-    onDuplicate: (TransactionEntity) -> Unit
+    onDelete: (Transaction) -> Unit,
+    onDuplicate: (Transaction) -> Unit
 ) {
-    var deleteTarget by remember { mutableStateOf<TransactionEntity?>(null) }
+    var deleteTarget by remember { mutableStateOf<Transaction?>(null) }
 
     deleteTarget?.let { tx ->
         AlertDialog(
@@ -299,7 +299,7 @@ private fun TransactionList(
     val today = Clock.System.now().toLocalDateTime(zone).date
     val yesterday = LocalDate.fromEpochDays(today.toEpochDays() - 1)
 
-    val groups: List<Pair<LocalDate, List<TransactionEntity>>> = state.transactions
+    val groups: List<Pair<LocalDate, List<Transaction>>> = state.transactions
         .groupBy { it.occurredAt.toLocalDateTime(zone).date }
         .toSortedMap(compareByDescending { it })
         .toList()
@@ -348,10 +348,10 @@ private fun LocalDate.toJavaLocalDate(): java.time.LocalDate =
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TransactionRow(
-    tx: TransactionEntity,
+    tx: Transaction,
     accountName: String,
     counterpartName: String?,
-    counterpartTx: TransactionEntity?,
+    counterpartTx: Transaction?,
     categoryName: String?,
     categoryIcon: String,
     categoryColor: Long,

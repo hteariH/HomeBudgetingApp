@@ -24,13 +24,33 @@ interface TransactionRepository {
         to: Instant? = null,
     ): Flow<List<Transaction>>
 
+    /** One row, re-emitting on every change to it. */
+    fun observeById(id: Long): Flow<Transaction?>
+
     suspend fun findById(id: Long): Transaction?
+
+    /** Both legs of a transfer, by their shared [Transaction.transferGroupId]. */
+    suspend fun findTransferPair(groupId: String): List<Transaction>
 
     suspend fun insert(transaction: Transaction): Long
 
     suspend fun update(transaction: Transaction)
 
+    /**
+     * Writes both legs of a transfer, or neither.
+     *
+     * A transfer is a signed debit and a signed credit sharing a [Transaction.transferGroupId];
+     * saving one without the other would leave money that has left one account and arrived
+     * nowhere. Android does it in a Room transaction, the web in one request the server
+     * commits atomically - which is why this is a repository method rather than two inserts
+     * at the call site.
+     */
+    suspend fun insertTransferPair(debit: Transaction, credit: Transaction)
+
     suspend fun delete(id: Long)
+
+    /** Removes both legs. Deleting one alone would leave the other stranded. */
+    suspend fun deleteTransfer(groupId: String)
 
     suspend fun refresh() {}
 }

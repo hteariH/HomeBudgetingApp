@@ -35,7 +35,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.core.database.entity.SubscriptionEntity
+import com.personalmoney.core.domain.model.Subscription
 import com.personalmoney.core.domain.CurrencyCode
 import com.personalmoney.core.domain.Money
 import com.personalmoney.core.domain.SubscriptionFrequency
@@ -135,7 +135,7 @@ fun SubscriptionsScreen(
 
 @Composable
 private fun SubscriptionRow(
-    sub: SubscriptionEntity,
+    sub: Subscription,
     onClick: () -> Unit,
     onToggle: () -> Unit
 ) {

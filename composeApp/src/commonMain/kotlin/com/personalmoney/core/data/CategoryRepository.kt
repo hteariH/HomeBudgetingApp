@@ -11,6 +11,14 @@ interface CategoryRepository {
 
     fun observeAll(): Flow<List<Category>>
 
+    /**
+     * The categories the user reaches for, most-used first, for the quick-add chips.
+     *
+     * Ordered by how many ledger rows point at each, then by name so the order is stable
+     * for a user who has entered nothing yet.
+     */
+    fun observeMostUsed(type: CategoryType, limit: Int = 8): Flow<List<Category>>
+
     suspend fun findById(id: Long): Category?
 
     suspend fun create(category: Category): Long

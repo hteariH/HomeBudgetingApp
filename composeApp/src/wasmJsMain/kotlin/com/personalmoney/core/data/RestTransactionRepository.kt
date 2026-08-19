@@ -7,6 +7,7 @@ import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.toDecimalString
 import com.personalmoney.core.domain.toMinorUnits
 import com.personalmoney.core.network.CreateTransactionRequest
+import com.personalmoney.core.network.CreateTransferRequest
 import com.personalmoney.core.network.RestApi
 import com.personalmoney.core.network.RestTransaction
 import kotlinx.coroutines.flow.Flow
@@ -53,6 +54,22 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
         )
     }
 
+    override fun observeById(id: Long): Flow<Transaction?> =
+        recent.map { rows -> rows.firstOrNull { it.id == id } }
+
+    override suspend fun findTransferPair(groupId: String): List<Transaction> =
+        recent.value.filter { it.transferGroupId == groupId }
+
+    /**
+     * The transfer endpoint takes the group's own id, and removes both legs server-side -
+     * so unlike the ledger delete, this is one call rather than two.
+     */
+    override suspend fun deleteTransfer(groupId: String) {
+        val leg = recent.value.firstOrNull { it.transferGroupId == groupId } ?: return
+        api.deleteTransfer(leg.id)
+        refresh()
+    }
+
     override suspend fun findById(id: Long): Transaction? =
         recent.value.firstOrNull { it.id == id }
 
@@ -64,6 +81,31 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
 
     override suspend fun update(transaction: Transaction) {
         api.updateTransaction(transaction.id, transaction.toRequest())
+        refresh()
+    }
+
+    /**
+     * One `/api/transfers` call rather than two inserts: the server writes both legs in a
+     * single transaction, which is the guarantee the contract promises. The debit carries
+     * the fee and the negative amount, so the request is reconstructed from it.
+     */
+    override suspend fun insertTransferPair(debit: Transaction, credit: Transaction) {
+        val fromDecimals = CurrencyRegistry.decimalsOrFallback(debit.currencyCode)
+        val toDecimals = CurrencyRegistry.decimalsOrFallback(credit.currencyCode)
+        val fee = debit.transferFeeMinor ?: 0L
+        api.createTransfer(
+            CreateTransferRequest(
+                fromAccountId = debit.accountId,
+                toAccountId = credit.accountId,
+                // The debit is stored signed and fee-inclusive; the endpoint wants the
+                // amount that actually moves, positive and without the fee.
+                fromAmount = (-debit.amountMinor - fee).toDecimalString(fromDecimals),
+                toAmount = credit.amountMinor.toDecimalString(toDecimals),
+                fee = fee.takeIf { it > 0 }?.toDecimalString(fromDecimals),
+                date = debit.occurredAt.toString(),
+                description = debit.note,
+            )
+        )
         refresh()
     }
 

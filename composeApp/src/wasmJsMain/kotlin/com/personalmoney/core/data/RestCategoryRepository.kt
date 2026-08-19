@@ -10,6 +10,7 @@ import com.personalmoney.core.network.RestApi
 import com.personalmoney.core.network.RestCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 /** The shared category contract, backed by REST. See [RestAccountRepository]. */
@@ -17,10 +18,29 @@ class RestCategoryRepository(private val api: RestApi) : CategoryRepository {
 
     private val cache = MutableStateFlow<List<Category>>(emptyList())
 
+    /** categoryId -> how many recent transactions use it; filled by [refresh]. */
+    private val recentUses = MutableStateFlow<Map<Long, Int>>(emptyMap())
+
     override fun observeByType(type: CategoryType): Flow<List<Category>> =
         cache.map { all -> all.filter { it.type == type && !it.archived }.sortedBy { it.sortOrder } }
 
     override fun observeAll(): Flow<List<Category>> = cache
+
+    /**
+     * Ordered by how often each category appears in the recent ledger, then by name.
+     *
+     * Android gets this from a GROUP BY over the whole history; there is no such endpoint,
+     * so this counts the page of transactions the app has already pulled. Different data,
+     * same intent - the chips put what the user actually uses within reach.
+     */
+    override fun observeMostUsed(type: CategoryType, limit: Int): Flow<List<Category>> =
+        combine(cache, recentUses) { all, uses ->
+            all.asSequence()
+                .filter { it.type == type && !it.archived }
+                .sortedWith(compareByDescending<Category> { uses[it.id] ?: 0 }.thenBy { it.name })
+                .take(limit)
+                .toList()
+        }
 
     override suspend fun findById(id: Long): Category? = cache.value.firstOrNull { it.id == id }
 
@@ -56,6 +76,10 @@ class RestCategoryRepository(private val api: RestApi) : CategoryRepository {
 
     override suspend fun refresh() {
         cache.value = api.categories().map { it.toCategory() }
+        recentUses.value = api.transactions(size = USAGE_SAMPLE).content
+            .mapNotNull { it.category?.id }
+            .groupingBy { it }
+            .eachCount()
     }
 }
 
@@ -86,3 +110,6 @@ private fun Category.toRequest() = CreateCategoryRequest(
         minor.toDecimalString(2)
     },
 )
+
+/** How far back the "most used" ordering looks. The same page the dashboard pulls. */
+private const val USAGE_SAMPLE = 100

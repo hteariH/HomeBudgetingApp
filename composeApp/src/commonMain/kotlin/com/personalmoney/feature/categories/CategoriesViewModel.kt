@@ -2,8 +2,8 @@ package com.personalmoney.feature.categories
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.personalmoney.core.data.repository.CategoryRepository
-import com.personalmoney.core.database.entity.CategoryEntity
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.CategoryType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 
 data class CategoriesUiState(
     val selectedTab: CategoryType = CategoryType.EXPENSE,
-    val expense: List<CategoryEntity> = emptyList(),
-    val income: List<CategoryEntity> = emptyList()
+    val expense: List<Category> = emptyList(),
+    val income: List<Category> = emptyList()
 )
 
 class CategoriesViewModel constructor(

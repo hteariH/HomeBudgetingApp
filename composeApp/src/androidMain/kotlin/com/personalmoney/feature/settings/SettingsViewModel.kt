@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.ThemeMode
 import com.personalmoney.core.data.UserPreferences
-import com.personalmoney.core.data.repository.CurrencyRepository
-import com.personalmoney.core.database.entity.CurrencyEntity
+import com.personalmoney.core.data.CurrencyRepository
+import com.personalmoney.core.domain.model.Currency
 import com.personalmoney.feature.settings.backup.BackupManager
 import com.personalmoney.feature.settings.backup.BackupPreview
 import com.personalmoney.resources.*
@@ -25,7 +25,7 @@ data class SettingsUiState(
     val dynamicColor: Boolean = true,
     val biometricLockEnabled: Boolean = false,
     val numpadPhoneLayout: Boolean = false,
-    val currencies: List<CurrencyEntity> = emptyList(),
+    val currencies: List<Currency> = emptyList(),
     val message: String? = null
 )
 
