@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -51,6 +52,8 @@ import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.personalmoney.core.ui.PageWidth
+import com.personalmoney.feature.quickadd.QuickEntryPanel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.ads.BannerAd
 import com.personalmoney.core.domain.formatMediumDate
@@ -119,6 +122,19 @@ fun TransactionsScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            // The same panel the overview carries, for the same reason: on a wide window
+            // the ledger is where you look when you want to record something, and sending
+            // that to a separate screen is a navigation step that buys nothing. The saved
+            // row appears in the list underneath without a refresh - both read the same
+            // repository.
+            BoxWithConstraints {
+                if (maxWidth >= PageWidth.InlineEntry) {
+                    QuickEntryPanel(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
             if (showSearch) {
                 OutlinedTextField(
                     value = state.filter.query,

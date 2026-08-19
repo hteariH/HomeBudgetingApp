@@ -160,16 +160,12 @@ fun PersonalMoneyNavHost(
 
     Row(Modifier.fillMaxSize()) {
         if (showRail) {
+            // No floating button here. A FAB is a phone pattern - a thumb-sized target
+            // over a scrolling list - and on a wide window it read as a stray "+" in the
+            // corner of a sidebar, which is not something any web app of this kind has.
+            // Wide windows enter transactions through the panel on the overview and on
+            // the ledger instead, where the form is simply on the page.
             NavigationRail {
-                Spacer(Modifier.height(12.dp))
-                FloatingActionButton(
-                    onClick = { navController.navigate(Routes.quickAdd("EXPENSE")) },
-                ) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = stringResource(Res.string.action_add_expense_fab),
-                    )
-                }
                 Spacer(Modifier.height(12.dp))
                 navDestinations.forEach { item ->
                     NavigationRailItem(
@@ -198,7 +194,7 @@ fun PersonalMoneyNavHost(
             }
         },
         floatingActionButton = {
-            // The rail hosts its own, so this would be a second one on a wide window.
+            // Phones only: a wide window has the entry panel on the page instead.
             if (showFab && !wide) {
                 FloatingActionButton(onClick = { navController.navigate(Routes.quickAdd("EXPENSE")) }) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.action_add_expense_fab))

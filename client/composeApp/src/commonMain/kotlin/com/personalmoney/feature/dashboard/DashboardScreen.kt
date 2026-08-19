@@ -59,8 +59,8 @@ import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.ui.components.BreakdownSlice
 import com.personalmoney.core.ui.components.CategoryBreakdownChart
 import com.personalmoney.core.ui.components.IconCircle
+import com.personalmoney.core.ui.PageWidth
 import com.personalmoney.core.ui.components.MoneyText
-import com.personalmoney.core.ui.theme.LocalFinanceColors
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -400,9 +400,10 @@ private fun RecentTransactionRow(
  * Where the dashboard stops being a phone screen.
  *
  * Higher than the navigation rail's 840dp: the rail only needs room for itself, while these
- * cards need four figures side by side and a chart wide enough to read six months on.
+ * cards need four figures side by side and a chart wide enough to read six months on. It is
+ * the same width at which an entry form fits inline, which is why it is one shared number.
  */
-private val WIDE_DASHBOARD = 900.dp
+private val WIDE_DASHBOARD = PageWidth.InlineEntry
 
 /**
  * The month's three figures.

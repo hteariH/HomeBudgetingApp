@@ -37,6 +37,16 @@ object PageWidth {
 
     /** Forms, sign-in, single-column editors. Matches the React `.modal` cap. */
     val Form: Dp = 480.dp
+
+    /**
+     * Where a transaction form fits inline, beside everything else on the page.
+     *
+     * Below this a full screen is the better shape and a floating button is the right way
+     * to reach it; above it, sending someone to another screen to type four fields is a
+     * navigation step that buys nothing. One number, shared, so the overview and the
+     * ledger never disagree about which layout they are in.
+     */
+    val InlineEntry: Dp = 900.dp
 }
 
 /**
