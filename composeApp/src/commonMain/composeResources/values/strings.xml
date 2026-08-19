@@ -310,6 +310,7 @@
     <string name="common_account">Account</string>
     <string name="common_actions">Actions</string>
     <string name="common_uncategorised">Uncategorised</string>
+    <string name="common_request_failed">Something went wrong. Try again.</string>
     <string name="common_income">Income</string>
     <string name="common_expense">Expense</string>
     <string name="common_transfer">Transfer</string>

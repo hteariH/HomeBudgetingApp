@@ -286,6 +286,7 @@
     <string name="common_account">Счёт</string>
     <string name="common_actions">Действия</string>
     <string name="common_uncategorised">Без категории</string>
+    <string name="common_request_failed">Что-то пошло не так. Попробуйте ещё раз.</string>
     <string name="common_income">Доход</string>
     <string name="common_expense">Расход</string>
     <string name="common_transfer">Перевод</string>

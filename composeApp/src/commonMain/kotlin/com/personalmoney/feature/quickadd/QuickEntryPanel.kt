@@ -1,7 +1,6 @@
 package com.personalmoney.feature.quickadd
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -12,8 +11,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -36,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.domain.formatMediumDate
 import com.personalmoney.core.ui.PageWidth
+import com.personalmoney.core.ui.PickerField
+import com.personalmoney.core.ui.PickerOption
 import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -98,14 +97,14 @@ fun QuickEntryPanel(
                 PickerField(
                     label = stringResource(Res.string.common_account),
                     value = state.selectedAccount?.name,
-                    options = state.accounts.map { it.id to it.name },
-                    onSelect = { id -> viewModel.selectAccountById(id) },
+                    options = state.accounts.map { PickerOption(it.id, it.name) },
+                    onSelect = { id -> id?.let(viewModel::selectAccountById) },
                     modifier = Modifier.widthIn(min = 200.dp, max = 260.dp),
                 )
                 PickerField(
                     label = stringResource(Res.string.common_category),
                     value = state.selectedCategory?.name,
-                    options = state.categories.map { it.id to it.name },
+                    options = state.categories.map { PickerOption(it.id, it.name) },
                     onSelect = { id ->
                         state.categories.firstOrNull { it.id == id }?.let(viewModel::selectCategory)
                     },
@@ -166,45 +165,5 @@ fun QuickEntryPanel(
             },
             onDismiss = { showDatePicker = false },
         )
-    }
-}
-
-/** A read-only field that opens a menu - the desktop equivalent of the phone's picker sheet. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PickerField(
-    label: String,
-    value: String?,
-    options: List<Pair<Long, String>>,
-    onSelect: (Long) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier) {
-        OutlinedTextField(
-            value = value.orEmpty(),
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        // An invisible button over the field: a read-only OutlinedTextField still takes the
-        // click itself, so the menu would never open.
-        TextButton(
-            onClick = { expanded = true },
-            modifier = Modifier.matchParentSize(),
-        ) {}
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { (id, name) ->
-                DropdownMenuItem(
-                    text = { Text(name) },
-                    onClick = {
-                        onSelect(id)
-                        expanded = false
-                    },
-                )
-            }
-        }
     }
 }

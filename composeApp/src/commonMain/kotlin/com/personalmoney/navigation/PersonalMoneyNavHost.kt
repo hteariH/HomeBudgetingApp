@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
@@ -54,6 +55,7 @@ import com.personalmoney.feature.accounts.AccountPickerScreen
 import com.personalmoney.feature.accounts.AccountsScreen
 import com.personalmoney.feature.analytics.AnalyticsScreen
 import com.personalmoney.feature.auth.AuthScreen
+import com.personalmoney.feature.banks.BanksScreen
 import com.personalmoney.feature.categories.CategoriesScreen
 import com.personalmoney.feature.categories.CategoryEditScreen
 import com.personalmoney.feature.currencies.CurrenciesScreen
@@ -87,7 +89,7 @@ private data class NavDestination(
  * (`frontend/src/components/Sidebar.tsx`). Same screens, same routes; only the chrome
  * differs, which is the point of doing this by window size rather than by platform.
  */
-private val navDestinations = listOf(
+private val navDestinations = listOfNotNull(
     NavDestination(Routes.DASHBOARD, Icons.Filled.Home, Res.string.nav_overview, primary = true),
     NavDestination(Routes.TRANSACTIONS, Icons.AutoMirrored.Filled.List, Res.string.nav_transactions, primary = true),
     NavDestination(Routes.ANALYTICS, Icons.Filled.BarChart, Res.string.nav_analytics, primary = true),
@@ -95,6 +97,10 @@ private val navDestinations = listOf(
     NavDestination(Routes.CATEGORIES, Icons.Filled.Category, Res.string.nav_categories),
     NavDestination(Routes.SUBSCRIPTIONS, Icons.Filled.Subscriptions, Res.string.dashboard_subscriptions),
     NavDestination(Routes.CURRENCIES, Icons.Filled.Language, Res.string.nav_currencies),
+    // Same position the React sidebar gives it, and absent entirely where there is no
+    // repository behind it - see [bankConnectionsAvailable].
+    NavDestination(Routes.BANKS, Icons.Filled.AccountBalance, Res.string.nav_banks)
+        .takeIf { bankConnectionsAvailable },
     NavDestination(Routes.SETTINGS, Icons.Filled.Settings, Res.string.dashboard_settings),
 )
 
@@ -357,6 +363,12 @@ fun PersonalMoneyNavHost(
                     onClose = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() }
                 )
+            }
+
+            if (bankConnectionsAvailable) {
+                composable(Routes.BANKS) {
+                    BanksScreen(onBack = { navController.popBackStack() })
+                }
             }
 
             composable(Routes.SUBSCRIPTIONS) {

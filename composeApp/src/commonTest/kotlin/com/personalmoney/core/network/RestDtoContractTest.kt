@@ -116,6 +116,27 @@ class RestDtoContractTest {
     }
 
     @Test
+    fun `decodes a real bank connection payload`() {
+        val payload = """
+            [{"id":1,"provider":"MONOBANK","providerDisplayName":"Monobank","label":"Dev Holder",
+              "status":"INVALID","linkedAccountIds":[],"createdAt":"2026-08-20T00:10:38.01122"}]
+        """.trimIndent()
+
+        val connections = json.decodeFromString<List<RestBankConnection>>(payload)
+
+        val connection = connections.single()
+        // Upper case, and the server's own spelling. The repository maps it to an enum so
+        // that no screen ever compares this string.
+        assertEquals("INVALID", connection.status)
+        assertEquals("Dev Holder", connection.label)
+        assertTrue(connection.linkedAccountIds.isEmpty())
+        // Absent from the JSON entirely: the server omits nulls
+        // (`default-property-inclusion: non_null`), so every optional field here has to
+        // carry a default rather than merely be nullable.
+        assertNull(connection.lastVerifiedAt)
+    }
+
+    @Test
     fun `decodes an empty transaction page`() {
         val payload = """{"content":[],"page":0,"size":1,"totalElements":0,"totalPages":0}"""
 

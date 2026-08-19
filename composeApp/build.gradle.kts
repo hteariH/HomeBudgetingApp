@@ -102,6 +102,11 @@ kotlin {
 
         commonTest.dependencies {
             implementation(kotlin("test"))
+            // Lets the error-handling tests drive a real HttpClient: the thing under test
+            // is how Ktor's own exceptions carry a server body, which a hand-rolled fake
+            // would only assert about itself.
+            implementation(libs.ktor.client.mock)
+            implementation(libs.kotlinx.coroutines.test)
         }
 
         wasmJsMain.dependencies {

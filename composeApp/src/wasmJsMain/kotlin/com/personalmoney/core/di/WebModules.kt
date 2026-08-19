@@ -4,6 +4,7 @@ import com.personalmoney.core.auth.AuthRepository
 import com.personalmoney.core.auth.BrowserTokenStore
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.AccountRepository
+import com.personalmoney.core.data.BankRepository
 import com.personalmoney.core.data.CategoryRepository
 import com.personalmoney.core.data.BrowserKeyValueStore
 import com.personalmoney.core.data.CurrencyRepository
@@ -17,6 +18,7 @@ import com.personalmoney.core.data.RestSubscriptionRepository
 import com.personalmoney.core.data.SubscriptionRepository
 import com.personalmoney.core.data.RestCurrencyRepository
 import com.personalmoney.core.data.RestAccountRepository
+import com.personalmoney.core.data.RestBankRepository
 import com.personalmoney.core.data.RestCategoryRepository
 import com.personalmoney.core.data.RestTransactionRepository
 import com.personalmoney.core.data.TransactionRepository
@@ -27,7 +29,9 @@ import com.personalmoney.core.network.createJson
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.js.Js
+import com.personalmoney.feature.banks.BanksViewModel
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -58,6 +62,12 @@ val webModule = module {
     singleOf(::RestCurrencyRepository) bind CurrencyRepository::class
     singleOf(::RestSubscriptionRepository) bind SubscriptionRepository::class
     singleOf(::RestExchangeRateRepository) bind ExchangeRateRepository::class
+
+    // Web only. The phone has no bank screen, and Android's Koin verify test would
+    // fail loudly if BanksViewModel were ever registered in the shared module without
+    // this binding underneath it - which is the check working, not a nuisance.
+    singleOf(::RestBankRepository) bind BankRepository::class
+    viewModelOf(::BanksViewModel)
 
     single<HttpClient> { createBackendClient(get(), get(), pageOrigin(), get()) }
     single { RestApi(get()) }

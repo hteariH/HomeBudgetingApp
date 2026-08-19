@@ -286,6 +286,7 @@
     <string name="common_account">Рахунок</string>
     <string name="common_actions">Дії</string>
     <string name="common_uncategorised">Без категорії</string>
+    <string name="common_request_failed">Щось пішло не так. Спробуйте ще раз.</string>
     <string name="common_income">Дохід</string>
     <string name="common_expense">Витрата</string>
     <string name="common_transfer">Переказ</string>
