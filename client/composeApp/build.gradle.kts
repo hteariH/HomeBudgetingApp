@@ -296,6 +296,16 @@ android {
         getByName("androidTest") {
             assets.srcDir("$projectDir/schemas")
         }
+
+        // The multiplatform plugin maps `androidDebug` onto the debug build type for
+        // Kotlin and for resources, but not for the manifest - AGP looks for that under
+        // `src/debug`. The overlay was therefore never merged, and the cleartext
+        // exemption it points at sat in the APK doing nothing: a debug build could not
+        // reach a server on the host machine at all. Named explicitly so the manifest can
+        // stay next to the resource it references.
+        getByName("debug") {
+            manifest.srcFile("src/androidDebug/AndroidManifest.xml")
+        }
     }
 }
 
