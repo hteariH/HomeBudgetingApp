@@ -2,6 +2,14 @@ package com.personalmoney.feature.dashboard
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
+import com.personalmoney.core.ui.theme.ExpenseRed
+import com.personalmoney.core.ui.theme.IncomeGreen
+import com.personalmoney.feature.quickadd.QuickEntryPanel
+import org.jetbrains.compose.resources.pluralStringResource
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,6 +72,12 @@ fun DashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // The wide dashboard is the React one: four headline figures, a six-month income and
+    // spending chart, an account summary, and entry without leaving the page. None of that
+    // fits on a phone, and none of it is web-specific - a tablet gets it too.
+    BoxWithConstraints {
+    val wide = maxWidth >= WIDE_DASHBOARD
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -78,8 +92,19 @@ fun DashboardScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Total balance card
-            item {
+            if (wide) {
+                item {
+                    StatCardRow(state)
+                }
+                item {
+                    QuickEntryPanel()
+                }
+            }
+
+            // Total balance card. Skipped on a wide window, where the stat row above already
+            // carries this figure and the two beneath it - three cards saying the same thing
+            // is not a richer dashboard.
+            if (!wide) item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -112,8 +137,8 @@ fun DashboardScreen(
                 }
             }
 
-            // Month overview
-            item {
+            // Month overview. Also folded into the stat row on a wide window.
+            if (!wide) item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -233,8 +258,14 @@ fun DashboardScreen(
                 }
             }
 
+            if (wide) {
+                item { MonthlyFlowCard(state) }
+                item { AccountsSummaryCard(state) }
+            }
+
             item { BannerAd() }
         }
+    }
     }
 }
 
@@ -373,5 +404,209 @@ private fun RecentTransactionRow(
             showSign = true,
             style = MaterialTheme.typography.titleMedium
         )
+    }
+}
+
+/**
+ * Where the dashboard stops being a phone screen.
+ *
+ * Higher than the navigation rail's 840dp: the rail only needs room for itself, while these
+ * cards need four figures side by side and a chart wide enough to read six months on.
+ */
+private val WIDE_DASHBOARD = 900.dp
+
+/** The four headline figures, side by side. Mirrors the React dashboard's stat grid. */
+@Composable
+private fun StatCardRow(state: DashboardUiState) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        StatCard(
+            label = stringResource(Res.string.dashboard_net_worth),
+            money = state.totalBalance,
+            sub = pluralStringResource(
+                Res.plurals.dashboard_account_count,
+                state.totalAccountsCount,
+                state.totalAccountsCount,
+            ),
+            modifier = Modifier.weight(1f),
+        )
+        StatCard(
+            label = stringResource(Res.string.dashboard_month_income),
+            money = state.monthIncome,
+            valueColor = IncomeGreen,
+            sub = stringResource(Res.string.dashboard_current_month),
+            modifier = Modifier.weight(1f),
+        )
+        StatCard(
+            label = stringResource(Res.string.dashboard_month_expenses),
+            money = state.monthExpenses,
+            valueColor = ExpenseRed,
+            sub = stringResource(Res.string.dashboard_current_month),
+            modifier = Modifier.weight(1f),
+        )
+        StatCard(
+            label = stringResource(Res.string.dashboard_net_this_month),
+            money = state.monthNet,
+            valueColor = if (state.monthNet.minor >= 0) IncomeGreen else ExpenseRed,
+            sub = stringResource(Res.string.dashboard_income_minus_expenses),
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun StatCard(
+    label: String,
+    money: Money,
+    sub: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color? = null,
+) {
+    Card(modifier, shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(6.dp))
+            MoneyText(
+                money = money,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = valueColor ?: MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                sub,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Income against spending, six months.
+ *
+ * Grouped bars rather than the React version's overlapping areas: two filled areas that
+ * cross each other are hard to read at this size, and paired bars make the month-by-month
+ * comparison - which is the actual question - a direct one.
+ *
+ * Income is always the left bar and spending always the right, and both are named in the
+ * legend. That is deliberate rather than decorative: the app's income-green and expense-red
+ * are only 4.9 apart in OKLab under deuteranopia, so position and the legend carry the
+ * identity and colour merely reinforces it.
+ */
+@Composable
+private fun MonthlyFlowCard(state: DashboardUiState) {
+    val flow = state.monthlyFlow
+    if (flow.isEmpty()) return
+    val peak = flow.maxOf { maxOf(it.incomeMinor, it.expenseMinor) }.coerceAtLeast(1L)
+
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                stringResource(Res.string.dashboard_chart_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.size(16.dp))
+            Row(
+                Modifier.fillMaxWidth().height(180.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                flow.forEach { month ->
+                    Column(
+                        Modifier.weight(1f).fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Row(
+                            Modifier.fillMaxWidth().weight(1f),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.Bottom,
+                        ) {
+                            FlowBar(month.incomeMinor, peak, IncomeGreen)
+                            Spacer(Modifier.size(4.dp))
+                            FlowBar(month.expenseMinor, peak, ExpenseRed)
+                        }
+                        Spacer(Modifier.size(6.dp))
+                        Text(
+                            month.label,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.size(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                LegendSwatch(IncomeGreen, stringResource(Res.string.common_income))
+                LegendSwatch(ExpenseRed, stringResource(Res.string.common_expense))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.FlowBar(valueMinor: Long, peakMinor: Long, color: Color) {
+    // A zero month still draws a hairline, so "spent nothing" reads as a value rather than
+    // as a column the chart forgot to fill.
+    val fraction = (valueMinor.toFloat() / peakMinor).coerceIn(0.01f, 1f)
+    Box(
+        Modifier
+            .weight(1f)
+            .fillMaxHeight(fraction)
+            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+            .background(color)
+    )
+}
+
+@Composable
+private fun LegendSwatch(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(color))
+        Spacer(Modifier.size(6.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Every account and its own balance - the one thing the phone dashboard never showed. */
+@Composable
+private fun AccountsSummaryCard(state: DashboardUiState) {
+    if (state.accounts.isEmpty()) return
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                stringResource(Res.string.dashboard_accounts),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.size(8.dp))
+            state.accounts.forEach { account ->
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(10.dp)
+                                .clip(RoundedCornerShape(5.dp))
+                                .background(Color(account.color))
+                        )
+                        Spacer(Modifier.size(10.dp))
+                        Text(account.name, style = MaterialTheme.typography.bodyMedium)
+                    }
+                    MoneyText(
+                        money = Money(account.balanceMinor, CurrencyCode(account.currencyCode)),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
+            }
+        }
     }
 }

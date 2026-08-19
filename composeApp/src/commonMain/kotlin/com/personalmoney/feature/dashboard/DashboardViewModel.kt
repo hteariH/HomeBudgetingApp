@@ -8,6 +8,7 @@ import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
 import com.personalmoney.core.data.ExchangeRateRepository
 import com.personalmoney.core.data.TransactionRepository
+import com.personalmoney.core.domain.shortMonthName
 import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.model.Transaction
@@ -65,6 +66,10 @@ data class DashboardUiState(
     val moreExpenseCategories: Int = 0,
     val budgets: List<BudgetProgress> = emptyList(),
     val netWorthTrend: List<Long> = emptyList(),
+    /** Income and spending per month, oldest first - six points, like the trend. */
+    val monthlyFlow: List<MonthFlow> = emptyList(),
+    /** Every account with its own balance, for the summary card. */
+    val accounts: List<Account> = emptyList(),
     val recent: List<Transaction> = emptyList(),
     val accountsById: Map<Long, Account> = emptyMap(),
     val categoriesById: Map<Long, Category> = emptyMap()
@@ -72,7 +77,13 @@ data class DashboardUiState(
     val totalBalance: Money get() = Money(totalBalanceMinor, CurrencyCode(baseCurrency))
     val monthExpenses: Money get() = Money(monthExpensesMinor, CurrencyCode(baseCurrency))
     val monthIncome: Money get() = Money(monthIncomeMinor, CurrencyCode(baseCurrency))
+
+    /** What the month actually added or took away. Negative is spending more than earning. */
+    val monthNet: Money get() = Money(monthIncomeMinor - monthExpensesMinor, CurrencyCode(baseCurrency))
 }
+
+/** One month's two totals, in base-currency minor units. */
+data class MonthFlow(val label: String, val incomeMinor: Long, val expenseMinor: Long)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModel constructor(
@@ -191,8 +202,34 @@ class DashboardViewModel constructor(
                 }
             }
 
+            // Income and spending for the same six months the trend covers. One pass over
+            // the ledger the screen already has, bucketed by month, rather than six more
+            // queries - the rows are in memory either way.
+            val flowByMonth = (5 downTo 0).map { i ->
+                val mStart = currentMonthStart.minus(i, DateTimeUnit.MONTH)
+                val from = mStart.atStartOfDayIn(zone)
+                val toExclusive = mStart.plus(1, DateTimeUnit.MONTH).atStartOfDayIn(zone)
+                var income = 0L
+                var expense = 0L
+                for (tx in recent + monthTx) {
+                    if (tx.occurredAt < from || tx.occurredAt >= toExclusive) continue
+                    val converted = fx.convert(
+                        Money(tx.amountMinor, CurrencyCode(tx.currencyCode)),
+                        CurrencyCode(base),
+                    )?.minor ?: continue
+                    when (tx.type) {
+                        TransactionType.INCOME -> income += converted
+                        TransactionType.EXPENSE -> expense += converted
+                        else -> Unit
+                    }
+                }
+                MonthFlow(shortMonthName(mStart.monthNumber), income, expense)
+            }
+
             DashboardUiState(
                 baseCurrency = base,
+                monthlyFlow = flowByMonth,
+                accounts = accounts,
                 totalBalanceMinor = totalMinor,
                 convertibleAccountsCount = convertibleCount,
                 totalAccountsCount = accounts.count { it.includeInTotal },

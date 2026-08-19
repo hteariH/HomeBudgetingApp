@@ -169,6 +169,19 @@ class QuickAddViewModel constructor(
         expressionFlow.update { ExpressionInput.append(it, key) }
     }
 
+    /**
+     * Types the amount directly, for the keyboard entry the web uses instead of the numpad.
+     *
+     * Same expression string the numpad builds, so both paths get the same evaluation and
+     * the same operators - a desktop user can still type `12+3.40`.
+     */
+    fun setAmountText(value: String) {
+        expressionFlow.value = value.filter { it.isDigit() || it in "+-*/.," }
+    }
+
+    /** Saves from a form, where there is no numpad key to stand for "done". */
+    fun submit() = save()
+
     fun selectAccount(account: Account) {
         selectedAccountIdFlow.value = account.id
     }
