@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import java.time.LocalDateTime
 
 data class ErrorResponse(
@@ -19,6 +20,21 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(NoSuchElementException::class)
     fun handleNotFound(ex: NoSuchElementException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+            ErrorResponse(status = 404, error = "Not Found", message = ex.message)
+        )
+
+    /**
+     * A static file that is not there.
+     *
+     * Without this it reaches the catch-all below and comes back as a 500 with a Java
+     * message in it, which says the server is broken when nothing is. It matters most for
+     * the client bundle under /app: a mis-pinned `web.bundle.tag` asks for a .wasm that
+     * this build does not contain, and "500 Internal Server Error" sends whoever is
+     * debugging that to entirely the wrong place.
+     */
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleMissingResource(ex: NoResourceFoundException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.NOT_FOUND).body(
             ErrorResponse(status = 404, error = "Not Found", message = ex.message)
         )
