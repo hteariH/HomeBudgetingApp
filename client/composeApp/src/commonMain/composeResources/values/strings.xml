@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PersonalMoney</string>
+
+    <!-- Common -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_add">Add</string>
+    <string name="action_archive">Archive</string>
+    <string name="action_close">Close</string>
+    <string name="action_done">Done</string>
+    <string name="action_back">Back</string>
+    <string name="action_duplicate">Duplicate</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_plus">Plus</string>
+    <string name="a11y_minus">Minus</string>
+    <string name="a11y_multiply">Multiply</string>
+    <string name="a11y_divide">Divide</string>
+    <string name="a11y_decimal">Decimal point</string>
+    <string name="a11y_backspace">Backspace</string>
+    <string name="a11y_done">Done</string>
+    <string name="a11y_swap_accounts">Swap accounts</string>
+    <string name="a11y_increase">Increase</string>
+    <string name="a11y_decrease">Decrease</string>
+
+    <string name="subscriptions_interval">Repeat every</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">Overview</string>
+    <string name="dashboard_total_balance">Total balance</string>
+    <string name="dashboard_this_month">This month</string>
+    <string name="dashboard_recent">Recent</string>
+    <string name="dashboard_add_expense">Expense</string>
+    <string name="dashboard_add_income">Income</string>
+    <string name="dashboard_transfer">Transfer</string>
+    <string name="dashboard_subscriptions">Subscriptions</string>
+    <string name="dashboard_accounts">Accounts</string>
+    <string name="dashboard_categories">Categories</string>
+    <string name="dashboard_transactions">Transactions</string>
+    <string name="dashboard_settings">Settings</string>
+    <string name="dashboard_no_transactions">No transactions yet</string>
+    <string name="dashboard_budgets">Budgets</string>
+    <string name="nav_overview">Overview</string>
+    <string name="nav_transactions">Transactions</string>
+    <string name="nav_analytics">Analytics</string>
+    <string name="nav_more">More</string>
+    <string name="more_title">More</string>
+    <string name="action_add_expense_fab">Add</string>
+    <string name="dashboard_more_categories">+%1$d more categories</string>
+
+    <!-- Quick Add -->
+    <string name="quickadd_title_expense">New expense</string>
+    <string name="quickadd_title_income">New income</string>
+    <string name="quickadd_amount_hint">0</string>
+    <string name="quickadd_category">Category</string>
+    <string name="quickadd_account">Account</string>
+    <string name="quickadd_note">Note</string>
+    <string name="quickadd_note_hint">Add note (optional)</string>
+    <string name="quickadd_date">Date</string>
+    <string name="quickadd_saved">Saved</string>
+    <string name="quickadd_pick_category">Pick category</string>
+    <string name="quickadd_no_account">No account selected</string>
+    <string name="quickadd_invalid_amount">Enter an amount</string>
+    <string name="quickadd_calc_error">Invalid expression</string>
+
+    <!-- Accounts -->
+    <string name="accounts_title">Accounts</string>
+    <string name="account_picker_title">Select account</string>
+    <string name="accounts_new">New account</string>
+    <string name="accounts_name">Name</string>
+    <string name="accounts_currency">Currency</string>
+    <string name="accounts_initial_balance">Initial balance</string>
+    <string name="accounts_icon">Icon</string>
+    <string name="accounts_color">Color</string>
+    <string name="accounts_total">Total</string>
+    <string name="accounts_archived">Archived</string>
+    <string name="accounts_empty">No accounts yet. Add one to start tracking.</string>
+    <string name="accounts_delete_warning">Delete \"%1$s\"? Its %2$d transactions will also be permanently deleted.</string>
+
+    <!-- Categories -->
+    <string name="categories_title">Categories</string>
+    <string name="categories_expense">Expenses</string>
+    <string name="categories_income">Income</string>
+    <string name="categories_new">New category</string>
+    <string name="categories_name">Name</string>
+    <string name="categories_in_use">Used by transactions, can\'t delete. Archive instead?</string>
+    <string name="category_budget">Monthly budget</string>
+    <string name="category_budget_hint">Optional. Leave empty for no limit.</string>
+    <string name="category_delete_confirm">Delete this category?</string>
+
+    <!-- Transactions -->
+    <string name="transactions_title">Transactions</string>
+    <string name="transactions_search">Search</string>
+    <string name="transactions_filter">Filter</string>
+    <string name="transactions_today">Today</string>
+    <string name="transactions_yesterday">Yesterday</string>
+    <string name="transactions_empty">No transactions match your filters</string>
+    <string name="action_clear_filters">Clear filters</string>
+    <string name="transactions_all">All</string>
+
+    <!-- Transfers -->
+    <string name="transfer_title">Transfer</string>
+    <string name="transfer_mode">Transfer</string>
+    <string name="transfer_add_fee">+ Fee</string>
+    <string name="transfer_from">From account</string>
+    <string name="transfer_to">To account</string>
+    <string name="transfer_amount">Amount</string>
+    <string name="transfer_rate">Exchange rate</string>
+    <string name="transfer_fee">Fee</string>
+    <string name="transfer_same_account">Source and destination must differ</string>
+    <string name="transfer_invalid_source">Enter a valid amount to send</string>
+    <string name="transfer_invalid_destination">Enter a valid amount to receive</string>
+
+    <!-- Subscriptions -->
+    <string name="subscriptions_title">Subscriptions</string>
+    <string name="subscriptions_new">New subscription</string>
+    <string name="subscriptions_name">Name</string>
+    <string name="subscriptions_amount">Amount</string>
+    <string name="subscriptions_frequency">Frequency</string>
+    <string name="subscriptions_next_charge">Next charge</string>
+    <string name="subscriptions_total_month">Per month</string>
+    <string name="subscriptions_total_year">Per year</string>
+    <string name="subscriptions_active">Active</string>
+    <string name="subscriptions_paused">Paused</string>
+    <string name="subscription_delete_confirm">Delete this subscription?</string>
+    <string name="subscriptions_invalid_amount">Enter a valid amount</string>
+    <string name="freq_daily">Daily</string>
+    <string name="freq_weekly">Weekly</string>
+    <string name="freq_monthly">Monthly</string>
+    <string name="freq_yearly">Yearly</string>
+    <string name="freq_interval_prefix">every %1$d </string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_base_currency">Base currency</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_export">Export data</string>
+    <string name="settings_import">Import data</string>
+    <string name="settings_import_confirm_title">Restore from backup?</string>
+    <string name="settings_import_confirm_message">This replaces all current data with the backup: %1$d accounts, %2$d categories, %3$d transactions, %4$d subscriptions. This can\'t be undone.</string>
+    <string name="settings_import_replace">Replace</string>
+    <string name="settings_export_done">Exported %1$d transactions</string>
+    <string name="settings_import_done">Imported %1$d transactions</string>
+    <string name="settings_export_csv">Export to CSV</string>
+    <string name="settings_export_csv_done">Exported %1$d transactions to CSV</string>
+    <string name="settings_export_failed">Export failed</string>
+    <string name="settings_import_failed">Import failed</string>
+    <string name="settings_backup_read_failed">Couldn\'t read the backup file</string>
+
+    <string name="settings_clear">Clear all data</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+
+    <!-- Currencies -->
+    <string name="currencies_title">Currencies</string>
+    <string name="currencies_active">Active</string>
+    <string name="currencies_all">All</string>
+    <string name="currencies_available">Available</string>
+    <string name="currencies_refresh_rates">Refresh rates</string>
+    <string name="currencies_manual_rate">Manual rate</string>
+    <string name="currencies_last_updated">Last updated</string>
+    <string name="currencies_search">Search currency or code</string>
+    <string name="currencies_add_custom">Add custom currency</string>
+    <string name="currencies_new">New currency</string>
+    <string name="currencies_code">Code (e.g. BTC, MYCOIN)</string>
+    <string name="currencies_name">Name</string>
+    <string name="currencies_symbol">Symbol</string>
+    <string name="currencies_decimals">Decimal places</string>
+    <string name="currencies_in_use">Used by %1$d items — can\'t delete. Disable instead?</string>
+    <string name="currencies_code_taken">This code is already in your list</string>
+    <string name="currencies_code_invalid">Code must be 2–8 characters: letters, digits, underscore</string>
+    <string name="settings_manage_currencies">Manage currencies</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome">Welcome to PersonalMoney</string>
+    <string name="onboarding_subtitle">Track your finances, synced across your devices</string>
+    <string name="onboarding_pick_currency">Pick your base currency</string>
+    <string name="onboarding_first_account">Create your first account</string>
+    <string name="onboarding_allow_notifications">Allow notifications for subscription reminders?</string>
+    <string name="onboarding_start">Start using</string>
+    <string name="onboarding_next">Next</string>
+
+    <!-- Widget -->
+    <string name="widget_quick_expense">Quick expense</string>
+    <string name="widget_balance">Balance</string>
+    <string name="widget_tap_to_add">Tap to add</string>
+    <string name="widget_expense">Expense</string>
+    <string name="widget_income">Income</string>
+    <string name="widget_saved">✓  Saved!</string>
+
+    <!-- Biometric lock -->
+    <string name="lock_title">App locked</string>
+    <string name="lock_subtitle">Authenticate to access your finances</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_prompt_title">Unlock PersonalMoney</string>
+    <string name="lock_prompt_subtitle">Use your fingerprint, face, or device PIN</string>
+    <string name="settings_biometric_lock">Biometric lock</string>
+    <string name="settings_biometric_lock_unavailable">Not available on this device</string>
+    <string name="settings_biometric_lock_not_enrolled">Set up a screen lock first</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_subtitle">Match Material You from wallpaper (Android 12+)</string>
+    <string name="settings_language_system">Follow system</string>
+    <string name="lang_english">English</string>
+    <string name="lang_russian">Русский</string>
+    <string name="lang_ukrainian">Українська</string>
+
+    <!-- Privacy -->
+    <string name="settings_numpad_layout">Numpad layout</string>
+    <string name="settings_numpad_calc">Calculator (7–8–9)</string>
+    <string name="settings_numpad_phone">Phone (1–2–3)</string>
+
+    <string name="settings_privacy_policy">Privacy policy</string>
+    <string name="settings_open_source_licenses">Open source licenses</string>
+
+    <!-- Charts / Analytics -->
+    <string name="chart_expenses_by_category">Expenses by category</string>
+    <string name="chart_no_data">No data for this period</string>
+    <string name="analytics_title">Analytics</string>
+    <string name="analytics_by_month">Monthly</string>
+    <string name="analytics_last_months">Last %1$d months</string>
+    <string name="analytics_insights">Insights</string>
+    <string name="analytics_expense_up">Spending up %1$d%% vs last month</string>
+    <string name="analytics_expense_down">Spending down %1$d%% vs last month</string>
+    <string name="analytics_expense_flat">Spending unchanged vs last month</string>
+    <string name="analytics_savings_rate">Savings rate this month: %1$d%%</string>
+
+    <!-- Period filter -->
+    <string name="period_all">All</string>
+    <string name="period_today">Today</string>
+    <string name="period_week">Week</string>
+    <string name="period_month">Month</string>
+    <string name="period_year">Year</string>
+
+    <!-- Transaction filters -->
+    <string name="filter_period">Period</string>
+    <string name="filter_type">Type</string>
+    <string name="filter_account">Account</string>
+
+    <!-- Transaction edit -->
+    <string name="transaction_edit_title">Edit transaction</string>
+    <string name="transaction_transfer_readonly">Transfers cannot be edited individually</string>
+    <string name="transaction_delete_confirm">Delete this transaction?</string>
+
+    <!-- Onboarding extras -->
+    <string name="onboarding_currency_not_here">My currency is not here</string>
+    <string name="onboarding_all_currencies">All currencies</string>
+
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_account_name">Account name</string>
+    <string name="onboarding_account_placeholder">e.g. Cash, Card</string>
+    <string name="onboarding_step_of">Step %1$d of %2$d</string>
+
+    <!-- Auth & sync -->
+    <string name="auth_login_subtitle">Sign in to sync your finances across devices</string>
+    <string name="auth_register_subtitle">Create an account to sync across devices</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_password_hint">At least %1$d characters</string>
+    <string name="auth_first_name">First name</string>
+    <string name="auth_last_name">Last name</string>
+    <string name="auth_sign_in">Sign in</string>
+    <string name="auth_signing_in">Signing in…</string>
+    <string name="auth_create_account">Create account</string>
+    <string name="auth_need_account">No account yet? Register</string>
+    <string name="auth_have_account">Already have an account? Sign in</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_sign_out_confirm">Sign out? Local data will be removed from this device. It stays on the server.</string>
+    <string name="settings_sync_now">Sync now</string>
+    <string name="settings_sync_status_synced">All changes synced</string>
+    <string name="settings_sync_status_pending">%1$d change(s) waiting to sync</string>
+    <string name="settings_sync_status_never">Not synced yet</string>
+    <string name="sync_pending_banner">%1$d change(s) not yet synced</string>
+
+    <!-- ===================================================================
+         Web strings, folded in from the React locale files. Screens that
+         only ever existed on the web (Banks, CSV import) bring their own
+         vocabulary; the rest overlaps with the Android keys above and the
+         two converge as screens move into commonMain.
+         ==================================================================== -->
+
+    <string name="common_save">Save</string>
+    <string name="common_saving">Saving…</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_close">Close</string>
+    <string name="common_optional">Optional</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_load_failed">Could not load your data</string>
+    <string name="common_none">—</string>
+    <string name="common_required">required</string>
+    <string name="common_choose">Choose…</string>
+    <string name="common_from">From</string>
+    <string name="common_to">To</string>
+    <string name="common_date">Date</string>
+    <string name="common_amount">Amount</string>
+    <string name="common_description">Description</string>
+    <string name="common_name">Name</string>
+    <string name="common_type">Type</string>
+    <string name="common_color">Color</string>
+    <string name="common_category">Category</string>
+    <string name="common_account">Account</string>
+    <string name="common_actions">Actions</string>
+    <string name="common_uncategorised">Uncategorised</string>
+    <string name="common_request_failed">Something went wrong. Try again.</string>
+    <string name="common_income">Income</string>
+    <string name="common_expense">Expense</string>
+    <string name="common_transfer">Transfer</string>
+
+    <string name="nav_menu">Menu</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_accounts">Accounts</string>
+    <string name="nav_transfers">Transfers</string>
+    <string name="nav_categories">Categories</string>
+    <string name="nav_currencies">Currencies</string>
+    <string name="nav_banks">Banks</string>
+    <string name="nav_open_menu">Open navigation</string>
+    <string name="nav_close_menu">Close navigation</string>
+
+    <string name="header_sign_out">Sign out</string>
+    <string name="header_to_light">Switch to light mode</string>
+    <string name="header_to_dark">Switch to dark mode</string>
+    <string name="header_language">Language</string>
+    <string name="header_user">User</string>
+
+    <string name="dashboard_subtitle">Your financial overview</string>
+    <string name="dashboard_net_worth">Net worth</string>
+    <string name="dashboard_month_income">This month’s income</string>
+    <string name="dashboard_month_expenses">This month’s expenses</string>
+    <string name="dashboard_net_this_month">Net this month</string>
+    <string name="dashboard_current_month">Current month</string>
+    <string name="dashboard_income_minus_expenses">Income − expenses</string>
+    <string name="dashboard_chart_title">Income vs expenses (6 months)</string>
+    <string name="dashboard_pie_title">Expense categories (this month)</string>
+    <string name="dashboard_no_expense_data">No expense data this month</string>
+    <string name="dashboard_no_accounts">No accounts yet</string>
+
+    <string name="accounts_subtitle">Manage your bank accounts and wallets</string>
+    <string name="accounts_edit">Edit account</string>
+    <string name="accounts_total_balance">Total balance (all accounts)</string>
+    <string name="accounts_empty_title">No accounts yet</string>
+    <string name="accounts_empty_body">Add your first account to start tracking.</string>
+    <string name="accounts_name_label">Account name</string>
+    <string name="accounts_name_placeholder">e.g. Main Checking</string>
+    <string name="accounts_name_required">Name is required</string>
+    <string name="accounts_currency_required">Select a currency</string>
+    <string name="accounts_confirm_delete">Delete this account?</string>
+
+    <string name="account_type_checking">Checking</string>
+    <string name="account_type_savings">Savings</string>
+    <string name="account_type_cash">Cash</string>
+    <string name="account_type_credit">Credit</string>
+    <string name="account_type_investment">Investment</string>
+
+    <string name="transactions_add">Add transaction</string>
+    <string name="transactions_edit_title">Edit transaction</string>
+    <string name="transactions_all_accounts">All accounts</string>
+    <string name="transactions_all_types">All types</string>
+    <string name="transactions_empty_body">Try widening the filters, or add one.</string>
+    <string name="transactions_select_account">Select account…</string>
+    <string name="transactions_select_category">Select category…</string>
+    <string name="transactions_description_placeholder">Optional note</string>
+    <string name="transactions_account_required">Select an account</string>
+    <string name="transactions_category_required">Select a category</string>
+    <string name="transactions_amount_required">Enter a valid amount</string>
+    <string name="transactions_confirm_delete">Delete this transaction?</string>
+    <string name="transactions_page">Page %1$s of %2$s</string>
+
+    <string name="transfers_title">Transfers</string>
+    <string name="transfers_subtitle">Move money between your accounts</string>
+    <string name="transfers_new">New transfer</string>
+    <string name="transfers_create">Create transfer</string>
+    <string name="transfers_creating">Creating…</string>
+    <string name="transfers_empty_title">No transfers yet</string>
+    <string name="transfers_empty_body">Move money between accounts to see it here.</string>
+    <string name="transfers_detail">Transfer detail</string>
+    <string name="transfers_rate">Rate</string>
+    <string name="transfers_from_account">From account</string>
+    <string name="transfers_to_account">To account</string>
+    <string name="transfers_select_account">Select account</string>
+    <string name="transfers_amount_from">Amount (from)</string>
+    <string name="transfers_amount_to">Amount (to)</string>
+    <string name="transfers_description_placeholder">e.g. Monthly savings</string>
+    <string name="transfers_need_both_accounts">Select both the source and the destination account</string>
+    <string name="transfers_need_amounts">Enter both amounts</string>
+    <string name="transfers_confirm_delete">Delete this transfer?</string>
+    <string name="transfers_delete_title">Delete transfer</string>
+
+    <string name="categories_subtitle">Organise your income and expenses</string>
+    <string name="categories_edit_title">Edit category</string>
+    <string name="categories_empty_expense">No expense categories yet</string>
+    <string name="categories_empty_income">No income categories yet</string>
+    <string name="categories_empty_body">Add one to start sorting your transactions.</string>
+    <string name="categories_name_placeholder">e.g. Groceries</string>
+    <string name="categories_icon_key">Icon key</string>
+    <string name="categories_name_required">Name is required</string>
+    <string name="categories_confirm_delete">Delete this category?</string>
+
+    <string name="currencies_subtitle">Manage supported currencies and exchange rates</string>
+    <string name="currencies_add">Add currency</string>
+    <string name="currencies_edit_title">Edit currency</string>
+    <string name="currencies_empty">No currencies yet</string>
+    <string name="currencies_code_label">Code (3 characters)</string>
+    <string name="currencies_rate_to_base">Rate to USD</string>
+    <string name="currencies_rate_hint">How many units of this currency equal 1 USD</string>
+    <string name="currencies_base">Base</string>
+    <string name="currencies_mark_as_base">Mark as base currency</string>
+    <string name="currencies_fields_required">Code, name and symbol are required</string>
+    <string name="currencies_code_length">Currency code must be exactly 3 characters</string>
+    <string name="currencies_confirm_delete">Delete this currency?</string>
+
+    <string name="banks_title">Banks</string>
+    <string name="banks_add_connection">Add a connection</string>
+    <string name="banks_no_providers">No providers available</string>
+    <string name="banks_verify">Verify</string>
+    <string name="banks_accounts">Accounts</string>
+    <string name="banks_disconnect">Disconnect</string>
+    <string name="banks_confirm_disconnect">Disconnect? Imported transactions stay.</string>
+    <string name="banks_credentials_rejected">credentials rejected</string>
+    <string name="banks_connect_title">Connect %1$s</string>
+    <string name="banks_checking">Checking…</string>
+    <string name="banks_check_and_connect">Check and connect</string>
+    <string name="banks_where_from">Where do I get this?</string>
+    <string name="banks_loading_accounts">Loading accounts…</string>
+    <string name="banks_at_the_bank">At the bank</string>
+    <string name="banks_balance">Balance</string>
+    <string name="banks_linked_to">Linked to</string>
+    <string name="banks_link_to">Link to…</string>
+    <string name="banks_unlink">Unlink</string>
+    <string name="banks_import_title">Import a statement</string>
+    <string name="banks_preview">Preview</string>
+    <string name="banks_imported">Imported %1$s, skipped %2$s</string>
+    <string name="banks_import_count">Import %1$d</string>
+
+    <string name="csv_title">Import from a file</string>
+    <string name="csv_statement_file">Statement file (CSV)</string>
+    <string name="csv_read">Read file</string>
+    <string name="csv_reading">Reading…</string>
+    <string name="csv_columns">Columns</string>
+    <string name="csv_summary">%1$s new, %2$s already imported</string>
+    <string name="csv_already_imported">imported</string>
+    <string name="csv_currency_mismatch">The file contains %1$s but %2$s is in %3$s. Amounts are imported as-is, without conversion.</string>
+    <string name="csv_truncated">Showing the first 200 of %1$s; all of them are imported.</string>
+
+    <!-- Counting strings: CLDR categories, so ru/uk get their own few/many. -->
+    <plurals name="dashboard_account_count">
+        <item quantity="one">%1$d account</item>
+        <item quantity="other">%1$d accounts</item>
+    </plurals>
+    <plurals name="transactions_total_count">
+        <item quantity="one">%1$d transaction</item>
+        <item quantity="other">%1$d transactions</item>
+    </plurals>
+    <plurals name="banks_connection_count">
+        <item quantity="one">%1$d connection</item>
+        <item quantity="other">%1$d connections</item>
+    </plurals>
+    <plurals name="csv_skipped_count">
+        <item quantity="one">%1$d line could not be read</item>
+        <item quantity="other">%1$d lines could not be read</item>
+    </plurals>
+</resources>

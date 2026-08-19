@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The manifest and the widget-info XML are read by the Android platform, which knows
+  nothing about composeResources - so the two strings they reference are duplicated
+  here. Everything else lives in commonMain/composeResources/values*/strings.xml.
+-->
+<resources>
+    <string name="app_name">PersonalMoney</string>
+    <string name="widget_quick_expense">Быстрый расход</string>
+</resources>
