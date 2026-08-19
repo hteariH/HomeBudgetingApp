@@ -22,14 +22,23 @@ data class AuthUiState(
     val signedIn: Boolean = false
 ) {
     /**
-     * Mirrors the server's rule. Checking here as well turns a round trip and a 400
-     * into immediate feedback while the user is still typing.
+     * Mirrors the server's rule - and only where the server actually has one.
+     *
+     * The length minimum belongs to registration alone (`RegisterRequest` carries
+     * `@Size(min = 10)`; `LoginRequest` asks only for `@NotBlank`). Applying it to
+     * sign-in as well locked out every account whose password was set before that rule
+     * existed, or by any other client: the button simply never enabled, with nothing on
+     * screen to say why. A minimum length is a rule about *choosing* a password, never
+     * about typing one you already have.
      */
     val canSubmit: Boolean
-        get() = !busy &&
-            email.contains('@') &&
+        get() = !busy && email.contains('@') && if (registerMode) {
             password.length >= MIN_PASSWORD_LENGTH &&
-            (!registerMode || (firstName.isNotBlank() && lastName.isNotBlank()))
+                firstName.isNotBlank() &&
+                lastName.isNotBlank()
+        } else {
+            password.isNotBlank()
+        }
 
     companion object {
         const val MIN_PASSWORD_LENGTH = 10

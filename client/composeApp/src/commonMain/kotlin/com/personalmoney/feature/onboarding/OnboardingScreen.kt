@@ -109,6 +109,17 @@ fun OnboardingScreen(
 
             // Bottom navigation
             Column {
+                // Above the button, because that is what the user just pressed and is
+                // waiting on. Onboarding cannot be navigated away from, so a failure here
+                // has to say something rather than leave the screen looking idle.
+                state.error?.let { message ->
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                    )
+                }
                 Button(
                     onClick = {
                         if (state.step < state.totalSteps - 1) viewModel.next()

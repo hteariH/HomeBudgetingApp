@@ -3,6 +3,11 @@ package com.personalmoney.feature.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.data.UserPreferences
+import com.personalmoney.core.network.serverMessage
+import com.personalmoney.core.util.AppLog
+import com.personalmoney.resources.Res
+import com.personalmoney.resources.common_request_failed
+import org.jetbrains.compose.resources.getString
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CurrencyRepository
 import com.personalmoney.core.domain.model.Account
@@ -26,7 +31,9 @@ data class OnboardingUiState(
     val done: Boolean = false,
     val showAllCurrenciesDialog: Boolean = false,
     val allCurrencies: List<Currency> = emptyList(),
-    val currencySearchQuery: String = ""
+    val currencySearchQuery: String = "",
+    /** Null unless the last attempt to finish failed. */
+    val error: String? = null
 ) {
     val canProceed: Boolean get() = when (step) {
         1 -> selectedCurrencyCode.isNotBlank()
@@ -56,18 +63,20 @@ class OnboardingViewModel constructor(
     private val doneFlow = MutableStateFlow(false)
     private val showAllCurrenciesDialogFlow = MutableStateFlow(false)
     private val currencySearchQueryFlow = MutableStateFlow("")
+    private val errorFlow = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<OnboardingUiState> = combine(
         combine(stepFlow, selectedCurrencyFlow, accountNameFlow, savingFlow, doneFlow) { step, currency, name, saving, done ->
-            listOf<Any>(step, currency, name, saving, done)
+            listOf<Any?>(step, currency, name, saving, done)
         },
         combine(
             currencyRepository.observeActive(),
             currencyRepository.observeAll(),
             showAllCurrenciesDialogFlow,
-            currencySearchQueryFlow
-        ) { active, all, showDialog, query ->
-            listOf<Any>(active, all, showDialog, query)
+            currencySearchQueryFlow,
+            errorFlow
+        ) { active, all, showDialog, query, error ->
+            listOf<Any?>(active, all, showDialog, query, error)
         }
     ) { primary, secondary ->
         @Suppress("UNCHECKED_CAST")
@@ -80,7 +89,8 @@ class OnboardingViewModel constructor(
             currencies = secondary[0] as List<Currency>,
             allCurrencies = secondary[1] as List<Currency>,
             showAllCurrenciesDialog = secondary[2] as Boolean,
-            currencySearchQuery = secondary[3] as String
+            currencySearchQuery = secondary[3] as String,
+            error = secondary[4] as String?
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OnboardingUiState())
 
@@ -118,6 +128,7 @@ class OnboardingViewModel constructor(
         val state = uiState.value
         viewModelScope.launch {
             savingFlow.value = true
+            errorFlow.value = null
             runCatching {
                 userPreferences.setBaseCurrency(state.selectedCurrencyCode)
                 if (state.accountName.isNotBlank()) {
@@ -137,8 +148,20 @@ class OnboardingViewModel constructor(
                 userPreferences.setOnboarded(true)
             }.onSuccess {
                 doneFlow.value = true
+            }.onFailure { failure ->
+                // Previously dropped on the floor, which turned any failure here into a
+                // button that simply did nothing: `done` never flipped, `saving` went
+                // back to false, and the screen looked idle. Onboarding is the one screen
+                // a user cannot get past, so a silent failure there is a dead end.
+                AppLog.w(TAG, "Could not finish onboarding: ${failure.message}")
+                errorFlow.value = failure.serverMessage()
+                    ?: getString(Res.string.common_request_failed)
             }
             savingFlow.value = false
         }
+    }
+
+    private companion object {
+        const val TAG = "OnboardingViewModel"
     }
 }

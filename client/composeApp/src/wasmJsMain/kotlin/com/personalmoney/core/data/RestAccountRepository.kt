@@ -36,7 +36,8 @@ class RestAccountRepository(private val api: RestApi) : AccountRepository {
     private val loaded get() = cache.loadingOnce(lazyLoad)
 
     // The server keys accounts to a currency row rather than a code, so creating one needs
-    // an id. Learned from whatever the server has already sent.
+    // an id. Seeded from accounts the server has already sent, and filled in from
+    // /api/currencies for anything they do not cover - see [currencyId].
     private val currencyIds = mutableMapOf<String, Long>()
 
     override fun observeActive(): Flow<List<Account>> =
@@ -54,8 +55,7 @@ class RestAccountRepository(private val api: RestApi) : AccountRepository {
                 initialBalance = account.initialBalanceMinor.toDecimalString(
                     CurrencyRegistry.decimalsOrFallback(account.currencyCode)
                 ),
-                currencyId = currencyIds[account.currencyCode]
-                    ?: error("Unknown currency ${account.currencyCode}; refresh() must run first"),
+                currencyId = currencyId(account.currencyCode),
                 icon = account.icon,
                 sortOrder = account.sortOrder,
                 includeInTotal = account.includeInTotal,
@@ -63,6 +63,22 @@ class RestAccountRepository(private val api: RestApi) : AccountRepository {
         )
         refresh()
         return created.id
+    }
+
+    /**
+     * The server's row id for a currency code.
+     *
+     * Scavenging these from existing accounts is enough once there are some, and useless
+     * exactly when it matters most: a new user has no accounts, so the map is empty and
+     * their *first* account - the one onboarding creates - could never be made. Asking
+     * /api/currencies is the answer that does not depend on already having what you are
+     * trying to create.
+     */
+    private suspend fun currencyId(code: String): Long {
+        currencyIds[code]?.let { return it }
+        api.currencies().forEach { currencyIds[it.code] = it.id }
+        return currencyIds[code]
+            ?: error("The server has no currency $code")
     }
 
     override suspend fun update(account: Account) {
