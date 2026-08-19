@@ -10,6 +10,8 @@ import com.personalmoney.core.ui.theme.IncomeGreen
 import com.personalmoney.feature.quickadd.QuickEntryPanel
 import org.jetbrains.compose.resources.pluralStringResource
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,6 +87,10 @@ fun DashboardScreen(
             )
         }
     ) { padding ->
+        if (wide) {
+            WideDashboard(state, Modifier.padding(padding))
+            return@Scaffold
+        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -92,19 +98,8 @@ fun DashboardScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (wide) {
-                item {
-                    StatCardRow(state)
-                }
-                item {
-                    QuickEntryPanel()
-                }
-            }
-
-            // Total balance card. Skipped on a wide window, where the stat row above already
-            // carries this figure and the two beneath it - three cards saying the same thing
-            // is not a richer dashboard.
-            if (!wide) item {
+            // Total balance card
+            item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -137,8 +132,8 @@ fun DashboardScreen(
                 }
             }
 
-            // Month overview. Also folded into the stat row on a wide window.
-            if (!wide) item {
+            // Month overview
+            item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -256,11 +251,6 @@ fun DashboardScreen(
                             ?: 0xFF94A3B8L
                     )
                 }
-            }
-
-            if (wide) {
-                item { MonthlyFlowCard(state) }
-                item { AccountsSummaryCard(state) }
             }
 
             item { BannerAd() }
@@ -415,23 +405,18 @@ private fun RecentTransactionRow(
  */
 private val WIDE_DASHBOARD = 900.dp
 
-/** The four headline figures, side by side. Mirrors the React dashboard's stat grid. */
+/**
+ * The month's three figures.
+ *
+ * Net worth is not among them on purpose: the balance column beside this already leads with
+ * it, and repeating it would be the third card on screen showing one number.
+ */
 @Composable
 private fun StatCardRow(state: DashboardUiState) {
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        StatCard(
-            label = stringResource(Res.string.dashboard_net_worth),
-            money = state.totalBalance,
-            sub = pluralStringResource(
-                Res.plurals.dashboard_account_count,
-                state.totalAccountsCount,
-                state.totalAccountsCount,
-            ),
-            modifier = Modifier.weight(1f),
-        )
         StatCard(
             label = stringResource(Res.string.dashboard_month_income),
             money = state.monthIncome,
@@ -606,6 +591,153 @@ private fun AccountsSummaryCard(state: DashboardUiState) {
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * The wide dashboard: two columns, not one long scroll.
+ *
+ * Modelled on the layout the owner asked for - balances down the left, and everything you
+ * *do* down the right: enter a transaction, see what just happened, see where the month
+ * went. A single centred column is a phone screen on a big monitor; this uses the width for
+ * the thing width is good at, which is showing two related things at once.
+ *
+ * Each column scrolls on its own, so a long account list does not push the entry panel off
+ * the top.
+ */
+@Composable
+private fun WideDashboard(state: DashboardUiState, modifier: Modifier = Modifier) {
+    Row(
+        modifier.fillMaxSize().padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Narrower, and fixed: an account list is names and numbers, and giving it half the
+        // window would only stretch the gap between the two.
+        Column(
+            Modifier.weight(0.36f).fillMaxHeight().verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            BalanceHeader(state)
+            AccountsSummaryCard(state)
+        }
+
+        Column(
+            Modifier.weight(0.64f).fillMaxHeight().verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            StatCardRow(state)
+            QuickEntryPanel()
+            RecentCard(state)
+            ExpenseBreakdownCard(state)
+            MonthlyFlowCard(state)
+            BannerAd()
+        }
+    }
+}
+
+/** The running total, at the head of the balance column. */
+@Composable
+private fun BalanceHeader(state: DashboardUiState) {
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Text(
+                stringResource(Res.string.dashboard_total_balance),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Spacer(Modifier.size(4.dp))
+            MoneyText(
+                money = state.totalBalance,
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Text(
+                pluralStringResource(
+                    Res.plurals.dashboard_account_count,
+                    state.totalAccountsCount,
+                    state.totalAccountsCount,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+            )
+        }
+    }
+}
+
+/** Recent rows as a card, so the right column reads as a stack of panels. */
+@Composable
+private fun RecentCard(state: DashboardUiState) {
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                stringResource(Res.string.dashboard_recent),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.size(8.dp))
+            if (state.recent.isEmpty()) {
+                Text(
+                    stringResource(Res.string.dashboard_no_transactions),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                state.recent.forEach { tx ->
+                    RecentTransactionRow(
+                        transaction = tx,
+                        accountName = state.accountsById[tx.accountId]?.name ?: "",
+                        categoryName = tx.categoryId?.let { state.categoriesById[it]?.name },
+                        categoryIcon = tx.categoryId?.let { state.categoriesById[it]?.icon }
+                            ?: "more_horiz",
+                        categoryColor = tx.categoryId?.let { state.categoriesById[it]?.color }
+                            ?: 0xFF94A3B8L,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The same breakdown the phone shows, lifted out so both layouts call one thing. */
+@Composable
+private fun ExpenseBreakdownCard(state: DashboardUiState) {
+    if (state.expenseByCategory.isEmpty()) return
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                stringResource(Res.string.chart_expenses_by_category),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.size(12.dp))
+            val slices = remember(state.expenseByCategory) {
+                state.expenseByCategory.map { s ->
+                    BreakdownSlice(
+                        key = "cat-${s.categoryId}",
+                        label = s.name,
+                        iconKey = s.icon,
+                        color = Color(s.color),
+                        amount = Money(s.totalMinor, CurrencyCode(state.baseCurrency)),
+                    )
+                }
+            }
+            CategoryBreakdownChart(slices = slices)
+            if (state.moreExpenseCategories > 0) {
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    stringResource(
+                        Res.string.dashboard_more_categories,
+                        state.moreExpenseCategories,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

@@ -25,8 +25,15 @@ import androidx.compose.ui.unit.dp
  * wide invites nothing - so forms stay near the 480px the React client used for its modals.
  */
 object PageWidth {
-    /** Lists, dashboards, anything tabular. */
-    val Content: Dp = 1120.dp
+    /**
+     * Lists, dashboards, anything tabular.
+     *
+     * Wide enough for the dashboard's two columns to each be worth having - below about
+     * this the balance column stops fitting account names and the split is worse than no
+     * split. The React client is full-bleed, so this is if anything the more conservative
+     * of the two.
+     */
+    val Content: Dp = 1400.dp
 
     /** Forms, sign-in, single-column editors. Matches the React `.modal` cap. */
     val Form: Dp = 480.dp
