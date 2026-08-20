@@ -1,6 +1,7 @@
 package com.personalmoney.feature.dashboard
 
 import app.cash.turbine.test
+import com.personalmoney.core.data.LedgerFilterRequest
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
@@ -66,7 +67,8 @@ class DashboardViewModelTest {
         categoryRepository = categoryRepository,
         transactionRepository = transactionRepository,
         exchangeRateRepository = exchangeRateRepository,
-        userPreferences = userPreferences
+        userPreferences = userPreferences,
+        ledgerFilter = LedgerFilterRequest(),
     )
 
     // ── Initial state ────────────────────────────────────────────────────────

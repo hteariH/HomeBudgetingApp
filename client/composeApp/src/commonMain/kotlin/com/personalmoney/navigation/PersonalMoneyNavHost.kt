@@ -225,7 +225,11 @@ fun PersonalMoneyNavHost(
             }
 
             composable(Routes.DASHBOARD) {
-                DashboardScreen()
+                DashboardScreen(
+                    // The view model records which account was asked for; this is then an
+                    // ordinary tab switch, which is what keeps it out of the saved stacks.
+                    onOpenAccount = { navController.switchTab(Routes.TRANSACTIONS) },
+                )
             }
 
             composable(Routes.MORE) {

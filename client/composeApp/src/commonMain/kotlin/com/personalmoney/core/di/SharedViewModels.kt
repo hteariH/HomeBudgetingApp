@@ -1,5 +1,6 @@
 package com.personalmoney.core.di
 
+import com.personalmoney.core.data.LedgerFilterRequest
 import com.personalmoney.feature.accounts.AccountEditViewModel
 import com.personalmoney.feature.accounts.AccountPickerViewModel
 import com.personalmoney.feature.accounts.AccountsViewModel
@@ -30,6 +31,9 @@ import org.koin.dsl.module
  * `BackupViewModel` on top; it is the one that stayed platform-specific.
  */
 val sharedViewModelModule = module {
+    // Shared, because the overview writes it and the ledger reads it.
+    single { LedgerFilterRequest() }
+
     viewModelOf(::AccountEditViewModel)
     viewModelOf(::AccountPickerViewModel)
     viewModelOf(::AccountsViewModel)

@@ -3,6 +3,7 @@ package com.personalmoney.feature.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.currency.FxSnapshot
+import com.personalmoney.core.data.LedgerFilterRequest
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
@@ -91,7 +92,8 @@ class DashboardViewModel constructor(
     categoryRepository: CategoryRepository,
     transactionRepository: TransactionRepository,
     exchangeRateRepository: ExchangeRateRepository,
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
+    private val ledgerFilter: LedgerFilterRequest,
 ) : ViewModel() {
 
     // Emits every hour so month boundaries are picked up without a restart.
@@ -245,4 +247,10 @@ class DashboardViewModel constructor(
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardUiState())
+    /**
+     * Remembers which account the ledger should open on. The screen then switches tab as
+     * usual - see [LedgerFilterRequest] for why this is state rather than a route.
+     */
+    fun openAccount(id: Long) = ledgerFilter.requestAccount(id)
+
 }

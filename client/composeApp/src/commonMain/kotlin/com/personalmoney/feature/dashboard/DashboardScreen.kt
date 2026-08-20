@@ -2,6 +2,7 @@ package com.personalmoney.feature.dashboard
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -69,6 +70,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    onOpenAccount: () -> Unit = {},
     viewModel: DashboardViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -87,7 +89,7 @@ fun DashboardScreen(
         }
     ) { padding ->
         if (wide) {
-            WideDashboard(state, Modifier.padding(padding))
+            WideDashboard(state, { id -> viewModel.openAccount(id); onOpenAccount() }, Modifier.padding(padding))
             return@Scaffold
         }
         LazyColumn(
@@ -564,18 +566,29 @@ private fun LegendSwatch(color: Color, label: String) {
 
 /** Every account and its own balance - the one thing the phone dashboard never showed. */
 @Composable
-private fun AccountsSummaryCard(state: DashboardUiState) {
+private fun AccountsSummaryCard(state: DashboardUiState, onOpenAccount: (Long) -> Unit) {
     if (state.accounts.isEmpty()) return
     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(vertical = 16.dp)) {
             Text(
                 stringResource(Res.string.dashboard_accounts),
                 style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
             Spacer(Modifier.size(8.dp))
             state.accounts.forEach { account ->
                 Row(
-                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    // A balance invites the question "made of what?", and the answer is the
+                    // ledger filtered to this account. The whole row is the target rather
+                    // than the name alone: a two-word account name is a small thing to hit,
+                    // and the amount is the part being asked about.
+                    //
+                    // The padding moved off the Column and onto the row so the ripple runs
+                    // to the card's edge instead of stopping short of it.
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenAccount(account.id) }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -610,7 +623,11 @@ private fun AccountsSummaryCard(state: DashboardUiState) {
  * the top.
  */
 @Composable
-private fun WideDashboard(state: DashboardUiState, modifier: Modifier = Modifier) {
+private fun WideDashboard(
+    state: DashboardUiState,
+    onOpenAccount: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier.fillMaxSize().padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -622,7 +639,7 @@ private fun WideDashboard(state: DashboardUiState, modifier: Modifier = Modifier
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             BalanceHeader(state)
-            AccountsSummaryCard(state)
+            AccountsSummaryCard(state, onOpenAccount)
         }
 
         Column(

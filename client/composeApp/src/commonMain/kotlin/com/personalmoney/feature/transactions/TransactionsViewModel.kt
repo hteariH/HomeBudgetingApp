@@ -2,6 +2,7 @@ package com.personalmoney.feature.transactions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.personalmoney.core.data.LedgerFilterRequest
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
 import com.personalmoney.core.data.TransactionRepository
@@ -50,7 +51,8 @@ data class TransactionsUiState(
 class TransactionsViewModel constructor(
     private val transactionRepository: TransactionRepository,
     accountRepository: AccountRepository,
-    categoryRepository: CategoryRepository
+    categoryRepository: CategoryRepository,
+    private val ledgerFilter: LedgerFilterRequest,
 ) : ViewModel() {
 
     private val filterFlow = MutableStateFlow(TransactionsFilter())
@@ -156,4 +158,18 @@ class TransactionsViewModel constructor(
             )
         }
     }
+    init {
+        // Applied as a starting filter, not a lock: the account dropdown still shows it and
+        // the clear-filters action still removes it. Consumed straight away so returning to
+        // this tab later does not silently re-narrow a list the user has since widened.
+        viewModelScope.launch {
+            ledgerFilter.accountId.collect { requested ->
+                if (requested != null) {
+                    setAccount(requested)
+                    ledgerFilter.consume()
+                }
+            }
+        }
+    }
+
 }

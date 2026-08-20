@@ -1,6 +1,7 @@
 package com.personalmoney.feature.transactions
 
 import app.cash.turbine.test
+import com.personalmoney.core.data.LedgerFilterRequest
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
 import com.personalmoney.core.data.TransactionRepository
@@ -47,7 +48,7 @@ class TransactionsViewModelTest {
         every { txRepo.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(txCoffee, txRent))
         every { accRepo.observeAll() } returns flowOf(listOf(account))
         every { catRepo.observeAll() } returns flowOf(listOf(category))
-        return TransactionsViewModel(txRepo, accRepo, catRepo)
+        return TransactionsViewModel(txRepo, accRepo, catRepo, LedgerFilterRequest())
     }
 
     @Test fun `search matches category name`() = runTest {

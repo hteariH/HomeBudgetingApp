@@ -48,7 +48,12 @@ Thumbs.db
 !.env.example
 
 # Local H2 database (local profile)
-data/
+# Anchored to the repository root. Unanchored, this matched a directory named `data` at
+# any depth - which since the client moved in here includes
+# client/composeApp/src/.../core/data, the package holding every repository in the app.
+# Files already tracked kept working, so the only symptom was that *new* ones silently
+# refused to be committed.
+/data/
 *.mv.db
 *.trace.db
 
