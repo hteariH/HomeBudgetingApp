@@ -73,6 +73,17 @@ val ExpenseRedDark = Color(0xFFEF4444)
 val IncomeGreenLight = Color(0xFF059669)
 val ExpenseRedLight = Color(0xFFDC2626)
 
-/** Transfers are neither income nor expense, so they take the neutral accent hue. */
-val TransferBlueDark = Color(0xFF06B6D4)
-val TransferBlueLight = Color(0xFF0891B2)
+/**
+ * Transfers: neither income nor expense, so a third hue - and a measured one.
+ *
+ * The obvious pick was the palette's cyan, and it failed: against the income green it
+ * scores ΔE 12.5 for a viewer with full colour vision, under the 15 floor, and 3.4 under
+ * tritanopia. Teal beside green is a distinction most people cannot make.
+ *
+ * A plain blue separates from green cleanly but lands ΔE 7.2 from the indigo accent, which
+ * would make every transfer look like a link. These two sit between: 18+ from the income
+ * green and 15+ from the accent in both themes, with the light step darkened for contrast
+ * on white the same way the money colours are.
+ */
+val TransferBlueDark = Color(0xFF0EA5E9)
+val TransferBlueLight = Color(0xFF0369A1)

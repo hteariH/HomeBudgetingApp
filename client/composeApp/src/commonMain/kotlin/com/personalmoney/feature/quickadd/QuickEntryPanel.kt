@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +42,7 @@ import com.personalmoney.core.domain.formatMediumDate
 import com.personalmoney.core.ui.PageWidth
 import com.personalmoney.core.ui.PickerField
 import com.personalmoney.core.ui.PickerOption
+import com.personalmoney.core.ui.theme.LocalFinanceColors
 import com.personalmoney.core.ui.theme.PmButtonShape
 import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
 import com.personalmoney.feature.transfers.TransferUiState
@@ -89,13 +91,14 @@ fun QuickEntryPanel(
             Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            val finance = LocalFinanceColors.current
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 val options = listOf(
-                    EntryMode.EXPENSE to Res.string.dashboard_add_expense,
-                    EntryMode.INCOME to Res.string.dashboard_add_income,
-                    EntryMode.TRANSFER to Res.string.transfer_mode,
+                    Triple(EntryMode.EXPENSE, Res.string.dashboard_add_expense, finance.expense),
+                    Triple(EntryMode.INCOME, Res.string.dashboard_add_income, finance.income),
+                    Triple(EntryMode.TRANSFER, Res.string.transfer_mode, finance.transfer),
                 )
-                options.forEachIndexed { index, (option, label) ->
+                options.forEachIndexed { index, (option, label, tint) ->
                     SegmentedButton(
                         selected = mode == option,
                         onClick = {
@@ -109,6 +112,23 @@ fun QuickEntryPanel(
                             }
                         },
                         shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                        // The same three colours the amounts wear everywhere else, so the
+                        // tab and the row it will produce mean the same thing. A tint plus
+                        // coloured text rather than a solid slab: at full strength three
+                        // saturated blocks fight the card they sit on, and the selected
+                        // one would shout louder than the amount being typed.
+                        //
+                        // The label and the tick carry the state on their own; the colour
+                        // only agrees with them, which is what keeps this readable when
+                        // red and green are the two a viewer cannot tell apart.
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContainerColor = tint.copy(alpha = 0.14f),
+                            activeContentColor = tint,
+                            activeBorderColor = tint,
+                            inactiveContainerColor = Color.Transparent,
+                            inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            inactiveBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        ),
                     ) { Text(stringResource(label)) }
                 }
             }
