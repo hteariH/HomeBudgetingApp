@@ -108,6 +108,8 @@
     <string name="transfer_from">From account</string>
     <string name="transfer_to">To account</string>
     <string name="transfer_amount">Amount</string>
+    <string name="transfer_amount_from">Amount (from)</string>
+    <string name="transfer_amount_to">Amount (to)</string>
     <string name="transfer_rate">Exchange rate</string>
     <string name="transfer_fee">Fee</string>
     <string name="transfer_same_account">Source and destination must differ</string>

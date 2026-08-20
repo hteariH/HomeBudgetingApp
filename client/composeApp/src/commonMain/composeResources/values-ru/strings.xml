@@ -100,6 +100,8 @@
     <string name="transfer_from">Со счёта</string>
     <string name="transfer_to">На счёт</string>
     <string name="transfer_amount">Сумма</string>
+    <string name="transfer_amount_from">Сумма (списание)</string>
+    <string name="transfer_amount_to">Сумма (зачисление)</string>
     <string name="transfer_rate">Курс</string>
     <string name="transfer_fee">Комиссия</string>
     <string name="transfer_same_account">Счета должны отличаться</string>
