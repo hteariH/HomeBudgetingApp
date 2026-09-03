@@ -52,6 +52,11 @@ class SecurityConfig(
                     // The rest is reached without a session by definition: signing in,
                     // registering, and following a link out of an email.
                     .requestMatchers("/api/auth/**").permitAll()
+                    // HomeMoney redirects a browser here after the user consents, and a
+                    // browser carries no bearer token. The caller is identified by the
+                    // signed state minted when the flow started, not by this filter -
+                    // see HomeMoneyConnectionService.
+                    .requestMatchers("/api/import/homemoney/callback").permitAll()
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
             }

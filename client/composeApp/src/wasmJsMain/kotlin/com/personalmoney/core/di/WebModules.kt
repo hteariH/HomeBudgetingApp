@@ -21,6 +21,8 @@ import com.personalmoney.core.data.RestCurrencyRepository
 import com.personalmoney.core.data.RestAccountRepository
 import com.personalmoney.core.data.RestBankRepository
 import com.personalmoney.core.data.RestCsvImportRepository
+import com.personalmoney.core.data.HomeMoneyImportRepository
+import com.personalmoney.core.data.RestHomeMoneyImportRepository
 import com.personalmoney.core.data.RestCategoryRepository
 import com.personalmoney.core.data.RestTransactionRepository
 import com.personalmoney.core.data.TransactionRepository
@@ -33,6 +35,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.js.Js
 import com.personalmoney.feature.banks.BanksViewModel
 import com.personalmoney.feature.banks.CsvImportViewModel
+import com.personalmoney.feature.homemoney.HomeMoneyImportViewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
@@ -71,8 +74,10 @@ val webModule = module {
     // this binding underneath it - which is the check working, not a nuisance.
     singleOf(::RestBankRepository) bind BankRepository::class
     singleOf(::RestCsvImportRepository) bind CsvImportRepository::class
+    singleOf(::RestHomeMoneyImportRepository) bind HomeMoneyImportRepository::class
     viewModelOf(::BanksViewModel)
     viewModelOf(::CsvImportViewModel)
+    viewModelOf(::HomeMoneyImportViewModel)
 
     single<HttpClient> { createBackendClient(get(), get(), pageOrigin(), get()) }
     single { RestApi(get()) }

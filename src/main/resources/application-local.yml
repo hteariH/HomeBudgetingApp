@@ -44,6 +44,13 @@ spring:
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:8085}
+  # Not a secret worth protecting - it is a throwaway local database - but SecretCrypto
+  # needs *a* key, and without one every third-party credential (a Monobank token, a
+  # HomeMoney authorisation) fails to store with a 500.
+  jwt:
+    secret: ${APP_JWT_SECRET:local-development-secret-at-least-32-characters}
+  crypto:
+    secret: ${APP_CRYPTO_SECRET:local-development-storage-key-at-least-32-chars}
   mail:
     from: ${APP_MAIL_FROM:noreply@personalmoney.app}
     # Default: write the link to the log instead of sending, so the flow can be walked

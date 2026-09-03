@@ -47,6 +47,10 @@ services:
       # nowhere.
       APP_BASE_URL: ${APP_BASE_URL:-https://personalmoney.app}
       APP_MAIL_FROM: ${MAIL_FROM:-noreply@personalmoney.app}
+      # The OAuth client homemoney.ua issued us. Their demo client is the fallback, so
+      # the import keeps working before ours is registered.
+      HOMEMONEY_CLIENT_ID: ${HOMEMONEY_CLIENT_ID:-5}
+      HOMEMONEY_CLIENT_SECRET: ${HOMEMONEY_CLIENT_SECRET:-demo}
       # Resend over plain SMTP. Defaults are Resend's fixed values, so the only real
       # secret is the API key; point these elsewhere to switch provider without a
       # code change.

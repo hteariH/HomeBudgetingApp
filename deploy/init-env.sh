@@ -69,6 +69,11 @@ MAIL_PORT=587
 MAIL_USERNAME=resend
 MAIL_PASSWORD=$MAIL_PASSWORD
 MAIL_FROM=$MAIL_FROM
+
+# The OAuth client homemoney.ua issued us, for the import. Theirs is a manual process;
+# until they answer, these are their published demo client and the import still works.
+HOMEMONEY_CLIENT_ID=5
+HOMEMONEY_CLIENT_SECRET=demo
 ENVFILE
 
 chmod 600 "$TARGET"

@@ -454,6 +454,40 @@
     <string name="csv_currency_mismatch">The file contains %1$s but %2$s is in %3$s. Amounts are imported as-is, without conversion.</string>
     <string name="csv_truncated">Showing the first 200 of %1$s; all of them are imported.</string>
 
+    <!-- Import from homemoney.ua. Web only; see navigation.homeMoneyImportAvailable. -->
+    <string name="nav_homemoney">HomeMoney</string>
+    <string name="homemoney_title">Import from HomeMoney</string>
+    <string name="homemoney_intro">Bring your accounts, categories and every operation across from homemoney.ua. You sign in on their site - your HomeMoney password never reaches us.</string>
+    <string name="homemoney_connect">Connect HomeMoney</string>
+    <string name="homemoney_connected_as">Connected as %1$s</string>
+    <string name="homemoney_invalid">HomeMoney is refusing the stored authorisation. Connect again.</string>
+    <string name="homemoney_disconnect">Disconnect</string>
+    <string name="homemoney_confirm_disconnect">Disconnect? Everything already imported stays.</string>
+    <string name="homemoney_load_plan">See what would be imported</string>
+    <string name="homemoney_step_connect">1. Connect</string>
+    <string name="homemoney_step_review">2. Check the mapping</string>
+    <string name="homemoney_step_import">3. Import</string>
+    <string name="homemoney_summary">%1$d accounts, %2$d categories, %3$d operations</string>
+    <string name="homemoney_range">From %1$s to %2$s</string>
+    <string name="homemoney_start">Import</string>
+    <string name="homemoney_rerun_note">Safe to run more than once: anything already imported is skipped.</string>
+    <string name="homemoney_accounts_title">Accounts</string>
+    <string name="homemoney_accounts_hint">An account held in several currencies arrives as one account per currency.</string>
+    <string name="homemoney_target_account">Import into</string>
+    <string name="homemoney_target_category">File under</string>
+    <string name="homemoney_create_new">Create a new one</string>
+    <string name="homemoney_will_create">A new %1$s account will be created</string>
+    <string name="homemoney_currency_unknown">HomeMoney calls this currency %1$s, which matches nothing here.</string>
+    <string name="homemoney_choose_currency">Currency</string>
+    <string name="homemoney_currency_needed">Choose a currency for %1$d more account(s) before importing.</string>
+    <string name="homemoney_categories_title">Categories</string>
+    <string name="homemoney_categories_summary">%1$d in HomeMoney, %2$d of them new here</string>
+    <string name="homemoney_review_categories">Review</string>
+    <string name="homemoney_hide_categories">Hide</string>
+    <string name="homemoney_running">Working through the history - %1$d years read so far</string>
+    <string name="homemoney_done">Import finished.</string>
+    <string name="homemoney_counts">%1$d accounts and %2$d categories created, %3$d operations imported, %4$d skipped</string>
+
     <!-- Counting strings: CLDR categories, so ru/uk get their own few/many. -->
     <plurals name="dashboard_account_count">
         <item quantity="one">%1$d account</item>

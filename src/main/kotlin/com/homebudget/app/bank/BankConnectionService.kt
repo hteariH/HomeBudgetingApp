@@ -42,7 +42,17 @@ class BankConnectionService(
     fun provider(id: String): BankProvider =
         byId[id] ?: throw NoSuchElementException("Unknown bank provider: $id")
 
+    /**
+     * The bank connections, which is not quite all of them.
+     *
+     * `bank_connections` also stores the HomeMoney importer's OAuth tokens - same secret,
+     * same encryption, same status model, no second table. But HomeMoney has no
+     * [BankProvider] bean, so a row for it reaching [BankConnectionResponse] would blow up
+     * in [provider] and take the whole bank screen down with it. It is filtered here
+     * rather than at the controller so every caller gets the same answer.
+     */
     fun findAll(): List<BankConnection> = connectionRepo.findAllByUser(securityUtils.getCurrentUser())
+        .filter { byId.containsKey(it.provider) }
 
     fun findById(id: Long): BankConnection =
         connectionRepo.findByIdAndUser(id, securityUtils.getCurrentUser())

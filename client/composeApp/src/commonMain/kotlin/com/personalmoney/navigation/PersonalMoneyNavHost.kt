@@ -1,11 +1,15 @@
 package com.personalmoney.navigation
 
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Language
@@ -21,6 +25,7 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -30,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,6 +56,9 @@ import androidx.savedstate.read
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.ui.PageContainer
+import com.personalmoney.core.ui.webChrome
+import com.personalmoney.core.ui.PageWidth
+import com.personalmoney.core.ui.theme.isDark
 import com.personalmoney.feature.accounts.AccountEditScreen
 import com.personalmoney.feature.accounts.AccountPickerScreen
 import com.personalmoney.feature.accounts.AccountsScreen
@@ -61,18 +70,21 @@ import com.personalmoney.feature.categories.CategoryEditScreen
 import com.personalmoney.feature.currencies.CurrenciesScreen
 import com.personalmoney.feature.currencies.CurrencyEditScreen
 import com.personalmoney.feature.dashboard.DashboardScreen
+import com.personalmoney.feature.homemoney.HomeMoneyImportScreen
 import com.personalmoney.feature.more.MoreScreen
 import com.personalmoney.feature.onboarding.OnboardingScreen
 import com.personalmoney.feature.quickadd.QuickAddScreen
 import com.personalmoney.feature.quickadd.QuickAddViewModel
 import com.personalmoney.feature.settings.SettingsScreen
+import com.personalmoney.feature.shell.AppShellViewModel
 import com.personalmoney.feature.subscriptions.SubscriptionEditScreen
 import com.personalmoney.feature.subscriptions.SubscriptionsScreen
 import com.personalmoney.feature.transactions.TransactionEditScreen
 import com.personalmoney.feature.transactions.TransactionsScreen
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
-private data class NavDestination(
+internal data class NavDestination(
     val route: String,
     val icon: ImageVector,
     val label: StringResource,
@@ -99,6 +111,8 @@ private val navDestinations = listOfNotNull(
     NavDestination(Routes.CURRENCIES, Icons.Filled.Language, Res.string.nav_currencies),
     // Same position the React sidebar gives it, and absent entirely where there is no
     // repository behind it - see [bankConnectionsAvailable].
+    NavDestination(Routes.IMPORT_HOMEMONEY, Icons.Filled.ImportExport, Res.string.nav_homemoney)
+        .takeIf { homeMoneyImportAvailable },
     NavDestination(Routes.BANKS, Icons.Filled.AccountBalance, Res.string.nav_banks)
         .takeIf { bankConnectionsAvailable },
     NavDestination(Routes.SETTINGS, Icons.Filled.Settings, Res.string.dashboard_settings),
@@ -114,6 +128,26 @@ private val bottomNavItems =
  * not need a new adaptive artifact to read.
  */
 private val RAIL_BREAKPOINT = 840.dp
+
+/**
+ * Where the sections stop fitting across the top and fold into the drawer.
+ *
+ * Higher than [RAIL_BREAKPOINT] because a row of words needs far more room than a column
+ * of them: eight labels, a wordmark and an account chip come to roughly 1260dp in English
+ * and more in Ukrainian. Below this the header keeps the brand and the account and hands
+ * the sections to a menu button - which is what a site does at this width anyway.
+ */
+private val HEADER_NAV_BREAKPOINT = 1240.dp
+
+/** Below this the header keeps the mark and drops the name beside it - see `showWordmark`. */
+private val WORDMARK_BREAKPOINT = 480.dp
+
+/**
+ * The sections the header lists. Settings is not one of them: it lives in the account menu,
+ * where a site keeps it, and leaving it in the row would have made it the ninth label
+ * competing for width. The drawer still lists it, because there the column is free.
+ */
+private val headerDestinations = navDestinations.filter { it.route != Routes.SETTINGS }
 
 private fun NavController.switchTab(route: String) {
     navigate(route) {
@@ -135,28 +169,110 @@ fun PersonalMoneyNavHost(
     // Wait for preference to be read (typically <16ms from DataStore cache)
     if (onboarded == null) return
 
+    // Who is signed in and which theme they chose - both outlive every screen, so this
+    // is held here rather than by whichever page happens to be on top.
+    val shell: AppShellViewModel = koinViewModel()
+    val themeMode by shell.themeMode.collectAsStateWithLifecycle()
+    val dark = themeMode.isDark()
+
     // The app is a client of an account now, so nothing can be shown before there is
     // one. This is a whole separate NavHost rather than a start destination, so that
     // signing out cannot leave a signed-in screen on the back stack.
     if (!signedIn) {
-        AuthScreen(onSignedIn = { })
+        if (!webChrome) {
+            AuthScreen(onSignedIn = { })
+            return
+        }
+        // Signing in is a page of the site, so it keeps the site's header - reduced to the
+        // brand and the theme switch, because there is no account yet to offer a menu for.
+        // Without it the page read as a modal that had lost the app it belonged to.
+        BoxWithConstraints {
+            // Read out here: Compose's layout scopes are DSL-marked, so `maxWidth` is not
+            // reachable from inside the Column's own scope.
+            val navInline = maxWidth >= HEADER_NAV_BREAKPOINT
+            val wordmark = maxWidth >= WORDMARK_BREAKPOINT
+            Column(Modifier.fillMaxSize()) {
+                AppHeader(
+                    destinations = emptyList(),
+                    currentRoute = null,
+                    navInline = navInline,
+                    showWordmark = wordmark,
+                    onNavigate = { },
+                    onOpenMenu = { },
+                    email = null,
+                    onOpenSettings = { },
+                    onSignOut = { },
+                    dark = dark,
+                    onToggleTheme = { shell.setDark(!dark) },
+                    onAdd = null,
+                )
+                AuthScreen(onSignedIn = { })
+            }
+        }
         return
     }
 
     val navController = rememberNavController()
+    // Where there is an address bar, it now says which screen this is - and a link to one
+    // opens it. No-op on Android; see [BindBrowserUrl].
+    BindBrowserUrl(navController)
+    // Something outside the app asked for a particular screen - today, HomeMoney
+    // redirecting the browser back after consent, which lands on the app's own root and
+    // would otherwise drop the user on the dashboard with no idea whether it worked.
+    // Keyed on the link so it fires once rather than on every recomposition.
+    LaunchedEffect(deepLink) { deepLink?.let { navController.navigate(it) } }
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val onMainTab = bottomNavItems.any { it.route == currentRoute }
     val showFab = currentRoute == Routes.DASHBOARD || currentRoute == Routes.TRANSACTIONS
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
     BoxWithConstraints {
     val wide = maxWidth >= RAIL_BREAKPOINT
+    val navInline = maxWidth >= HEADER_NAV_BREAKPOINT
+    val wordmark = maxWidth >= WORDMARK_BREAKPOINT
+    val onboarding = currentRoute == Routes.ONBOARDING
     // Present on every screen of the app, including detail ones - a sidebar that vanished
     // when you opened an account would be a worse sidebar than none. Onboarding is the
     // exception: the user is not in the app yet, and offering navigation out of a three-step
     // setup would be offering a way to skip it.
-    val showRail = wide && currentRoute != Routes.ONBOARDING
-    val showBottomBar = !wide && onMainTab
+    //
+    // All three are the app's frame, so all three are off in a browser, where the header
+    // and its drawer carry the same jobs - see [webChrome].
+    val showRail = wide && !webChrome && !onboarding
+    val showBottomBar = !wide && !webChrome && onMainTab
+
+    // Below this width no page carries the entry panel, so the header has to offer the
+    // form the floating button used to. Above it, the panel is already on the page.
+    val headerAdd: (() -> Unit)? =
+        if (webChrome && !onboarding && maxWidth < PageWidth.InlineEntry) {
+            { navController.navigate(Routes.quickAdd("EXPENSE")) }
+        } else null
+
+    // Widening the window puts the sections back in the header; a drawer left open over
+    // them would be covering navigation with the same navigation.
+    LaunchedEffect(navInline) { if (navInline) drawerState.close() }
+
+    val body = @Composable {
+    Column(Modifier.fillMaxSize()) {
+    if (webChrome && !onboarding) {
+        AppHeader(
+            destinations = headerDestinations,
+            currentRoute = currentRoute,
+            navInline = navInline,
+            showWordmark = wordmark,
+            onNavigate = { navController.switchTab(it) },
+            onOpenMenu = { scope.launch { drawerState.open() } },
+            email = shell.email,
+            onOpenSettings = { navController.switchTab(Routes.SETTINGS) },
+            onSignOut = { shell.signOut() },
+            dark = dark,
+            onToggleTheme = { shell.setDark(!dark) },
+            onAdd = headerAdd,
+        )
+    }
 
     Row(Modifier.fillMaxSize()) {
         if (showRail) {
@@ -195,7 +311,7 @@ fun PersonalMoneyNavHost(
         },
         floatingActionButton = {
             // Phones only: a wide window has the entry panel on the page instead.
-            if (showFab && !wide) {
+            if (showFab && !wide && !webChrome) {
                 FloatingActionButton(onClick = { navController.navigate(Routes.quickAdd("EXPENSE")) }) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.action_add_expense_fab))
                 }
@@ -371,6 +487,12 @@ fun PersonalMoneyNavHost(
                 }
             }
 
+            if (homeMoneyImportAvailable) {
+                composable(Routes.IMPORT_HOMEMONEY) {
+                    HomeMoneyImportScreen(onBack = { navController.popBackStack() })
+                }
+            }
+
             composable(Routes.SUBSCRIPTIONS) {
                 SubscriptionsScreen(
                     onAdd = { navController.navigate(Routes.subscriptionEdit()) },
@@ -449,6 +571,31 @@ fun PersonalMoneyNavHost(
         }
         }
     }
+    }
+    }
+    }
+
+    if (webChrome) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            // Nothing to pull out when the sections are already across the top, and nothing
+            // to pull out of a three-step setup either.
+            gesturesEnabled = !navInline && !onboarding,
+            drawerContent = {
+                AppDrawerSheet(
+                    destinations = navDestinations,
+                    currentRoute = currentRoute,
+                    onNavigate = {
+                        scope.launch { drawerState.close() }
+                        navController.switchTab(it)
+                    },
+                    onClose = { scope.launch { drawerState.close() } },
+                )
+            },
+            content = body,
+        )
+    } else {
+        body()
     }
     }
 }

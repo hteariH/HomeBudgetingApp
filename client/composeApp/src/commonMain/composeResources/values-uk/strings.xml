@@ -430,6 +430,40 @@
     <string name="csv_currency_mismatch">У файлі зустрічається %1$s, а рахунок %2$s ведеться в %3$s. Суми завантажуються як є, без конвертації.</string>
     <string name="csv_truncated">Показано перші 200 з %1$s; завантажені будуть усі.</string>
 
+    <!-- Import z homemoney.ua. Lyshe veb; dyv. navigation.homeMoneyImportAvailable. -->
+    <string name="nav_homemoney">HomeMoney</string>
+    <string name="homemoney_title">Імпорт з HomeMoney</string>
+    <string name="homemoney_intro">Перенесіть рахунки, категорії та всі операції з homemoney.ua. Вхід відбувається на їхньому сайті - ваш пароль від HomeMoney до нас не потрапляє.</string>
+    <string name="homemoney_connect">Підключити HomeMoney</string>
+    <string name="homemoney_connected_as">Підключено як %1$s</string>
+    <string name="homemoney_invalid">HomeMoney більше не приймає збережену авторизацію. Підключіться знову.</string>
+    <string name="homemoney_disconnect">Відключити</string>
+    <string name="homemoney_confirm_disconnect">Відключити? Усе вже імпортоване залишиться.</string>
+    <string name="homemoney_load_plan">Подивитися, що буде імпортовано</string>
+    <string name="homemoney_step_connect">1. Підключення</string>
+    <string name="homemoney_step_review">2. Перевірка відповідностей</string>
+    <string name="homemoney_step_import">3. Імпорт</string>
+    <string name="homemoney_summary">Рахунків: %1$d, категорій: %2$d, операцій: %3$d</string>
+    <string name="homemoney_range">З %1$s до %2$s</string>
+    <string name="homemoney_start">Імпортувати</string>
+    <string name="homemoney_rerun_note">Можна запускати повторно: уже імпортоване пропускається.</string>
+    <string name="homemoney_accounts_title">Рахунки</string>
+    <string name="homemoney_accounts_hint">Рахунок із кількома валютами стане окремим рахунком на кожну валюту.</string>
+    <string name="homemoney_target_account">Імпортувати в</string>
+    <string name="homemoney_target_category">Віднести до</string>
+    <string name="homemoney_create_new">Створити нову</string>
+    <string name="homemoney_will_create">Буде створено новий рахунок у %1$s</string>
+    <string name="homemoney_currency_unknown">У HomeMoney ця валюта називається %1$s, у нас такої немає.</string>
+    <string name="homemoney_choose_currency">Валюта</string>
+    <string name="homemoney_currency_needed">Оберіть валюту ще для %1$d рахунків перед імпортом.</string>
+    <string name="homemoney_categories_title">Категорії</string>
+    <string name="homemoney_categories_summary">%1$d у HomeMoney, з них %2$d нові тут</string>
+    <string name="homemoney_review_categories">Переглянути</string>
+    <string name="homemoney_hide_categories">Сховати</string>
+    <string name="homemoney_running">Проходимо історію - прочитано років: %1$d</string>
+    <string name="homemoney_done">Імпорт завершено.</string>
+    <string name="homemoney_counts">Створено рахунків: %1$d, категорій: %2$d; імпортовано операцій: %3$d, пропущено: %4$d</string>
+
     <!-- Counting strings: CLDR categories, so ru/uk get their own few/many. -->
     <plurals name="dashboard_account_count">
         <item quantity="one">%1$d рахунок</item>

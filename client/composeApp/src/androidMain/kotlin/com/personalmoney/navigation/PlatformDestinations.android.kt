@@ -2,3 +2,6 @@ package com.personalmoney.navigation
 
 /** No `BankRepository` in the Android graph - see the expect declaration. */
 internal actual val bankConnectionsAvailable: Boolean = false
+
+/** No `HomeMoneyImportRepository` in the Android graph - see the expect declaration. */
+internal actual val homeMoneyImportAvailable: Boolean = false

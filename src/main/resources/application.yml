@@ -30,6 +30,18 @@ springdoc:
   swagger-ui:
     enabled: false
 
+app:
+  homemoney:
+    base-url: ${HOMEMONEY_BASE_URL:https://homemoney.ua}
+    # Until an application is registered with homemoney.ua, their published demo client
+    # is what the OAuth endpoints accept.
+    client-id: ${HOMEMONEY_CLIENT_ID:5}
+    client-secret: ${HOMEMONEY_CLIENT_SECRET:demo}
+    # The username-and-password grant, for development against an unregistered client.
+    # Off here on purpose: the redirect flow exists so this server never sees somebody's
+    # HomeMoney password, and a flag that quietly stays on undoes that.
+    allow-password-grant: ${HOMEMONEY_ALLOW_PASSWORD_GRANT:false}
+
 logging:
   level:
     com.homebudget: DEBUG

@@ -16,6 +16,9 @@ interface CategoryRepository : JpaRepository<Category, Long> {
     fun findByIdAndUser(id: Long, user: User): Category?
     fun findByUuidAndUser(uuid: String, user: User): Category?
 
+    /** Categories a previous import created, keyed by the source's own id. */
+    fun findAllByUserAndExternalIdIsNotNull(user: User): List<Category>
+
     @Query("SELECT DISTINCT c FROM Category c JOIN c.mccCodes m WHERE c.user = :user AND m = :mcc and c.type = :type")
     fun findByUserAndMccCodeAndType(user: User, mcc: Int, type: CategoryType): List<Category>
 

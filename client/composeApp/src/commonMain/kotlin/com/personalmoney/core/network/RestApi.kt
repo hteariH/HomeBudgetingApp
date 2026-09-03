@@ -194,6 +194,41 @@ class RestApi(private val client: HttpClient) {
     suspend fun confirmCsv(body: CsvConfirmRequest): RestImportResult =
         client.post("api/import/csv/confirm") { jsonBody(body) }.body()
 
+    // ── homemoney import ─────────────────────────────────────────────────────
+    /**
+     * Migrating a whole ledger out of homemoney.ua.
+     *
+     * Three round trips rather than the bank import's two, because there is a third thing
+     * to establish first: whether the user has connected at all. The OAuth consent itself
+     * never passes through here - [authorizeHomeMoney] hands back a URL for the page to
+     * navigate to, and homemoney.ua redirects the browser to the server, which is the only
+     * side that ever holds a token.
+     */
+    suspend fun homeMoneyConnection(): RestHomeMoneyConnection =
+        client.get("api/import/homemoney/connection").body()
+
+    /**
+     * The consent URL to send the browser to.
+     *
+     * A POST rather than a plain link because it needs the bearer token: the URL carries a
+     * signed state naming this user, and a top-level navigation cannot authenticate itself.
+     */
+    suspend fun authorizeHomeMoney(): RestHomeMoneyAuthorization =
+        client.post("api/import/homemoney/authorize").body()
+
+    suspend fun disconnectHomeMoney() { client.delete("api/import/homemoney/connection") }
+
+    /** Reads HomeMoney and proposes a mapping. Writes nothing. */
+    suspend fun homeMoneyPlan(): RestHomeMoneyPlan =
+        client.post("api/import/homemoney/plan").body()
+
+    /** Starts the import; answers 202 and leaves the progress to [homeMoneyStatus]. */
+    suspend fun applyHomeMoney(body: HomeMoneyApplyRequest): RestHomeMoneyStatus =
+        client.post("api/import/homemoney/apply") { jsonBody(body) }.body()
+
+    suspend fun homeMoneyStatus(): RestHomeMoneyStatus =
+        client.get("api/import/homemoney/status").body()
+
     // ── fx ───────────────────────────────────────────────────────────────────
     /**
      * The rates the server refreshed overnight. Read-only by design: rates are per-install,

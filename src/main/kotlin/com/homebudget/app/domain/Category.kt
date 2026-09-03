@@ -61,6 +61,14 @@ data class Category(
     @Column(name = "budget_limit_minor")
     var budgetLimitMinor: Long? = null,
 
+    /**
+     * The id this category had in whatever it was imported from, namespaced by source
+     * (`homemoney:42`). It is what makes a second import adopt the rows the first one
+     * created instead of building the tree again.
+     */
+    @Column(name = "external_id", length = 100)
+    var externalId: String? = null,
+
     /** MCC codes (Merchant Category Codes) learned from Monobank imports */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "category_mcc_codes", joinColumns = [JoinColumn(name = "category_id")])

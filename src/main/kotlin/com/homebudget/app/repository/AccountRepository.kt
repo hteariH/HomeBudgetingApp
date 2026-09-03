@@ -17,8 +17,18 @@ data class AccountBalanceRow(
 @Repository
 interface AccountRepository : JpaRepository<Account, Long> {
     fun findAllByUser(user: User): List<Account>
+
+    /**
+     * Accounts that count towards the free plan's cap - see
+     * [com.homebudget.app.domain.PlanLimits]. Tombstoned rows are already excluded by the
+     * entity's `@SQLRestriction`, so this is live, unarchived accounts.
+     */
+    fun countByUserAndArchivedFalse(user: User): Long
     fun findByIdAndUser(id: Long, user: User): Account?
     fun findByUuidAndUser(uuid: String, user: User): Account?
+
+    /** Accounts a previous import created, keyed by the source's own id. */
+    fun findAllByUserAndExternalAccountIdIsNotNull(user: User): List<Account>
 
     /** Detaches accounts from a connection being deleted; history is untouched. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)

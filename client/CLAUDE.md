@@ -67,6 +67,11 @@ Copy-Item "composeApp\build\dist\wasmJs\productionExecutable\*" `
   --user-data-dir="$env:TEMP\hlprofile" "http://localhost:8085/app/"
 ```
 
+A live dev loop instead of the build-and-stage dance: `./gradlew.bat wasmJsBrowserDevelopmentRun`
+serves the bundle on :8080 and proxies `/api` to the Spring server on :8085
+(`composeApp/webpack.config.d/dev-server-proxy.js`), so no CORS configuration exists or is
+needed. Use the staged path above when you need to see production output.
+
 `--enable-unsafe-swiftshader` is the load-bearing flag: Compose draws through WebGL, and
 without software rasterisation the page renders its rectangles and none of its text.
 `--disable-gpu` is *not* a substitute - it produces exactly that half-drawn result.
@@ -80,7 +85,17 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
 
 - Unidirectional flow: `ViewModel(StateFlow)` → Compose. Hilt for DI. Room + Flow for reactive reads.
 - Layout: `core/{database,domain,data,ui,currency}` + `feature/<name>` + `widget/` + `ads/`.
-  Nav in `navigation/Routes.kt` + `PersonalMoneyNavHost.kt`. Bottom nav bar + FAB.
+  Nav in `navigation/Routes.kt` + `PersonalMoneyNavHost.kt`.
+- **Chrome differs by platform, not by window size** - `core/ui/webChrome` (expect/actual).
+  Android: rail on a wide window, bottom bar + FAB on a phone. Web: `navigation/AppHeader.kt`
+  across the top (brand, sections, theme switch, account menu with Settings and Sign out),
+  folding into a `ModalNavigationDrawer` below 1240dp and dropping the wordmark below 480dp;
+  no bottom bar and no FAB, so below 900dp the header carries the "+" instead. Screens' own
+  `TopAppBar`s pass `colors = pageBarColors()`, which goes transparent under that header so
+  the title reads as a page heading rather than a second band.
+- Browser URLs track the back stack via `navigation/BrowserUrl.kt` (`bindToBrowserNavigation`,
+  no-op on Android). Routes are URL **fragments** - `/app/#accounts` - so the server needs no
+  rewrite rule; the start destination stays fragment-less.
 - **Money is `Long` minor units.** Per-currency decimals via `Currency.getInstance(code)
   .defaultFractionDigits` (fallback 2) / `CurrencyRegistry`. Numpad math via `core/calc/Calculator`
   + shared sanitizer `core/calc/ExpressionInput`.
@@ -111,6 +126,27 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
   buttons to a pill regardless of `MaterialTheme.shapes`, so a button that should match the
   web app passes `shape = PmButtonShape`. Material You is off by default: it repaints the
   app from the wallpaper, which is the opposite of one product on two platforms.
+- **Plans:** the free plan caps accounts at `PlanLimits.FREE_ACCOUNTS` (5) on the *server*,
+  on both the REST and the sync path - a client is never asked whether it has paid. The
+  server answers **402** with a sentence meant for the user; `PaymentRequired` is in
+  `core/network/ApiErrors.kt`'s `USER_FACING` set so `serverMessage()` surfaces it. Whether
+  an account is premium is `User.isPremium(now)` on the server, which reads the expiry
+  rather than trusting the stored value. `GET /api/users/me` carries `entitlement` for
+  display only.
+- **Importing from HomeMoney** (`feature/homemoney`, web only like Banks - see
+  `navigation/homeMoneyImportAvailable`): the server owns it end to end
+  (`com.homebudget.app.importer.homemoney`), because homemoney.ua sends no CORS headers and
+  a browser cannot call it at all. Consent is an OAuth redirect: `POST /authorize` returns a
+  URL carrying a signed state, the page *navigates* to it (`core/ui/rememberPageNavigator`,
+  not `rememberUrlOpener` - a new tab would swallow the return), and the callback lands back
+  on `/app/?homemoney=…`, which `main.kt` turns into the nav host's `deepLink`. Their API
+  answers **HTTP 200 even for errors** and rejects a trailing slash on the path; both are
+  documented on `HomeMoneyApi`. Dedup is `transactions.external_id = "homemoney:<GUID>"`, so
+  re-running imports nothing twice.
+- **Encoding defaults:** kotlinx.serialization omits any value equal to its declared
+  default, and Jackson fills the gap with `false`/`0` on the other side. A boolean whose
+  meaningful state *is* the default needs `@EncodeDefault` - see `RestPlannedAccount` and
+  the test that guards it. Give the server DTO the same default too.
 - **i18n:** strings live in **`composeApp/src/commonMain/composeResources/values{,-ru,-uk}/
   strings.xml`**, not in `res/values*` - the Android resource table cannot be read from wasm.
   Read them with `stringResource(Res.string.x)` (composable) or the **suspend**

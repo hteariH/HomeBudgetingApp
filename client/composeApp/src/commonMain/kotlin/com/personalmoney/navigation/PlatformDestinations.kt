@@ -15,3 +15,13 @@ package com.personalmoney.navigation
  * a list and the type stops being a lie.
  */
 internal expect val bankConnectionsAvailable: Boolean
+
+/**
+ * Whether this platform can reach the HomeMoney import.
+ *
+ * Same reasoning as [bankConnectionsAvailable], and the same answer: the import writes to
+ * the server's ledger, and the phone reads its own out of Room, so on Android nothing
+ * would appear until the next sync - and the consent step needs a browser page to leave
+ * and come back to, which an app does not have.
+ */
+internal expect val homeMoneyImportAvailable: Boolean

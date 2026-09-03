@@ -15,6 +15,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val CURRENCIES = "currencies"
     const val BANKS = "banks"
+    const val IMPORT_HOMEMONEY = "import/homemoney"
     const val CURRENCY_EDIT = "currency/edit?code={code}"
     const val ONBOARDING = "onboarding"
     const val ANALYTICS = "analytics"
