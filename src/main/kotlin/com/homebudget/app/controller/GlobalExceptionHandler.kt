@@ -1,5 +1,6 @@
 package com.homebudget.app.controller
 
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -17,6 +18,8 @@ data class ErrorResponse(
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @ExceptionHandler(NoSuchElementException::class)
     fun handleNotFound(ex: NoSuchElementException): ResponseEntity<ErrorResponse> =
@@ -84,9 +87,20 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 502, error = "Bank Unavailable", message = ex.message)
         )
 
+    /**
+     * The catch-all, and the only handler here that logs.
+     *
+     * Everything above is a request the server understood and refused, which the client
+     * shows to the user; there is nothing for an operator to do about those and logging
+     * them would be noise. This one is the opposite: it means the server broke, the user
+     * saw "something went wrong", and without a stack trace the only record of it is a
+     * screenshot. That has already cost one debugging session.
+     */
     @ExceptionHandler(Exception::class)
-    fun handleGeneric(ex: Exception): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+    fun handleGeneric(ex: Exception): ResponseEntity<ErrorResponse> {
+        log.error("Unhandled exception", ex)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
             ErrorResponse(status = 500, error = "Internal Server Error", message = ex.message)
         )
+    }
 }
