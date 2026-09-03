@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { authApi } from '../api';
 import { AlertTriangle, UserPlus, Mail, Lock, User } from 'lucide-react';
 import { useT } from '../i18n';
 import AuthShell from './AuthShell';
+import { enterApp, saveSession } from '../session';
 
 const Register: React.FC = () => {
     const t = useT();
@@ -15,7 +16,6 @@ const Register: React.FC = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,7 +23,13 @@ const Register: React.FC = () => {
         setLoading(true);
         try {
             await authApi.register(formData);
-            navigate('/login');
+            // Registration does not return tokens, so sign in straight away rather than
+            // sending someone who has just typed their password to a form asking for it
+            // again. This is what the Compose client's AuthRepository.register already did;
+            // the web was the odd one out.
+            const res = await authApi.login({ email: formData.email, password: formData.password });
+            saveSession(res);
+            enterApp();
         } catch (err: any) {
             setError(err.message || t('register.failed'));
         } finally {

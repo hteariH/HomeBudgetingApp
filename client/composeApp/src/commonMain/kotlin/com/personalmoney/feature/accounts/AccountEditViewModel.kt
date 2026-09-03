@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.data.UserPreferences
+import com.personalmoney.core.network.serverMessage
+import org.jetbrains.compose.resources.getString
+import com.personalmoney.resources.*
 import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CurrencyRepository
 import com.personalmoney.core.domain.model.Account
@@ -111,7 +114,7 @@ class AccountEditViewModel constructor(
         if (!st.canSave) return
         internalState.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
-            runCatching {
+            val outcome = runCatching {
                 val decimals = currencyDecimals(st.currencyCode)
                 val balanceMinor = BigDecimal.parseString(st.initialBalance.ifBlank { "0" })
                     .toMinorUnits(decimals)
@@ -150,10 +153,16 @@ class AccountEditViewModel constructor(
                         )
                     )
                 }
-            }.onSuccess {
+            }
+            // Not `onFailure`: reading the server's sentence is a suspend call, and the
+            // sentence is the whole point here - "402 Payment Required" from Ktor tells a
+            // user nothing, while the server's own message names the limit and the way out.
+            val failure = outcome.exceptionOrNull()
+            if (failure == null) {
                 internalState.update { it.copy(saving = false, saved = true) }
-            }.onFailure { e ->
-                internalState.update { it.copy(saving = false, error = e.message ?: "Save failed") }
+            } else {
+                val message = failure.serverMessage() ?: getString(Res.string.common_request_failed)
+                internalState.update { it.copy(saving = false, error = message) }
             }
         }
     }
@@ -169,7 +178,12 @@ class AccountEditViewModel constructor(
                 }
             }
                 .onSuccess { internalState.update { it.copy(saved = true) } }
-                .onFailure { e -> internalState.update { it.copy(error = e.message) } }
+                .also { result ->
+                    result.exceptionOrNull()?.let { e ->
+                        val message = e.serverMessage() ?: getString(Res.string.common_request_failed)
+                        internalState.update { it.copy(error = message) }
+                    }
+                }
         }
     }
 

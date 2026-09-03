@@ -116,6 +116,7 @@ export const uk: Locale = {
     'landing.nav.how': 'Як це працює',
     'landing.nav.faq': 'Питання',
     'landing.nav.signIn': 'Увійти',
+    'landing.nav.openApp': 'Відкрити застосунок',
     'landing.nav.getStarted': 'Почати',
 
     'landing.hero.badge': 'Бюджет у кількох валютах',

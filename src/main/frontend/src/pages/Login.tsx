@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { authApi } from '../api';
 import { AlertTriangle, LogIn, Mail, Lock } from 'lucide-react';
 import { useT } from '../i18n';
 import AuthShell from './AuthShell';
+import { enterApp, saveSession } from '../session';
 
 const Login: React.FC = () => {
     const t = useT();
@@ -11,7 +12,6 @@ const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,9 +19,10 @@ const Login: React.FC = () => {
         setLoading(true);
         try {
             const res = await authApi.login({ email, password });
-            localStorage.setItem('token', res.token);
-            localStorage.setItem('user', JSON.stringify(res));
-            navigate('/');
+            // Not `navigate` - the application is a separate document at /app/, and the
+            // tokens are written under the names it reads. See session.ts.
+            saveSession(res);
+            enterApp();
         } catch (err: any) {
             setError(err.message || t('login.failed'));
         } finally {

@@ -117,6 +117,7 @@ export const en = {
     'landing.nav.how': 'How it works',
     'landing.nav.faq': 'FAQ',
     'landing.nav.signIn': 'Sign in',
+    'landing.nav.openApp': 'Open app',
     'landing.nav.getStarted': 'Get started',
 
     'landing.hero.badge': 'Multi-currency budgeting',

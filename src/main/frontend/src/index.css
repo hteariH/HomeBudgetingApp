@@ -60,9 +60,6 @@
   --shadow:    0 4px 16px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
 
-  --sidebar-width: 240px;
-  --header-height: 64px;
-
   --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 
   color-scheme: dark;
@@ -117,171 +114,9 @@ input, select, textarea { font-family: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
 
-/* ─── Layout ──────────────────────────────────────────────────────────── */
-.app-layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-/* ─── Sidebar ─────────────────────────────────────────────────────────── */
-.sidebar {
-  width: var(--sidebar-width);
-  background: var(--bg-surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  z-index: 120;
-  overflow-y: auto;
-  transition: transform var(--transition);
-}
-
-.sidebar-logo {
-  padding: 20px 20px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-.sidebar-logo-icon {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--accent), var(--cyan));
-  border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-.sidebar-logo-text {
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-.sidebar-logo-text span { color: var(--accent-light); }
-
-.sidebar-nav {
-  padding: 12px 10px;
-  flex: 1;
-}
-
-.sidebar-section-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  padding: 8px 10px 4px;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 500;
-  transition: background var(--transition), color var(--transition);
-  margin-bottom: 2px;
-}
-.nav-link:hover { background: var(--bg-hover); color: var(--text-primary); }
-.nav-link.active { background: var(--accent-glow); color: var(--accent-light); }
-.nav-link svg { flex-shrink: 0; }
-
-/* Drawer behaviour: off-canvas below the breakpoint, permanent above it. */
-.sidebar-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(2px);
-  z-index: 110;
-  border: none;
-  display: none;
-}
-
-@media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); box-shadow: var(--shadow-lg); }
-  .sidebar.open { transform: translateX(0); }
-  .sidebar-backdrop { display: block; }
-}
-/* The two drawer buttons are styled further down, after .btn - see the note there. */
-
-/* ─── Main Content ────────────────────────────────────────────────────── */
-.main-content {
-  margin-left: var(--sidebar-width);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-width: 0;
-}
-
-/* Must come after the rule above, not with the rest of the drawer styles: both
-   selectors have the same specificity, so whichever is written last wins and the
-   gutter would survive on mobile - pushing the whole page off-screen. */
-@media (max-width: 900px) {
-  .main-content { margin-left: 0; }
-}
-
-/* ─── Header ──────────────────────────────────────────────────────────── */
-.header {
-  min-height: var(--header-height);
-  background: rgb(var(--bg-surface-rgb) / 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 0 28px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-
-.header-title { font-size: 18px; font-weight: 600; line-height: 1.3; }
-.header-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-
-.user-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 12px 5px 6px;
-  border-radius: 999px;
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-}
-.user-chip-avatar {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
-}
-.user-chip-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-@media (max-width: 640px) {
-  .header { padding: 0 16px; }
-  .user-chip-name { display: none; }
-  .user-chip { padding: 5px; }
-  /* Every page renders its own heading immediately below, so at this width the
-     header title only competes for room and ends up truncated to a few letters. */
-  .header-title { display: none; }
-}
-
-/* ─── Page ────────────────────────────────────────────────────────────── */
-.page { padding: 28px; animation: fadeIn 0.2s ease; }
-@media (max-width: 640px) { .page { padding: 18px 16px; } }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+/* The signed-in shell - sidebar, sticky header, cards, tables, modals, the page wrapper -
+   used to live here. All of it moved to the Compose client at /app/, so what is left
+   dresses the landing page and the pages a visitor reaches before there is an account. */
 
 /* ─── Cards ───────────────────────────────────────────────────────────── */
 .card {
@@ -290,42 +125,6 @@ input, select, textarea { font-family: inherit; }
   border-radius: var(--radius-lg);
   padding: 24px;
 }
-
-.card-sm { padding: 16px; border-radius: var(--radius); }
-
-.stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  position: relative;
-  overflow: hidden;
-  transition: border-color var(--transition), transform var(--transition);
-}
-.stat-card:hover { border-color: var(--border-light); transform: translateY(-2px); }
-.stat-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--accent-glow), transparent);
-  opacity: 0;
-  transition: opacity var(--transition);
-  pointer-events: none;
-}
-.stat-card:hover::after { opacity: 1; }
-.stat-card > * { position: relative; z-index: 1; }
-
-.stat-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-.stat-value { font-size: 26px; font-weight: 700; margin-top: 6px; }
-.stat-sub   { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
-
-/* ─── Grids ───────────────────────────────────────────────────────────── */
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-@media (max-width: 1200px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 900px)  { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
-@media (max-width: 640px)  { .grid-4 { grid-template-columns: 1fr; } }
 
 /* ─── Buttons ─────────────────────────────────────────────────────────── */
 .btn {
@@ -355,9 +154,6 @@ input, select, textarea { font-family: inherit; }
 }
 .btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-light); }
 
-.btn-danger { background: var(--red); color: #fff; }
-.btn-danger:hover:not(:disabled) { background: #dc2626; }
-
 .btn-secondary {
   background: var(--bg-hover);
   color: var(--text-primary);
@@ -365,27 +161,9 @@ input, select, textarea { font-family: inherit; }
 }
 .btn-secondary:hover:not(:disabled) { background: var(--border); border-color: var(--accent); color: var(--accent-light); }
 
-.btn-warning { background: var(--yellow); color: #000; }
-.btn-warning:hover:not(:disabled) { opacity: 0.85; }
-
 .btn-sm { padding: 6px 12px; font-size: 13px; }
 .btn-lg { padding: 13px 26px; font-size: 15px; }
 .btn-icon { padding: 8px; border-radius: var(--radius-sm); }
-
-/* ─── Drawer Controls ─────────────────────────────────────────────────── *
- * The menu toggle and the drawer's close button. Declared after .btn because they
- * also carry it: at equal specificity the later rule wins, so a `display: none`
- * written earlier loses to .btn's inline-flex and the toggle appears on desktop.
- *
- * They share the sidebar's 900px breakpoint rather than a Tailwind one, which would
- * leave them wrong between 768px and 900px.
- * ----------------------------------------------------------------------- */
-.nav-toggle, .nav-close { display: none; }
-.nav-close { margin-left: auto; }
-
-@media (max-width: 900px) {
-  .nav-toggle, .nav-close { display: inline-flex; }
-}
 
 /* ─── Form Controls ───────────────────────────────────────────────────── */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -420,30 +198,6 @@ select.form-control { cursor: pointer; }
   pointer-events: none;
 }
 
-/* ─── Table ───────────────────────────────────────────────────────────── */
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-thead tr { border-bottom: 1px solid var(--border); }
-th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
-td { padding: 12px 14px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
-tbody tr:last-child td { border-bottom: none; }
-tbody tr { transition: background var(--transition); }
-tbody tr:hover { background: var(--bg-hover); }
-
-/* ─── Badges ──────────────────────────────────────────────────────────── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-}
-.badge-income  { background: rgb(var(--green-rgb) / 0.15); color: var(--green); }
-.badge-expense { background: rgb(var(--red-rgb) / 0.15);   color: var(--red);   }
-.badge-transfer{ background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-light); }
-
 /* ─── Alert ───────────────────────────────────────────────────────────── */
 .alert-error {
   display: flex;
@@ -456,66 +210,6 @@ tbody tr:hover { background: var(--bg-hover); }
   color: var(--red);
   font-size: 13px;
 }
-
-/* ─── Modal ───────────────────────────────────────────────────────────── */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(4px);
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  animation: fadeIn 0.15s ease;
-  overflow-y: auto;
-}
-
-.modal {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 28px;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: var(--shadow-lg);
-  animation: slideUp 0.2s ease;
-  margin: auto;
-}
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 22px;
-}
-.modal-title { font-size: 17px; font-weight: 700; }
-.modal-body { display: flex; flex-direction: column; gap: 16px; }
-.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
-
-/* ─── Color Dot ───────────────────────────────────────────────────────── */
-.color-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-/* ─── Account Chip ────────────────────────────────────────────────────── */
-.account-chip {
-  display: flex; align-items: center; gap: 8px;
-}
-.account-chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-/* ─── Empty State ─────────────────────────────────────────────────────── */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--text-muted);
-}
-.empty-state-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
-.empty-state-text { font-size: 15px; }
-.empty-state-sub  { font-size: 13px; margin-top: 6px; }
 
 /* ─── Loading ─────────────────────────────────────────────────────────── */
 .loading {
@@ -542,19 +236,8 @@ tbody tr:hover { background: var(--bg-hover); }
  * layout/spacing utilities that used to live here were removed once Tailwind
  * was enabled - it generates identical ones.
  * ----------------------------------------------------------------------- */
-.text-green  { color: var(--green); }
-.text-red    { color: var(--red); }
-.text-accent { color: var(--accent-light); }
-.text-muted  { color: var(--text-muted); }
 
-/* ─── Section Header ──────────────────────────────────────────────────── */
-.section-header {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-.section-title { font-size: 16px; font-weight: 700; }
+.text-red    { color: var(--red); }
 
 /* ─── Language Switcher ───────────────────────────────────────────────── */
 .lang-switcher { position: relative; }

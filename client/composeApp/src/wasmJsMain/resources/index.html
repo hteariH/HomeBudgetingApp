@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PersonalMoney</title>
     <link rel="icon" href="/favicon.ico" sizes="any">
+    <!-- Inter is 876 KB and Compose only asks for it once it is composing, which is
+         after seven megabytes of wasm have compiled - so the first frames drew boxes
+         and no text. Preloading starts it with the bundle instead of after it. Kept
+         relative: the app is served from /app/ locally and in production alike, and
+         `as="fetch"` because Compose reads the resource with fetch(), not as a CSS
+         font face - the wrong `as` would fetch the file a second time. -->
+    <link rel="preload" as="fetch" crossorigin
+          href="composeResources/com.personalmoney.resources/font/inter_variable.ttf">
+
+    <!-- AdSense. Both values are public - a publisher id appears in the source of every
+         page that carries AdSense - so they live here rather than in a secrets file, and
+         changing them does not mean rebuilding the wasm bundle.
+
+         Left empty deliberately: `BannerAd` draws nothing at all until both are filled in,
+         so an unconfigured build behaves exactly as it did before ads existed. To turn ads
+         on, paste the publisher id (ca-pub-…) and the ad unit's slot id below and
+         uncomment the loader script.
+
+         Consent is not a code problem here: enable the GDPR/CCPA message under Privacy &
+         messaging in the AdSense account and the loader serves it. Without that, ads must
+         not be shown to EEA or UK visitors at all. -->
+    <meta name="adsense-client" content="">
+    <meta name="adsense-slot" content="">
+    <!-- <script async crossorigin="anonymous"
+                 src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"></script> -->
     <style>
         /* `overflow: hidden` because the page itself must never scroll: Compose fills the
            viewport and scrolls inside its own containers. Without it the app sizes itself

@@ -70,11 +70,15 @@ fun Category.toResponse(baseDecimals: Int) = CategoryResponse(
 
 fun User.toResponse() = UserResponse(
     id = id,
+    uuid = uuid,
     email = email,
     firstName = firstName,
     lastName = lastName,
     role = role,
     emailVerified = emailVerified,
+    // Resolved, not copied: see the note on UserResponse.entitlement.
+    entitlement = if (isPremium()) Entitlement.PREMIUM else Entitlement.FREE,
+    entitlementExpiresAt = entitlementExpiresAt,
     baseCurrency = baseCurrency?.toResponse()
 )
 

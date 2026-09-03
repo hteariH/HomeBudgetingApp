@@ -3,7 +3,6 @@ package com.personalmoney
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,6 +21,7 @@ import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.security.BiometricGate
 import com.personalmoney.core.security.LockScreen
 import com.personalmoney.core.ui.theme.PersonalMoneyTheme
+import com.personalmoney.core.ui.theme.isDark
 import com.personalmoney.navigation.PersonalMoneyNavHost
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -49,12 +49,7 @@ class MainActivity : AppCompatActivity() {
             val themeMode by preferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
             val dynamicColor by preferences.dynamicColor.collectAsState(initial = false)
             val biometricLockEnabled by preferences.biometricLockEnabled.collectAsState(initial = false)
-            val systemDark = isSystemInDarkTheme()
-            val darkTheme = when (themeMode) {
-                ThemeMode.SYSTEM -> systemDark
-                ThemeMode.LIGHT -> false
-                ThemeMode.DARK -> true
-            }
+            val darkTheme = themeMode.isDark()
             var unlocked by remember { mutableStateOf(false) }
             var lockError by remember { mutableStateOf<String?>(null) }
             val locked = biometricLockEnabled && !unlocked

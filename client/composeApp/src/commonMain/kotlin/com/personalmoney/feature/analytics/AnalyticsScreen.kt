@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.personalmoney.core.ui.pageBarColors
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +59,7 @@ fun AnalyticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.analytics_title)) },
                 navigationIcon = {
                     if (onBack != null) {

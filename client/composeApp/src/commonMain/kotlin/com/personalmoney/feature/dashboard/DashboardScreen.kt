@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import com.personalmoney.core.ui.pageBarColors
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +85,7 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.dashboard_title)) }
             )
         }

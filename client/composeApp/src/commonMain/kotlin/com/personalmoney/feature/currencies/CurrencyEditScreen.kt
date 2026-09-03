@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.personalmoney.core.ui.pageBarColors
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -85,6 +86,7 @@ fun CurrencyEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = pageBarColors(),
                 title = {
                     Text(
                         if (state.isEditing) state.name.ifBlank { state.code }

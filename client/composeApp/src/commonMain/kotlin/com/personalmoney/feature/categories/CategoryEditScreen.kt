@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.personalmoney.core.ui.pageBarColors
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -90,6 +91,7 @@ fun CategoryEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = pageBarColors(),
                 title = {
                     Text(if (state.isEditing) stringResource(Res.string.action_edit)
                     else stringResource(Res.string.categories_new))

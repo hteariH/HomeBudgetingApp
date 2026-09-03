@@ -45,6 +45,18 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 400, error = "Bad Request", message = ex.message)
         )
 
+    /**
+     * A limit of the free plan, not a mistake in the request.
+     *
+     * 402 rather than 400 or 403 so a client can tell "this needs a subscription" from
+     * "this was malformed" and from "this is not yours" without matching on the message.
+     */
+    @ExceptionHandler(com.homebudget.app.service.PlanLimitException::class)
+    fun handlePlanLimit(ex: com.homebudget.app.service.PlanLimitException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(
+            ErrorResponse(status = 402, error = "Plan Limit Reached", message = ex.message)
+        )
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         val messages = ex.bindingResult.fieldErrors.joinToString("; ") {

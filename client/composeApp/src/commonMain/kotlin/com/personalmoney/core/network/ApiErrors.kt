@@ -25,6 +25,10 @@ private val errorJson = Json { ignoreUnknownKeys = true; isLenient = true }
 private val USER_FACING = setOf(
     HttpStatusCode.BadRequest,
     HttpStatusCode.NotFound,
+    // A limit of the free plan. The server's sentence names the limit and what to do about
+    // it, and without this the one refusal a user can actually act on is the one that comes
+    // back as a shrug.
+    HttpStatusCode.PaymentRequired,
     HttpStatusCode.UnprocessableEntity,
     HttpStatusCode.BadGateway,
 )

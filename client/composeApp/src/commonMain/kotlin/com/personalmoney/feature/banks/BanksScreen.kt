@@ -74,6 +74,7 @@ import com.personalmoney.core.ui.PickerOption
 import com.personalmoney.core.ui.components.MoneyText
 import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
 import com.personalmoney.feature.settings.rememberUrlOpener
+import com.personalmoney.core.ui.pageBarColors
 import com.personalmoney.resources.*
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.pluralStringResource
@@ -102,6 +103,7 @@ fun BanksScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.banks_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

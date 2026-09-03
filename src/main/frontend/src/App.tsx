@@ -1,81 +1,63 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import './index.css';
 import { I18nProvider } from './i18n';
 import { ThemeProvider } from './theme';
-import Sidebar from './components/Sidebar';
-import Header from './components/Header';
 import Landing from './pages/Landing';
-import Dashboard from './pages/Dashboard';
-import Accounts from './pages/Accounts';
-import Categories from './pages/Categories';
-import Transactions from './pages/Transactions';
-import Transfers from './pages/Transfers';
-import Currencies from './pages/Currencies';
-import Banks from './pages/Banks';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Login from './pages/Login';
 import Register from './pages/Register';
-
-const isAuthenticated = () => !!localStorage.getItem('token');
+import { APP_PATH } from './session';
 
 /**
- * The signed-in application: fixed sidebar, sticky header, routed page.
+ * Where the application's screens used to live in this shell.
  *
- * The sidebar is a permanent column on wide screens and an off-canvas drawer below
- * 900px (see the media query in index.css); this component only owns whether the
- * drawer is open.
+ * They are Compose screens at /app/ now, and their addresses are fragments of that one
+ * page. Bookmarks and links from before the move still exist, so each old path is
+ * forwarded to the screen it named rather than dumped on the dashboard. `/transfers` has
+ * no screen of its own any more - transfers became the third mode of the entry form.
  */
-const AppShell: React.FC = () => {
-    const [navOpen, setNavOpen] = useState(false);
-    const { pathname } = useLocation();
+const LEGACY_ROUTES: Record<string, string> = {
+    '/accounts': 'accounts',
+    '/transactions': 'transactions',
+    '/categories': 'categories',
+    '/currencies': 'currencies',
+    '/banks': 'banks',
+    '/transfers': 'quickadd?type=TRANSFER',
+};
 
-    // Following a link inside the drawer should reveal the page it led to, not leave
-    // the drawer sitting on top of it.
-    useEffect(() => setNavOpen(false), [pathname]);
+/** A hard navigation: /app/ is a separate document, not a route of this one. */
+const RedirectToApp: React.FC<{ fragment: string }> = ({ fragment }) => {
+    useEffect(() => {
+        window.location.replace(fragment ? `${APP_PATH}#${fragment}` : APP_PATH);
+    }, [fragment]);
 
-    return (
-        <div className="app-layout">
-            <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
-
-            <div className="main-content">
-                <Header onMenuToggle={() => setNavOpen(v => !v)} navOpen={navOpen} />
-
-                <main className="flex-1 pb-8">
-                    <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/accounts" element={<Accounts />} />
-                        <Route path="/transactions" element={<Transactions />} />
-                        <Route path="/transfers" element={<Transfers />} />
-                        <Route path="/categories" element={<Categories />} />
-                        <Route path="/currencies" element={<Currencies />} />
-                        <Route path="/banks" element={<Banks />} />
-                        {/* Any unknown signed-in path goes home rather than showing a blank shell. */}
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                </main>
-            </div>
-        </div>
-    );
+    return null;
 };
 
 /**
- * Decides what the root of the site is.
+ * What the root of the site is.
  *
- * `/` is the one path that means two different things: the marketing page to a
- * visitor who has never signed in, and the dashboard to someone who has. Any other
- * path still requires a token and otherwise redirects to sign-in.
+ * It used to mean two different things - the marketing page to a visitor, the dashboard to
+ * someone signed in. It means one thing now: this shell is the public site, and the
+ * application is somewhere else. A signed-in visitor still gets the landing page, with the
+ * sign-in button replaced by a way into the app; being signed in is not a reason to be
+ * denied the page describing the product.
+ *
+ * Anything unrecognised goes to the landing page rather than into the app, so a mistyped
+ * address does not cost a seven-megabyte download to say "not found".
  */
 const Root: React.FC = () => {
     const { pathname } = useLocation();
 
-    if (!isAuthenticated()) {
-        return pathname === '/' ? <Landing /> : <Navigate to="/login" replace />;
-    }
+    if (pathname === '/') return <Landing />;
 
-    return <AppShell />;
+    const fragment = LEGACY_ROUTES[pathname];
+    if (fragment !== undefined) return <RedirectToApp fragment={fragment} />;
+
+    return <Navigate to="/" replace />;
 };
 
 const App: React.FC = () => (

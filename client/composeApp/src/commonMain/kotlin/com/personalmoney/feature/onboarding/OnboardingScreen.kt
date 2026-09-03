@@ -35,6 +35,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.personalmoney.core.ui.PageContainer
+import com.personalmoney.core.ui.PageWidth
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -67,10 +69,17 @@ fun OnboardingScreen(
     }
 
     Scaffold { padding ->
+        // A phone-shaped wizard: title at the top, button under the thumb. Stretched across
+        // a browser window it put the heading against one edge and the button against both,
+        // which is the first thing a new account now sees on the web. Capping it to the form
+        // width is a no-op on a phone and makes it a wizard again in a browser.
+        PageContainer(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            maxWidth = PageWidth.Form,
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(24.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -147,6 +156,7 @@ fun OnboardingScreen(
                     }
                 }
             }
+        }
         }
     }
 }

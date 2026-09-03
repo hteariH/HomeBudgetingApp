@@ -27,7 +27,7 @@ This application helps users track their personal finances, including accounts, 
 - **Frontend:**
   - Language: TypeScript (React)
   - Framework: React 19
-  - UI Library: Tailwind CSS (implied), Lucide React, Recharts
+  - UI Library: Tailwind CSS (implied), Lucide React
   - Package Manager: npm
   - Version: Node.js v20.11.1, npm 10.2.4
 

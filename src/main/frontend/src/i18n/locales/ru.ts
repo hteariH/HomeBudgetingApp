@@ -117,6 +117,7 @@ export const ru: Locale = {
     'landing.nav.how': 'Как это работает',
     'landing.nav.faq': 'Вопросы',
     'landing.nav.signIn': 'Войти',
+    'landing.nav.openApp': 'Открыть приложение',
     'landing.nav.getStarted': 'Начать',
 
     'landing.hero.badge': 'Бюджет в нескольких валютах',

@@ -53,6 +53,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.core.ui.theme.Accent
+import com.personalmoney.core.ui.webChrome
 import com.personalmoney.core.ui.theme.AccentLight
 import com.personalmoney.core.ui.theme.LocalFinanceColors
 import com.personalmoney.core.ui.theme.PmButtonShape
@@ -92,7 +93,10 @@ fun AuthScreen(
             AuthBackdrop()
 
             Column(Modifier.fillMaxSize()) {
-                BrandRow()
+                // The site header already carries the wordmark on the web, and drawing both
+                // put it on the page twice. This row exists for the platforms where sign-in
+                // has no shell around it at all.
+                if (!webChrome) BrandRow()
 
                 Column(
                     modifier = Modifier

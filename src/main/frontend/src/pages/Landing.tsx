@@ -7,11 +7,14 @@ import {
 import { useT } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import ThemeToggle from '../components/ThemeToggle';
+import { APP_PATH, hasSession } from '../session';
 
 /**
  * The public front page - what a first-time visitor lands on at `/`.
  *
- * Deliberately self-contained: no API calls, no auth state, no charting library.
+ * Deliberately self-contained: no API calls and no charting library. The one thing it
+ * does ask about the visitor is whether a session already exists, so the header can
+ * offer the app instead of a sign-in form.
  * The product preview is a hand-built mock rather than a screenshot so it follows
  * the live theme tokens and stays correct in both light and dark mode, and so it
  * never goes stale against a UI screenshot nobody remembers to retake.
@@ -45,6 +48,9 @@ const MOCK_CATEGORIES = [
 
 const Landing: React.FC = () => {
     const t = useT();
+    // Read once at mount rather than watched: localStorage cannot change under a page that
+    // is not doing the changing, and the only thing this decides is which button to draw.
+    const signedIn = hasSession();
 
     return (
         <div className="min-h-screen bg-base text-ink overflow-x-hidden [scroll-behavior:smooth]">
@@ -70,12 +76,23 @@ const Landing: React.FC = () => {
                     <div className="flex items-center gap-2">
                         <LanguageSwitcher />
                         <ThemeToggle />
-                        <Link to="/login" className="btn btn-ghost btn-sm hidden sm:inline-flex">
-                            {t('landing.nav.signIn')}
-                        </Link>
-                        <Link to="/register" className="btn btn-primary btn-sm">
-                            {t('landing.nav.getStarted')}
-                        </Link>
+                        {signedIn ? (
+                            // Already signed in: the useful button is the one that opens the
+                            // app, not one that offers an account they already have. A plain
+                            // anchor - /app/ is a separate document, not a route of this one.
+                            <a href={APP_PATH} className="btn btn-primary btn-sm">
+                                {t('landing.nav.openApp')}
+                            </a>
+                        ) : (
+                            <>
+                                <Link to="/login" className="btn btn-ghost btn-sm hidden sm:inline-flex">
+                                    {t('landing.nav.signIn')}
+                                </Link>
+                                <Link to="/register" className="btn btn-primary btn-sm">
+                                    {t('landing.nav.getStarted')}
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
@@ -108,13 +125,22 @@ const Landing: React.FC = () => {
                         </p>
 
                         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                            {signedIn ? (
+                                <a href={APP_PATH} className="btn btn-primary btn-lg w-full shadow-glow sm:w-auto">
+                                    {t('landing.nav.openApp')}
+                                    <ArrowRight size={17} />
+                                </a>
+                            ) : (
                             <Link to="/register" className="btn btn-primary btn-lg w-full shadow-glow sm:w-auto">
                                 {t('landing.hero.ctaPrimary')}
                                 <ArrowRight size={17} />
                             </Link>
-                            <Link to="/login" className="btn btn-ghost btn-lg w-full sm:w-auto">
-                                {t('landing.hero.ctaSecondary')}
-                            </Link>
+                            )}
+                            {!signedIn && (
+                                <Link to="/login" className="btn btn-ghost btn-lg w-full sm:w-auto">
+                                    {t('landing.hero.ctaSecondary')}
+                                </Link>
+                            )}
                         </div>
 
                         <p className="mt-5 text-[13px] text-ink-dim">{t('landing.hero.note')}</p>
@@ -320,10 +346,17 @@ const Landing: React.FC = () => {
                     />
                     <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t('landing.cta.title')}</h2>
                     <p className="mx-auto mt-4 max-w-xl text-base text-ink-soft">{t('landing.cta.body')}</p>
+                    {signedIn ? (
+                        <a href={APP_PATH} className="btn btn-primary btn-lg mt-8 shadow-glow">
+                            {t('landing.nav.openApp')}
+                            <ArrowRight size={17} />
+                        </a>
+                    ) : (
                     <Link to="/register" className="btn btn-primary btn-lg mt-8 shadow-glow">
                         {t('landing.cta.button')}
                         <ArrowRight size={17} />
                     </Link>
+                    )}
                 </div>
             </section>
 

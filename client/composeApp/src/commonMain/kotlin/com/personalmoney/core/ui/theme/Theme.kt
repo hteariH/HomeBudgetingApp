@@ -12,6 +12,22 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.personalmoney.core.data.ThemeMode
+
+/**
+ * What [ThemeMode] means in pixels, in one place.
+ *
+ * Three callers need this answer and would otherwise each spell out the same `when`: the
+ * Android activity and the web entry point, which pick the colour scheme, and the header's
+ * theme switch, which has to know what it is switching *away from* - a toggle offering
+ * "switch to dark" while the window is already dark is worse than no toggle.
+ */
+@Composable
+fun ThemeMode.isDark(): Boolean = when (this) {
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+}
 
 /**
  * The web app's four surface layers, mapped onto Material's slots.

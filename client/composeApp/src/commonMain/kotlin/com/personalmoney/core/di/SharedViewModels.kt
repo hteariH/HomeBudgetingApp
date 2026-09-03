@@ -14,6 +14,7 @@ import com.personalmoney.feature.dashboard.DashboardViewModel
 import com.personalmoney.feature.onboarding.OnboardingViewModel
 import com.personalmoney.feature.quickadd.QuickAddViewModel
 import com.personalmoney.feature.settings.SettingsViewModel
+import com.personalmoney.feature.shell.AppShellViewModel
 import com.personalmoney.feature.subscriptions.SubscriptionEditViewModel
 import com.personalmoney.feature.subscriptions.SubscriptionsViewModel
 import com.personalmoney.feature.transactions.TransactionEditViewModel
@@ -34,6 +35,7 @@ val sharedViewModelModule = module {
     // Shared, because the overview writes it and the ledger reads it.
     single { LedgerFilterRequest() }
 
+    viewModelOf(::AppShellViewModel)
     viewModelOf(::AccountEditViewModel)
     viewModelOf(::AccountPickerViewModel)
     viewModelOf(::AccountsViewModel)
