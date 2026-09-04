@@ -25,12 +25,22 @@ val DarkHover = Color(0xFF252B3B)
 val DarkBorder = Color(0xFF2D3448)
 val DarkBorderLight = Color(0xFF3A4260)
 
-val LightBase = Color(0xFFF8FAFC)
+// Light stacks the other way. On a dark page a raised layer is lighter; on a light page it
+// can only be whiter, and white is the ceiling - so the light ladder is built *downwards*
+// from the card: the page is a tinted step below white and hover a step below that. The
+// first version of it kept the page at #F8FAFC under white cards, 1.05:1 apart, which is a
+// difference no screen actually draws - every card, sheet and dialog dissolved into the
+// page and the whole theme read as one flat sheet of white. These values put the page
+// 1.20:1 below a card, the same separation the dark theme has (1.22:1).
+val LightBase = Color(0xFFE6EBF3)
 val LightSurface = Color(0xFFFFFFFF)
 val LightCard = Color(0xFFFFFFFF)
-val LightHover = Color(0xFFF1F5F9)
-val LightBorder = Color(0xFFE2E8F0)
-val LightBorderLight = Color(0xFFCBD5E1)
+val LightHover = Color(0xFFD4DDE9)
+// Borders carry more here than in dark, because they are the only hard edge a white card
+// has. #E2E8F0 on white is 1.23:1 - present in a mockup, gone on a laptop screen at an
+// angle. These are 1.62:1 and 2.56:1.
+val LightBorder = Color(0xFFC3CCDA)
+val LightBorderLight = Color(0xFF94A3B8)
 
 // ── Text ─────────────────────────────────────────────────────────────────────
 // Three steps, and the third has no Material slot - see FinanceSemanticColors.muted.
@@ -40,7 +50,10 @@ val DarkTextMuted = Color(0xFF555D7C)
 
 val LightTextPrimary = Color(0xFF0F172A)
 val LightTextSecondary = Color(0xFF475569)
-val LightTextMuted = Color(0xFF64748B)
+// A step darker than the web app's old #64748B, which was 4.76:1 on white and dropped under
+// AA the moment the same text landed on a hover row or a tinted panel. This clears 4.5:1 on
+// every light surface in the palette.
+val LightTextMuted = Color(0xFF5A6779)
 
 // ── Accent ───────────────────────────────────────────────────────────────────
 // Indigo 500/400/600. The light step carries the accent on dark surfaces, where the
@@ -59,19 +72,22 @@ val StatusPurple = Color(0xFFA855F7)
 /**
  * Income and expense, per theme.
  *
- * The dark pair is the web app's `--green` and `--red` exactly. The light pair is one
- * step darker on the same hues, and that is a deliberate departure: as *text* on a white
- * card, `#10B981` sits at 2.47:1 contrast, which is not readable. The darker steps clear
- * 3:1 and improve colour-blind separation as well (ΔE 8.6 against 8.1 under deuteranopia),
- * so nothing is lost by it.
+ * The dark pair is the web app's `--green` and `--red` exactly. The light pair is darker on
+ * the same hues, and that is a deliberate departure: as *text* on a white card, `#10B981`
+ * sits at 2.47:1 contrast, which is not readable. Two steps down rather than one, because
+ * one was only enough against pure white - `#059669` is 3.77:1 on a card but 3.15:1 on the
+ * page, and an amount is body text, not a chart fill. These clear AA on both: income 5.48:1
+ * on a card and 4.58:1 on the page, expense 5.74:1 and 4.79:1.
  *
- * Both pairs clear the ΔE 8 floor for deuteranopia, which the previous Material-derived
- * palette did not - it sat at 4.9 and needed position and a legend to carry the meaning.
+ * Darkening does not cost colour-blind separation - the new light pair separates slightly
+ * better under deuteranopia than the old one did, and both pairs stay well clear of the
+ * floor the previous Material-derived palette missed, where red and green sat close enough
+ * that position and a legend had to carry the meaning.
  */
 val IncomeGreenDark = Color(0xFF10B981)
 val ExpenseRedDark = Color(0xFFEF4444)
-val IncomeGreenLight = Color(0xFF059669)
-val ExpenseRedLight = Color(0xFFDC2626)
+val IncomeGreenLight = Color(0xFF047857)
+val ExpenseRedLight = Color(0xFFC81E1E)
 
 /**
  * Transfers: neither income nor expense, so a third hue - and a measured one.

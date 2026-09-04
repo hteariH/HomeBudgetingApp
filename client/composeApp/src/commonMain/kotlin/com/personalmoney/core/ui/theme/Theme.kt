@@ -72,20 +72,33 @@ private val DarkColors = darkColorScheme(
     outlineVariant = DarkBorder,
 )
 
+/**
+ * The same mapping in light, with the accent one step down.
+ *
+ * `Accent` is the indigo the dark theme uses, and it is the right one there: on a near-black
+ * card it is the brightest thing on screen. On white it is 4.47:1, which is under AA and
+ * reads as a pastel - a filled button in white text that looks disabled next to the same
+ * button in dark mode. `AccentDark` is 6.29:1 and is the same indigo the web app's light
+ * mode uses, so the two clients still show one accent.
+ */
 private val LightColors = lightColorScheme(
-    primary = Accent,
+    primary = AccentDark,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFE0E7FF),
-    onPrimaryContainer = AccentDark,
-    secondary = AccentDark,
+    // Material would put a pale indigo tint here, and that is what this used to be: #E0E7FF,
+    // which against the page is 1.04:1. Everything built on this slot - the balance hero, the
+    // FAB, a selected chip - is the loudest thing on its screen in dark and vanished in
+    // light. It is the same fill as dark now, so a hero is a hero in both.
+    primaryContainer = AccentDark,
+    onPrimaryContainer = Color.White,
+    secondary = Accent,
     onSecondary = Color.White,
     secondaryContainer = LightHover,
     onSecondaryContainer = LightTextPrimary,
-    tertiary = Color(0xFF0891B2),
+    tertiary = Color(0xFF0E7490),
     onTertiary = Color.White,
     tertiaryContainer = LightHover,
     onTertiaryContainer = LightTextPrimary,
-    error = Color(0xFFDC2626),
+    error = ExpenseRedLight,
     onError = Color.White,
     errorContainer = Color(0xFFFEE2E2),
     onErrorContainer = Color(0xFF991B1B),
@@ -95,11 +108,14 @@ private val LightColors = lightColorScheme(
     onSurface = LightTextPrimary,
     surfaceVariant = LightHover,
     onSurfaceVariant = LightTextSecondary,
+    // Light's ladder runs the other way - a container is *whiter* than the page it sits on,
+    // so the "low" end is white and the steps go down into the tinted greys, mirroring dark
+    // rather than copying its ordering.
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = LightBase,
+    surfaceContainerLow = LightSurface,
     surfaceContainer = LightCard,
     surfaceContainerHigh = LightHover,
-    surfaceContainerHighest = LightHover,
+    surfaceContainerHighest = LightBorder,
     outline = LightBorderLight,
     outlineVariant = LightBorder,
 )
