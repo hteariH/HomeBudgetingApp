@@ -126,29 +126,6 @@ fun SettingsScreen(
 
             DynamicColorSection(viewModel, state.dynamicColor)
 
-            // Numpad layout
-            SectionLabel(stringResource(Res.string.settings_numpad_layout))
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = !state.numpadPhoneLayout,
-                        onClick = { viewModel.setNumpadPhoneLayout(false) },
-                        label = { Text(stringResource(Res.string.settings_numpad_calc)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = state.numpadPhoneLayout,
-                        onClick = { viewModel.setNumpadPhoneLayout(true) },
-                        label = { Text(stringResource(Res.string.settings_numpad_phone)) }
-                    )
-                }
-            }
-
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             // Each of these draws its own trailing divider, and draws nothing at all on a

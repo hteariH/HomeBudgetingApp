@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 /**
  * The parts of Settings that only some platforms have.
  *
- * The rest of the screen - currency, theme, numpad layout, language - is the same
+ * The rest of the screen - currency, theme, theme, language - is the same
  * everywhere and lives in [SettingsScreen]. These three are not, and each is absent from
  * the web for a different and specific reason, so they are separate declarations rather
  * than one "platform extras" block: the reader should be able to see which capability is

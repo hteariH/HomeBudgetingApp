@@ -13,13 +13,6 @@
     <string name="action_back">Назад</string>
     <string name="action_duplicate">Дублировать</string>
 
-    <string name="a11y_plus">Плюс</string>
-    <string name="a11y_minus">Минус</string>
-    <string name="a11y_multiply">Умножить</string>
-    <string name="a11y_divide">Разделить</string>
-    <string name="a11y_decimal">Десятичная точка</string>
-    <string name="a11y_backspace">Стереть</string>
-    <string name="a11y_done">Готово</string>
     <string name="a11y_swap_accounts">Поменять счета местами</string>
     <string name="a11y_increase">Увеличить</string>
     <string name="a11y_decrease">Уменьшить</string>
@@ -61,6 +54,9 @@
     <string name="quickadd_no_account">Счёт не выбран</string>
     <string name="quickadd_invalid_amount">Введите сумму</string>
     <string name="quickadd_calc_error">Неверное выражение</string>
+    <string name="quickadd_scan_receipt">Сканировать чек</string>
+    <string name="quickadd_scan_nothing_found">На фото нечего распознать</string>
+    <string name="quickadd_scan_failed">Не удалось отсканировать чек</string>
 
     <string name="accounts_title">Счета</string>
     <string name="account_picker_title">Выберите счёт</string>
@@ -104,6 +100,7 @@
     <string name="transfer_amount_to">Сумма (зачисление)</string>
     <string name="transfer_rate">Курс</string>
     <string name="transfer_fee">Комиссия</string>
+    <string name="transfer_amount_received">Сумма зачисления</string>
     <string name="transfer_same_account">Счета должны отличаться</string>
     <string name="transfer_invalid_source">Введите корректную сумму списания</string>
     <string name="transfer_invalid_destination">Введите корректную сумму зачисления</string>
@@ -199,9 +196,6 @@
     <string name="lang_russian">Русский</string>
     <string name="lang_ukrainian">Українська</string>
 
-    <string name="settings_numpad_layout">Раскладка клавиатуры</string>
-    <string name="settings_numpad_calc">Калькулятор (7–8–9)</string>
-    <string name="settings_numpad_phone">Телефон (1–2–3)</string>
 
     <string name="settings_privacy_policy">Политика конфиденциальности</string>
     <string name="settings_open_source_licenses">Open Source лицензии</string>

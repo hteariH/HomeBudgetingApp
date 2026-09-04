@@ -75,6 +75,25 @@
         </provider>
 
         <!--
+            Hands the camera app a uri to write the receipt photo into. Needed because the
+            scanner shoots at full resolution (ActivityResultContracts.TakePicture), which
+            writes to a uri we provide; the thumbnail contract needs no provider and is far
+            too small for OCR to read a price off.
+
+            No CAMERA permission goes with this: ACTION_IMAGE_CAPTURE is served by the
+            camera app, not by this process.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/receipt_paths" />
+        </provider>
+
+        <!--
             AppCompat per-app locale storage. On API 33+ Android handles it natively
             (and this service is no-op). On API < 33 the AppCompat library persists the
             locale selection so it survives process restarts.

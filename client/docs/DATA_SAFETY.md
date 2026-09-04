@@ -61,6 +61,8 @@ None directly. **Do not check any boxes here.**
 
 (Files & docs, Audio, Photos & videos, Messages, Contacts, Calendar, Health & fitness, Web browsing history) — **leave unchecked**. The app does not access any of these.
 
+> **Receipt scanning does not change this.** The photo is taken by the system camera app through `ACTION_IMAGE_CAPTURE` (so the app declares no `CAMERA` permission and reads no photo library), recognised on-device by Tesseract with language data bundled in the APK, and deleted from the cache as soon as it has been read. No network call is involved at any point. Nothing about the image leaves the device, so Play's definition of "collected" is not met and **Photos & videos stays unchecked**.
+
 ---
 
 ## Section 3 — Security practices
@@ -89,7 +91,8 @@ Re-do this checklist whenever you:
 - start sending user data to your own backend,
 - enable Crashlytics or any other crash collector,
 - add user authentication (account creation, sign-in),
-- expand permissions (location, contacts, files outside SAF, etc.).
+- expand permissions (location, contacts, files outside SAF, etc.),
+- start retaining or uploading receipt images rather than deleting them after recognition.
 
 ---
 
@@ -102,3 +105,4 @@ Re-do this checklist whenever you:
 | Local Room database (accounts, transactions, etc.) | Not "collected" by Play's definition (stays on device) — no declaration needed |
 | Local biometric prompt | Not user data — no declaration needed |
 | Local backup file via SAF | Not collection — the user chooses where to save the file |
+| Receipt scan (camera → on-device Tesseract → deleted) | Not collection — the image never leaves the device and is not retained |

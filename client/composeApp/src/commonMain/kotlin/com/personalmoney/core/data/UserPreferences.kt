@@ -43,8 +43,6 @@ class UserPreferences(private val store: KeyValueStore) {
         store.observeBoolean(Keys.ADS_CONSENT_OBTAINED).map { it ?: false }
     val biometricLockEnabled: Flow<Boolean> =
         store.observeBoolean(Keys.BIOMETRIC_LOCK_ENABLED).map { it ?: false }
-    val numpadPhoneLayout: Flow<Boolean> =
-        store.observeBoolean(Keys.NUMPAD_PHONE_LAYOUT).map { it ?: false }
     val syncCursor: Flow<String> = store.observeString(Keys.SYNC_CURSOR).map { it ?: "" }
     val syncLastOkMs: Flow<Long> = store.observeLong(Keys.SYNC_LAST_OK_MS).map { it ?: 0L }
 
@@ -73,8 +71,6 @@ class UserPreferences(private val store: KeyValueStore) {
     suspend fun setBiometricLockEnabled(value: Boolean) =
         store.putBoolean(Keys.BIOMETRIC_LOCK_ENABLED, value)
 
-    suspend fun setNumpadPhoneLayout(value: Boolean) =
-        store.putBoolean(Keys.NUMPAD_PHONE_LAYOUT, value)
 
     suspend fun setSyncCursor(cursor: String) = store.putString(Keys.SYNC_CURSOR, cursor)
 
@@ -99,7 +95,6 @@ internal object PreferenceKeys {
     const val TRANSACTION_SAVE_COUNT = "transaction_save_count"
     const val ADS_CONSENT_OBTAINED = "ads_consent_obtained"
     const val BIOMETRIC_LOCK_ENABLED = "biometric_lock_enabled"
-    const val NUMPAD_PHONE_LAYOUT = "numpad_phone_layout"
 
     // Server-issued cursor for the last successful sync pull. Kept as the exact string
     // the server sent rather than a parsed instant, so no local clock or formatting quirk

@@ -13,13 +13,6 @@
     <string name="action_back">Назад</string>
     <string name="action_duplicate">Дублювати</string>
 
-    <string name="a11y_plus">Плюс</string>
-    <string name="a11y_minus">Мінус</string>
-    <string name="a11y_multiply">Помножити</string>
-    <string name="a11y_divide">Поділити</string>
-    <string name="a11y_decimal">Десяткова крапка</string>
-    <string name="a11y_backspace">Стерти</string>
-    <string name="a11y_done">Готово</string>
     <string name="a11y_swap_accounts">Поміняти рахунки місцями</string>
     <string name="a11y_increase">Збільшити</string>
     <string name="a11y_decrease">Зменшити</string>
@@ -61,6 +54,9 @@
     <string name="quickadd_no_account">Рахунок не обрано</string>
     <string name="quickadd_invalid_amount">Введіть суму</string>
     <string name="quickadd_calc_error">Невірний вираз</string>
+    <string name="quickadd_scan_receipt">Сканувати чек</string>
+    <string name="quickadd_scan_nothing_found">На фото нічого розпізнати</string>
+    <string name="quickadd_scan_failed">Не вдалося відсканувати чек</string>
 
     <string name="accounts_title">Рахунки</string>
     <string name="account_picker_title">Виберіть рахунок</string>
@@ -104,6 +100,7 @@
     <string name="transfer_amount_to">Сума (зарахування)</string>
     <string name="transfer_rate">Курс</string>
     <string name="transfer_fee">Комісія</string>
+    <string name="transfer_amount_received">Сума зарахування</string>
     <string name="transfer_same_account">Рахунки мають відрізнятися</string>
     <string name="transfer_invalid_source">Введіть коректну суму списання</string>
     <string name="transfer_invalid_destination">Введіть коректну суму зарахування</string>
@@ -199,9 +196,6 @@
     <string name="lang_russian">Русский</string>
     <string name="lang_ukrainian">Українська</string>
 
-    <string name="settings_numpad_layout">Розкладка клавіатури</string>
-    <string name="settings_numpad_calc">Калькулятор (7–8–9)</string>
-    <string name="settings_numpad_phone">Телефон (1–2–3)</string>
 
     <string name="settings_privacy_policy">Політика конфіденційності</string>
     <string name="settings_open_source_licenses">Open Source ліцензії</string>

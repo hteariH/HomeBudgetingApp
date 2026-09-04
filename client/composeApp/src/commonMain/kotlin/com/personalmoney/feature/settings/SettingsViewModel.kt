@@ -19,7 +19,6 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
     val biometricLockEnabled: Boolean = false,
-    val numpadPhoneLayout: Boolean = false,
     val currencies: List<Currency> = emptyList(),
     val message: String? = null
 )
@@ -41,8 +40,8 @@ class SettingsViewModel(
         combine(preferences.baseCurrency, preferences.themeMode, preferences.dynamicColor) { base, theme, dynamic ->
             Triple(base, theme, dynamic)
         },
-        combine(preferences.biometricLockEnabled, preferences.numpadPhoneLayout, currencyRepository.observeAll()) { biometric, phoneLayout, currencies ->
-            Triple(biometric, phoneLayout, currencies)
+        combine(preferences.biometricLockEnabled, currencyRepository.observeAll()) { biometric, currencies ->
+            biometric to currencies
         }
     ) { abc, def ->
         SettingsUiState(
@@ -50,8 +49,7 @@ class SettingsViewModel(
             themeMode = abc.second,
             dynamicColor = abc.third,
             biometricLockEnabled = def.first,
-            numpadPhoneLayout = def.second,
-            currencies = def.third
+            currencies = def.second
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -69,9 +67,5 @@ class SettingsViewModel(
 
     fun setBiometricLockEnabled(value: Boolean) {
         viewModelScope.launch { preferences.setBiometricLockEnabled(value) }
-    }
-
-    fun setNumpadPhoneLayout(value: Boolean) {
-        viewModelScope.launch { preferences.setNumpadPhoneLayout(value) }
     }
 }

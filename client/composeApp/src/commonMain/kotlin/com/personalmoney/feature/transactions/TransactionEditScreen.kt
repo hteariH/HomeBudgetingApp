@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -49,9 +51,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.domain.TransactionType
-import com.personalmoney.core.ui.components.AmountDisplay
+import com.personalmoney.core.ui.components.AmountField
 import com.personalmoney.core.ui.components.CategoryChip
-import com.personalmoney.core.ui.components.Numpad
+import com.personalmoney.core.ui.theme.PmButtonShape
 import com.personalmoney.feature.quickadd.components.AccountPickerSheet
 import com.personalmoney.feature.quickadd.components.DatePickerDialogWrapper
 import com.personalmoney.feature.quickadd.components.SelectedAccountBar
@@ -152,7 +154,8 @@ fun TransactionEditScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(padding),
+                .padding(padding)
+                .imePadding(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (state.isTransfer) {
@@ -192,14 +195,18 @@ fun TransactionEditScreen(
                     onClick = { showAccountSheet = true }
                 )
 
-                // Amount display
                 val currencySymbol = state.currencyCode?.let {
                     (CurrencyRegistry.symbolFor(it) ?: it)
                 } ?: ""
-                AmountDisplay(
+                // Not focused on open, unlike the quick-add screen: an edit usually starts
+                // from wanting to change the category or the date, and throwing the keyboard
+                // up would cover both.
+                AmountField(
                     expression = state.expression,
+                    onExpressionChange = viewModel::setAmountText,
                     currencySymbol = currencySymbol,
                     previewResult = state.previewResult,
+                    onImeAction = { if (state.canSave) viewModel.save() },
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 
@@ -236,27 +243,18 @@ fun TransactionEditScreen(
                 )
             }
 
-            if (!state.isTransfer) {
-                HorizontalDivider(Modifier.padding(top = 4.dp))
-                val numpadPhoneLayout by viewModel.numpadPhoneLayout.collectAsStateWithLifecycle()
-                Numpad(
-                    onKey = viewModel::onKey,
-                    doneEnabled = state.canSave,
-                    decimalSeparator = ".",
-                    phoneLayout = numpadPhoneLayout
-                )
-            } else {
-                // Transfer: just a save button for note/date
-                HorizontalDivider(Modifier.padding(top = 4.dp))
-                TextButton(
-                    onClick = viewModel::save,
-                    enabled = state.canSave,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(stringResource(Res.string.action_save))
-                }
+            // One save button for both cases now. A transfer row has always been
+            // note-and-date only; with the numpad gone the editable case ends the same way.
+            HorizontalDivider(Modifier.padding(top = 4.dp))
+            Button(
+                onClick = viewModel::save,
+                enabled = state.canSave,
+                shape = PmButtonShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(stringResource(Res.string.action_save))
             }
         }
 

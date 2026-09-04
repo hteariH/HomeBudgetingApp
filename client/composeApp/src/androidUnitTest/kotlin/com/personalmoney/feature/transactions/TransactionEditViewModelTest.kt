@@ -28,7 +28,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import com.personalmoney.core.calc.NumpadKey
 
 @Suppress("LargeClass")
 class TransactionEditViewModelTest {
@@ -85,7 +84,6 @@ class TransactionEditViewModelTest {
         every { accountRepository.observeActive() } returns flowOf(listOf(testAccount))
         every { categoryRepository.observeByType(CategoryType.EXPENSE) } returns flowOf(listOf(testCategory))
         every { categoryRepository.observeByType(CategoryType.INCOME) } returns flowOf(emptyList())
-        every { userPreferences.numpadPhoneLayout } returns flowOf(false)
         coEvery { accountRepository.findById(1L) } returns testAccount
         coEvery { transactionRepository.update(any()) } just Runs
         coEvery { transactionRepository.delete(any()) } just Runs
@@ -203,11 +201,11 @@ class TransactionEditViewModelTest {
     // ── Expression input ─────────────────────────────────────────────────────
 
     @Test
-    fun `onKey digit appends to expression`() = runTest {
+    fun `typing replaces the expression`() = runTest {
         val vm = createViewModel()
         vm.uiState.test {
             awaitItem() // "15"
-            vm.onKey(NumpadKey.DIGIT_9)
+            vm.setAmountText("159")
             val state = awaitItem()
             assertEquals("159", state.expression)
             cancelAndIgnoreRemainingEvents()
@@ -215,60 +213,40 @@ class TransactionEditViewModelTest {
     }
 
     @Test
-    fun `onKey backspace removes last char`() = runTest {
+    fun `clearing the field leaves an empty expression`() = runTest {
         val vm = createViewModel()
         vm.uiState.test {
             awaitItem() // "15"
-            vm.onKey(NumpadKey.BACKSPACE)
+            vm.setAmountText("")
             val state = awaitItem()
-            assertEquals("1", state.expression)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `onKey backspace on single char leaves empty`() = runTest {
-        // Expression is derived from accountAmountMinor, so set both. $1.00 → "1"
-        val vm = createViewModel(
-            testTransaction.copy(amountMinor = 100L, accountAmountMinor = 100L)
-        )
-        coEvery { accountRepository.findById(1L) } returns testAccount
-
-        vm.uiState.test {
-            var state = awaitItem()
-            while (state.expression != "1") state = awaitItem() // drain to loaded
-            vm.onKey(NumpadKey.BACKSPACE)
-            while (state.expression != "") state = awaitItem()
             assertEquals("", state.expression)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `onKey adds operator correctly`() = runTest {
+    fun `typed text is sanitized on the way in`() = runTest {
         val vm = createViewModel()
         vm.uiState.test {
             awaitItem() // "15"
-            vm.onKey(NumpadKey.PLUS)
-            vm.onKey(NumpadKey.DIGIT_5)
-            // Flush intermediate
+            vm.setAmountText("1a5.2.7")
             var state = awaitItem()
-            while (state.expression != "15+5") state = awaitItem()
-            assertEquals("15+5", state.expression)
+            while (state.expression != "15.27") state = awaitItem()
+            assertEquals("15.27", state.expression)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
     fun `expression with operator shows preview result`() = runTest {
+        // No key produces an operator any more, but a paste can, and the preview line is
+        // what tells the user which number is about to be saved.
         val vm = createViewModel()
         vm.uiState.test {
             awaitItem() // "15"
-            vm.onKey(NumpadKey.PLUS)
-            vm.onKey(NumpadKey.DIGIT_5)
+            vm.setAmountText("15+5")
             var state = awaitItem()
             while (state.expression != "15+5") state = awaitItem()
-            // "15+5" should show preview "20.00"
             assertEquals("20.00", state.previewResult)
             cancelAndIgnoreRemainingEvents()
         }
@@ -384,12 +362,12 @@ class TransactionEditViewModelTest {
     }
 
     @Test
-    fun `onKey is ignored for transfer`() = runTest {
+    fun `typing is ignored for transfer`() = runTest {
         val vm = createViewModel(transferTransaction)
         vm.uiState.test {
             val initialState = awaitItem()
             val initialExpression = initialState.expression
-            vm.onKey(NumpadKey.DIGIT_5)
+            vm.setAmountText("5")
             // No new emission should be triggered
             expectNoEvents()
             assertEquals(initialExpression, vm.uiState.value.expression)

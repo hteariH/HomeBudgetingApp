@@ -31,7 +31,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
-import com.personalmoney.core.calc.NumpadKey
 import com.personalmoney.core.domain.toMinorUnits
 
 data class QuickAddUiState(
@@ -138,9 +137,6 @@ class QuickAddViewModel constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), QuickAddUiState(type = initialType))
 
-    val numpadPhoneLayout: StateFlow<Boolean> = userPreferences.numpadPhoneLayout
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-
     init {
         // Resolve default account on first run.
         viewModelScope.launch {
@@ -157,29 +153,16 @@ class QuickAddViewModel constructor(
         }
     }
 
-    fun onKey(key: NumpadKey) {
-        when (key) {
-            NumpadKey.BACKSPACE -> expressionFlow.update { it.dropLast(1) }
-            NumpadKey.DONE -> save()
-            else -> appendKey(key)
-        }
-    }
-
-    private fun appendKey(key: NumpadKey) {
-        expressionFlow.update { ExpressionInput.append(it, key) }
-    }
-
     /**
-     * Types the amount directly, for the keyboard entry the web uses instead of the numpad.
-     *
-     * Same expression string the numpad builds, so both paths get the same evaluation and
-     * the same operators - a desktop user can still type `12+3.40`.
+     * The one way an amount is entered, on every platform: what the keyboard typed, cleaned
+     * up. The phone used to build this string a numpad key at a time; now the phone and the
+     * browser take the same path, and there is one behaviour to reason about instead of two.
      */
     fun setAmountText(value: String) {
-        expressionFlow.value = value.filter { it.isDigit() || it in "+-*/.," }
+        expressionFlow.value = ExpressionInput.sanitize(value)
     }
 
-    /** Saves from a form, where there is no numpad key to stand for "done". */
+    /** Saves from the button, or from the keyboard's own Done action. */
     fun submit() = save()
 
     fun selectAccount(account: Account) {

@@ -54,11 +54,11 @@ import org.koin.compose.viewmodel.koinViewModel
 /**
  * Entering a transaction without leaving the page.
  *
- * The phone flow is a full screen with a numpad, which is right for a thumb and wrong for a
- * keyboard: on a desktop the fields are all visible at once and tabbing between them is
- * faster than any custom keypad. So this is the same view models and the same validation,
- * in the shape a wide window wants - the difference is the input device, not the feature,
- * which is why it is chosen by window width rather than by platform.
+ * The phone flow is a full screen built around one oversized amount, which is right for a
+ * thumb and wrong for a desk: on a desktop the fields are all visible at once and tabbing
+ * between them beats a screen you have to scroll. So this is the same view models and the
+ * same validation, in the shape a wide window wants - the difference is the layout, not the
+ * feature, which is why it is chosen by window width rather than by platform.
  *
  * All three kinds of entry, because a transfer between your own accounts is one of them and
  * hiding it behind a different screen made it look like something rarer than it is. Expense
@@ -66,8 +66,8 @@ import org.koin.compose.viewmodel.koinViewModel
  * rules - two accounts, an optional fee, a rate when the currencies differ - so it keeps its
  * own [TransferViewModel], exactly as the phone screen does.
  *
- * The amount goes through the same expression string the numpad builds, so `12+3.40` works
- * here too.
+ * Both shapes type the amount into the same `setAmountText`, so there is one input path to
+ * reason about rather than one per platform.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable

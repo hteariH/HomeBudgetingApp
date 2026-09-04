@@ -24,14 +24,10 @@ import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
-import com.personalmoney.core.calc.NumpadKey
 import com.personalmoney.core.domain.toMinorUnits
 import com.personalmoney.core.domain.roundTo
 import com.personalmoney.core.domain.toTrimmedString
 import com.personalmoney.core.domain.toFixedString
-
-/** Which transfer amount field the numpad currently edits. */
-enum class TransferAmountField { FROM, TO, FEE }
 
 data class TransferUiState(
     val accounts: List<Account> = emptyList(),
@@ -101,43 +97,20 @@ class TransferViewModel constructor(
     }
 
     fun setAmountFrom(value: String) {
-        internalState.update { it.copy(amountFrom = value) }
+        internalState.update { it.copy(amountFrom = ExpressionInput.sanitize(value)) }
         recomputeDestination()
     }
 
-    fun setAmountTo(value: String) = internalState.update { it.copy(amountTo = value, amountToEdited = true) }
-    fun setFee(value: String) = internalState.update { it.copy(feeFrom = value) }
+    /** Typing here is what makes the destination manual, so the FX rate stops overwriting it. */
+    fun setAmountTo(value: String) = internalState.update {
+        it.copy(amountTo = ExpressionInput.sanitize(value), amountToEdited = true)
+    }
+
+    fun setFee(value: String) = internalState.update {
+        it.copy(feeFrom = ExpressionInput.sanitize(value))
+    }
     fun setNote(value: String) = internalState.update { it.copy(note = value) }
     fun clearError() = internalState.update { it.copy(error = null) }
-
-    /** Routes a numpad key into the currently-focused transfer amount field. */
-    fun onKey(field: TransferAmountField, key: NumpadKey) {
-        if (key == NumpadKey.DONE) {
-            save()
-            return
-        }
-        internalState.update { s ->
-            when (field) {
-                TransferAmountField.FROM -> s.copy(amountFrom = applyKey(s.amountFrom, key, isFee = false))
-                TransferAmountField.FEE -> s.copy(feeFrom = applyKey(s.feeFrom, key, isFee = true))
-                TransferAmountField.TO -> {
-                    // The first edit to an auto-converted destination starts fresh and switches to manual mode.
-                    val current = if (s.amountToEdited) s.amountTo else ""
-                    s.copy(amountTo = applyKey(current, key, isFee = false), amountToEdited = true)
-                }
-            }
-        }
-        if (field == TransferAmountField.FROM) recomputeDestination()
-    }
-
-    private fun applyKey(current: String, key: NumpadKey, isFee: Boolean): String = when (key) {
-        NumpadKey.BACKSPACE -> current.dropLast(1)
-        else -> {
-            // Fee starts at "0"; treat a lone "0" as empty so the first keypress replaces it.
-            val base = if (isFee && current == "0") "" else current
-            ExpressionInput.append(base, key)
-        }
-    }
 
     /**
      * Keeps the destination amount in sync for a cross-currency transfer by converting the source

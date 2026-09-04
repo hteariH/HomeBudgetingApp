@@ -122,7 +122,8 @@ _Entry friction determines whether users keep logging. Mostly small additions; s
 | **Category suggestions from note keywords** — rule-based ("uber"→Transport), top-3 suggestions in QuickAdd. No ML infra. | medium | M | 2 lenses |
 | **Persist transaction list filter state** — `showSearch`/`activePeriod` are local Compose state, reset on back-nav. Hoist to ViewModel/SavedState. | medium | M | `TransactionsScreen.kt:69-70` |
 | **Clear expression on type switch (or confirm)** — `setType()` clears category but not expression, so an Income amount can carry into Expense. | medium | S | `QuickAddViewModel.kt:231-234`; `TransactionEditViewModel.kt:230-233` |
-| **Receipt photo attachment (local)** — optional local image URI via SAF, thumbnail in detail. No cloud. (OCR is a separate, larger bet.) | medium | M | 3 lenses |
+| **Receipt photo attachment (local)** — optional local image URI via SAF, thumbnail in detail. No cloud. | medium | M | 3 lenses |
+| ~~**Receipt scan (OCR)**~~ — *shipped.* Camera → on-device Tesseract (`ukr+rus+eng`) → `core/ocr/ReceiptParser` fills amount, date and note in QuickAdd. Android only. | — | — | — |
 | **Split transactions across categories** — one transaction → multiple category lines; improves analytics accuracy. | medium | M | 3 lenses |
 
 ---
@@ -142,7 +143,6 @@ _Several silent-failure bugs and unfinished UI that already has schema/backup su
 | **Localize & format subscription dates** — next-charge renders raw ISO `toString()` instead of the shared `d MMM yyyy` formatter. | medium | M | `SubscriptionsScreen.kt:157`; `SubscriptionEditScreen.kt:118` |
 | **Warn on subscriptions excluded from totals** — rows with no FX rate are silently `continue`d, so totals look low. | medium | M | `SubscriptionsViewModel.kt:57` |
 | **Expose account `note` field; friendlier currency labels** — `note` stored/serialized but no UI; pickers show bare codes. Show "USD — United States Dollar". | medium | M | `AccountEntity.kt:22`; `AccountEditScreen.kt:224-229` |
-| **Numpad DONE sizing / dead-branch cleanup** — `heightIn(min = if(isDone) 56.dp else 56.dp)` is a no-op ternary; DONE spans full row awkwardly. | low | S | `Numpad.kt:93,99` |
 
 ---
 
@@ -153,7 +153,6 @@ _Ships ru/en/uk but several user-facing strings bypass resources. Each fix is sm
 |------|--------|--------|----------|
 | **Localize hardcoded strings** — backup result messages, transfer validation errors, widget labels ("Expense"/"Income"/"Saved!"). | high | M | `SettingsViewModel.kt:77-78,85-86`; `TransferViewModel.kt:86,90`; `QuickExpenseWidget.kt:109,116,193` |
 | **Localize analytics month names** — hardcoded English `MONTH_NAMES`, so charts always show Jan/Feb. | medium | S | `AnalyticsViewModel.kt:46-49,92` |
-| **Locale-aware decimal separator in numpad** — hardcodes `.` though ru/uk use comma (Calculator already normalizes). | medium | M | `QuickAddScreen.kt:198`; `TransactionEditScreen.kt:246` |
 | **Transaction-specific "All" filter string** — reuses `R.string.currencies_all` (semantically wrong). | low | S | `TransactionsScreen.kt:173` |
 
 ---

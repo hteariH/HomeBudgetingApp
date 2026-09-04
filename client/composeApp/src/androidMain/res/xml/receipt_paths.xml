@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The one directory the camera app is allowed to write into: the receipt captures, in
+    the cache. Nothing else is shared, and the file is deleted as soon as it has been read
+    (see ReceiptScanner.android.kt) - so a scan leaves a transaction and no photograph.
+-->
+<paths>
+    <cache-path name="receipts" path="receipts/" />
+</paths>

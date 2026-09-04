@@ -15,13 +15,6 @@
     <string name="action_duplicate">Duplicate</string>
 
     <!-- Accessibility -->
-    <string name="a11y_plus">Plus</string>
-    <string name="a11y_minus">Minus</string>
-    <string name="a11y_multiply">Multiply</string>
-    <string name="a11y_divide">Divide</string>
-    <string name="a11y_decimal">Decimal point</string>
-    <string name="a11y_backspace">Backspace</string>
-    <string name="a11y_done">Done</string>
     <string name="a11y_swap_accounts">Swap accounts</string>
     <string name="a11y_increase">Increase</string>
     <string name="a11y_decrease">Decrease</string>
@@ -65,6 +58,9 @@
     <string name="quickadd_no_account">No account selected</string>
     <string name="quickadd_invalid_amount">Enter an amount</string>
     <string name="quickadd_calc_error">Invalid expression</string>
+    <string name="quickadd_scan_receipt">Scan receipt</string>
+    <string name="quickadd_scan_nothing_found">Nothing readable on that photo</string>
+    <string name="quickadd_scan_failed">Couldn\'t scan the receipt</string>
 
     <!-- Accounts -->
     <string name="accounts_title">Accounts</string>
@@ -112,6 +108,7 @@
     <string name="transfer_amount_to">Amount (to)</string>
     <string name="transfer_rate">Exchange rate</string>
     <string name="transfer_fee">Fee</string>
+    <string name="transfer_amount_received">Amount received</string>
     <string name="transfer_same_account">Source and destination must differ</string>
     <string name="transfer_invalid_source">Enter a valid amount to send</string>
     <string name="transfer_invalid_destination">Enter a valid amount to receive</string>
@@ -214,9 +211,6 @@
     <string name="lang_ukrainian">Українська</string>
 
     <!-- Privacy -->
-    <string name="settings_numpad_layout">Numpad layout</string>
-    <string name="settings_numpad_calc">Calculator (7–8–9)</string>
-    <string name="settings_numpad_phone">Phone (1–2–3)</string>
 
     <string name="settings_privacy_policy">Privacy policy</string>
     <string name="settings_open_source_licenses">Open source licenses</string>

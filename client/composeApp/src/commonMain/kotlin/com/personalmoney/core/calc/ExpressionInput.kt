@@ -2,55 +2,48 @@ package com.personalmoney.core.calc
 
 
 /**
- * Pure numpad-key-to-expression appender shared by the quick-add and transfer flows so that
- * calculator-style amount entry behaves identically everywhere.
+ * Cleans up what a keyboard hands over, so that only things [Calculator] can read reach the
+ * amount field.
  *
- * Handles digit / dot / operator keys. BACKSPACE and DONE are no-ops here — callers handle
- * those (drop-last and save, respectively) before delegating to this function.
+ * This used to translate numpad presses into an expression. The numpad is gone - amounts are
+ * typed on the system keyboard now - but the sanitising did not go with it: a `Decimal` IME
+ * is a hint, not a guarantee. Predictive input, a pasted string and a hardware keyboard can
+ * all put a letter or a second decimal point into the field, and `12.3.4` would otherwise
+ * leave it permanently invalid with nothing on screen explaining why.
+ *
+ * Both `.` and `,` are kept as typed. IMEs in ru/uk locales emit a comma, and `Calculator`
+ * already folds it onto a dot, so there is nothing to correct and no reason to overwrite what
+ * the user actually pressed.
  */
 object ExpressionInput {
 
-    fun append(current: String, key: NumpadKey): String {
-        val symbol = when (key) {
-            NumpadKey.PLUS -> "+"
-            NumpadKey.MINUS -> "−"
-            NumpadKey.MULTIPLY -> "×"
-            NumpadKey.DIVIDE -> "÷"
-            NumpadKey.DOT -> "."
-            NumpadKey.DIGIT_0 -> "0"
-            NumpadKey.DIGIT_1 -> "1"
-            NumpadKey.DIGIT_2 -> "2"
-            NumpadKey.DIGIT_3 -> "3"
-            NumpadKey.DIGIT_4 -> "4"
-            NumpadKey.DIGIT_5 -> "5"
-            NumpadKey.DIGIT_6 -> "6"
-            NumpadKey.DIGIT_7 -> "7"
-            NumpadKey.DIGIT_8 -> "8"
-            NumpadKey.DIGIT_9 -> "9"
-            else -> ""
-        }
+    private const val OPERATORS = "+-*/\u2212\u00D7\u00F7"
+    private const val SEPARATORS = ".,"
 
-        // Sanitize: don't allow leading operator (except minus), no double operators, no double dot in current number
-        return when {
-            symbol.isEmpty() -> current
-            symbol == "." -> {
-                val lastNumberPart = current.takeLastWhile { it.isDigit() || it == '.' }
-                if (lastNumberPart.contains('.')) current
-                else if (current.isEmpty() || current.last() in "+−×÷") current + "0."
-                else current + "."
-            }
-            symbol in setOf("+", "−", "×", "÷") -> {
-                if (current.isEmpty()) {
-                    if (symbol == "−") symbol else current
-                } else if (current.last() in "+−×÷") {
-                    current.dropLast(1) + symbol
-                } else if (current.last() == '.') {
-                    current
-                } else {
-                    current + symbol
+    fun sanitize(typed: String): String {
+        val out = StringBuilder()
+        var separatorInThisNumber = false
+        for (char in typed) {
+            when {
+                char.isDigit() -> out.append(char)
+
+                char in SEPARATORS -> if (!separatorInThisNumber) {
+                    separatorInThisNumber = true
+                    out.append(char)
                 }
+
+                // An operator ends the current number, so the next one may have its own
+                // separator. Nothing on the system keypad produces these any more; they
+                // survive a paste, and Calculator still evaluates them.
+                char in OPERATORS -> {
+                    separatorInThisNumber = false
+                    out.append(char)
+                }
+
+                // Everything else is dropped rather than rejected, so a stray character
+                // simply fails to appear instead of blocking the keystroke after it.
             }
-            else -> current + symbol
         }
+        return out.toString()
     }
 }

@@ -97,8 +97,11 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
   no-op on Android). Routes are URL **fragments** - `/app/#accounts` - so the server needs no
   rewrite rule; the start destination stays fragment-less.
 - **Money is `Long` minor units.** Per-currency decimals via `Currency.getInstance(code)
-  .defaultFractionDigits` (fallback 2) / `CurrencyRegistry`. Numpad math via `core/calc/Calculator`
-  + shared sanitizer `core/calc/ExpressionInput`.
+  .defaultFractionDigits` (fallback 2) / `CurrencyRegistry`. Amounts are typed on the **system keyboard**
+  (`core/ui/components/AmountField`, `KeyboardType.Decimal`) - the in-app numpad is gone, and
+  with it the layout preference it needed. `core/calc/Calculator` still evaluates, so a
+  pasted or scanned `12+3.40` works; `core/calc/ExpressionInput.sanitize` cleans what the
+  keyboard hands over, because a `Decimal` IME is a hint and not a guarantee.
 - **Transfers** = a pair of `TransactionEntity` rows (negative debit on source, positive credit on
   destination) linked by `transferGroupId`, cross-wired via `transferCounterpartAccountId`, optional
   `transferFeeMinor` on the debit. Saved atomically with `TransactionRepository.insertTransferPair`.
@@ -143,6 +146,20 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
   answers **HTTP 200 even for errors** and rejects a trailing slash on the path; both are
   documented on `HomeMoneyApi`. Dedup is `transactions.external_id = "homemoney:<GUID>"`, so
   re-running imports nothing twice.
+- **Receipt scanning** (`core/ocr`, Android only - `receiptScanAvailable` gates the button
+  the way `homeMoneyImportAvailable` gates Banks): the system camera via
+  `ActivityResultContracts.TakePicture` (full resolution - the preview contract's thumbnail is
+  unreadable), then **Tesseract** on-device (`ukr+rus+eng`), then `ReceiptParser` in
+  `commonMain`. No `CAMERA` permission (ACTION_IMAGE_CAPTURE is served by the camera app) and
+  the capture is deleted from the cache once read, so Play's Data safety answers do not change.
+  **Tesseract and not ML Kit because Google ships no Cyrillic model for ML Kit at all** - it
+  read `СУМА` as `CYMA` and the merchant name as noise, which is the wrong engine for this
+  market. Cost: ~11 MB of `*.traineddata` in `androidMain/assets/tessdata/`, extracted to
+  `filesDir/tesseract/tessdata` on first scan (`TESSDATA_VERSION` forces a re-extract), and a
+  slower pass. The parser's primary rule stays script-independent (the largest money-shaped
+  number); total keywords are matched both as Cyrillic and as homoglyph-folded Latin, because
+  `eng` is in the language list and a misread is still possible. A scan fills the QuickAdd form
+  and never saves.
 - **Encoding defaults:** kotlinx.serialization omits any value equal to its declared
   default, and Jackson fills the gap with `false`/`0` on the other side. A boolean whose
   meaningful state *is* the default needs `@EncodeDefault` - see `RestPlannedAccount` and
