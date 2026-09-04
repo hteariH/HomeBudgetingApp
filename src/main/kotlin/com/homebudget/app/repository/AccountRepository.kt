@@ -27,6 +27,16 @@ interface AccountRepository : JpaRepository<Account, Long> {
     fun findByIdAndUser(id: Long, user: User): Account?
     fun findByUuidAndUser(uuid: String, user: User): Account?
 
+    /**
+     * Every currency somebody actually holds money in.
+     *
+     * The FX job quotes these: an account is the reason a rate is ever needed, and on the
+     * web nothing else says which currencies a user has - the catalogue is global and
+     * `user_currency_settings` is written by the phone alone.
+     */
+    @Query("SELECT DISTINCT a.currency.code FROM Account a")
+    fun currencyCodesInUse(): List<String>
+
     /** Accounts a previous import created, keyed by the source's own id. */
     fun findAllByUserAndExternalAccountIdIsNotNull(user: User): List<Account>
 
