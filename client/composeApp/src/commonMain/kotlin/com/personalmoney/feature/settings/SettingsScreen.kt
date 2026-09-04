@@ -3,8 +3,6 @@ package com.personalmoney.feature.settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,10 +41,11 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.core.data.ThemeMode
+import com.personalmoney.core.ui.components.CurrencySelect
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -79,22 +78,15 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             SectionLabel(stringResource(Res.string.settings_base_currency))
-            // Wraps rather than scrolls sideways. With every currency switched on this is a
-            // hundred chips: on a phone a horizontal scroll is the only thing that fits, but
-            // on a wide window it hid all but the first dozen off the right edge.
-            FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                state.currencies.filter { it.active }.forEach { currency ->
-                    FilterChip(
-                        selected = currency.code == state.baseCurrency,
-                        onClick = { viewModel.setBaseCurrency(currency.code) },
-                        label = { Text(currency.code) }
-                    )
-                }
-            }
+            // A search field rather than a row of chips: with every currency switched on
+            // this is a hundred of them, and picking one out of that wall by eye is slower
+            // than typing three letters.
+            CurrencySelect(
+                selected = state.baseCurrency,
+                currencies = state.currencies.filter { it.active },
+                onSelect = viewModel::setBaseCurrency,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            )
 
             SettingsItem(
                 title = stringResource(Res.string.settings_manage_currencies),

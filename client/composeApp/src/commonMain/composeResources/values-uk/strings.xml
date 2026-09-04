@@ -155,6 +155,7 @@
     <string name="currencies_manual_rate">Ручний курс</string>
     <string name="currencies_last_updated">Оновлено</string>
     <string name="currencies_search">Пошук за назвою або кодом</string>
+    <string name="currencies_no_matches">Такої валюти не знайшлося</string>
     <string name="currencies_add_custom">Додати свою валюту</string>
     <string name="currencies_new">Нова валюта</string>
     <string name="currencies_code">Код (наприклад, BTC, MYCOIN)</string>

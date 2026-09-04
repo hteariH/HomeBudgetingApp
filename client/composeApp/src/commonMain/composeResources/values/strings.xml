@@ -166,6 +166,7 @@
     <string name="currencies_manual_rate">Manual rate</string>
     <string name="currencies_last_updated">Last updated</string>
     <string name="currencies_search">Search currency or code</string>
+    <string name="currencies_no_matches">No currency matches that</string>
     <string name="currencies_add_custom">Add custom currency</string>
     <string name="currencies_new">New currency</string>
     <string name="currencies_code">Code (e.g. BTC, MYCOIN)</string>
