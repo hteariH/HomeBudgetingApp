@@ -116,7 +116,12 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
 - **Sync & auth:** `core/sync/SyncEngine` pulls, merges in one Room transaction (parents before
   children, uuid→local-id), then pushes. Every syncable row carries `uuid` / `updatedAt` /
   `deleted` / `pendingSync` (`SyncableEntity`); deletes are tombstones, concurrency is
-  optimistic via `baseUpdatedAt`. **uuid is the identity across clients — server ids are not
+  optimistic via `baseUpdatedAt`. A syncable entity must also declare
+  `Index(value = ["uuid"], unique = true)` and `Index("pending_sync")` - the unique one is
+  what stops a merge leaving the same row twice. `SubscriptionEntity` was missing both,
+  while `MIGRATION_2_3` created them anyway, so an upgraded phone and a freshly installed
+  one had different schemas for v3; `MIGRATION_3_4` converges them. Schema `N.json` is
+  frozen once shipped - fix a schema by adding a version, never by editing the recorded one. **uuid is the identity across clients — server ids are not
   portable.** Tokens live in `core/auth/TokenStore` (EncryptedSharedPreferences); refresh is
   handled once, under a mutex, by `TokenAuthenticator` — never refresh at a call site.
 - **Design:** the palette, radii and type scale come from the React client's tokens

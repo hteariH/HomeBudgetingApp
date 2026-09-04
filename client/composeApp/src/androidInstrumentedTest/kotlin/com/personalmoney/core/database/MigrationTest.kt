@@ -1,6 +1,7 @@
 package com.personalmoney.core.database
 
 import androidx.room.testing.MigrationTestHelper
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -12,7 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Migration v2 → v3, the one that turns the local-only database into a synced one.
+ * The migrations, against the schemas Room recorded for each version.
  *
  * Two things have to hold, and neither is obvious from reading the DDL:
  *
@@ -75,5 +76,55 @@ class MigrationTest {
             assertEquals("uuid is not v4-shaped: ${uuids[0]}", 36, uuids[0].length)
         }
         db.close()
+    }
+
+    @Test
+    fun migrate3To4_addsTheSubscriptionSyncIndices() {
+        helper.createDatabase(dbName, 3).close()
+
+        val db = helper.runMigrationsAndValidate(dbName, 4, true, MIGRATION_3_4)
+
+        assertTrue(
+            "uuid must be unique, or a merge can leave the same subscription twice",
+            hasIndex(db, "index_subscriptions_uuid", unique = true),
+        )
+        assertTrue(
+            "the sync engine scans subscriptions by pending_sync",
+            hasIndex(db, "index_subscriptions_pending_sync", unique = false),
+        )
+        db.close()
+    }
+
+    /**
+     * The other v3 in the wild: a phone that upgraded through the old v2 → v3 already has
+     * both indices. v4 has to be reachable from there too, rather than failing on a
+     * duplicate-index error and leaving the app unable to open.
+     */
+    @Test
+    fun migrate3To4_isReachableFromAv3ThatAlreadyHasTheIndices() {
+        helper.createDatabase(dbName, 3).apply {
+            execSQL("CREATE UNIQUE INDEX index_subscriptions_uuid ON subscriptions (uuid)")
+            execSQL("CREATE INDEX index_subscriptions_pending_sync ON subscriptions (pending_sync)")
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(dbName, 4, true, MIGRATION_3_4)
+        assertTrue(hasIndex(db, "index_subscriptions_uuid", unique = true))
+        db.close()
+    }
+
+    private fun hasIndex(
+        db: SupportSQLiteDatabase,
+        name: String,
+        unique: Boolean,
+    ): Boolean = db.query("PRAGMA index_list(subscriptions)").use { c ->
+        val nameColumn = c.getColumnIndexOrThrow("name")
+        val uniqueColumn = c.getColumnIndexOrThrow("unique")
+        while (c.moveToNext()) {
+            if (c.getString(nameColumn) == name) {
+                return@use (c.getInt(uniqueColumn) == 1) == unique
+            }
+        }
+        false
     }
 }

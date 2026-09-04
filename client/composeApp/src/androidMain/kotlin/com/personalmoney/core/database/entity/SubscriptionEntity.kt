@@ -24,7 +24,17 @@ import kotlinx.datetime.LocalDate
             onDelete = ForeignKey.SET_NULL
         )
     ],
-    indices = [Index("account_id"), Index("category_id"), Index("active"), Index("next_charge_date")]
+    indices = [
+        Index("account_id"),
+        Index("category_id"),
+        Index("active"),
+        Index("next_charge_date"),
+        // Added in v4. Every other synced table has had these since v3; this one was
+        // missed, which is why a phone that upgraded and a phone that installed fresh
+        // ended up with different schemas for the same version.
+        Index(value = ["uuid"], unique = true),
+        Index("pending_sync"),
+    ]
 )
 data class SubscriptionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
