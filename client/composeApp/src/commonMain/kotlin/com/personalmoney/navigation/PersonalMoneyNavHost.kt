@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.DrawerValue
@@ -58,6 +59,7 @@ import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.ui.PageContainer
 import com.personalmoney.core.ui.webChrome
 import com.personalmoney.core.ui.PageWidth
+import com.personalmoney.core.ui.rememberPageNavigator
 import com.personalmoney.core.ui.theme.isDark
 import com.personalmoney.feature.accounts.AccountEditScreen
 import com.personalmoney.feature.accounts.AccountPickerScreen
@@ -143,6 +145,14 @@ private val HEADER_NAV_BREAKPOINT = 1240.dp
 private val WORDMARK_BREAKPOINT = 480.dp
 
 /**
+ * The site's sign-in page, which is where a signed-out browser is sent.
+ *
+ * A route of the React app rather than of this one - see the signed-out branch of
+ * [PersonalMoneyNavHost] for why the app cannot host its own sign-in form on the web.
+ */
+private const val WEB_SIGN_IN_PATH = "/login"
+
+/**
  * The sections the header lists. Settings is not one of them: it lives in the account menu,
  * where a site keeps it, and leaving it in the row would have made it the ninth label
  * competing for width. The drawer still lists it, because there the column is free.
@@ -183,32 +193,22 @@ fun PersonalMoneyNavHost(
             AuthScreen(onSignedIn = { })
             return
         }
-        // Signing in is a page of the site, so it keeps the site's header - reduced to the
-        // brand and the theme switch, because there is no account yet to offer a menu for.
-        // Without it the page read as a modal that had lost the app it belonged to.
-        BoxWithConstraints {
-            // Read out here: Compose's layout scopes are DSL-marked, so `maxWidth` is not
-            // reachable from inside the Column's own scope.
-            val navInline = maxWidth >= HEADER_NAV_BREAKPOINT
-            val wordmark = maxWidth >= WORDMARK_BREAKPOINT
-            Column(Modifier.fillMaxSize()) {
-                AppHeader(
-                    destinations = emptyList(),
-                    currentRoute = null,
-                    navInline = navInline,
-                    showWordmark = wordmark,
-                    onNavigate = { },
-                    onOpenMenu = { },
-                    email = null,
-                    onOpenSettings = { },
-                    onSignOut = { },
-                    dark = dark,
-                    onToggleTheme = { shell.setDark(!dark) },
-                    onAdd = null,
-                )
-                AuthScreen(onSignedIn = { })
-            }
-        }
+        // On the web, signing in belongs to the site rather than to the app.
+        //
+        // Not a style choice. Compose renders this client into a single canvas, so the
+        // sign-in form drawn here has no `<input type="password">` behind it - no
+        // element at all - and a password manager has nothing to detect, offer to save,
+        // or fill. `/login` is a real HTML form and does the same job: it posts, writes
+        // the same localStorage keys this client reads (see the React `session.ts`,
+        // which is the contract), and hands the tab back to /app/.
+        //
+        // This is also the way out of a dead session: a refresh token the server has
+        // stopped honouring clears the store, which lands here, which sends the visitor
+        // somewhere they can actually sign in again.
+        val leaveForSignIn = rememberPageNavigator()
+        LaunchedEffect(Unit) { leaveForSignIn(WEB_SIGN_IN_PATH) }
+        // The browser is on its way out; anything drawn here would flash for one frame.
+        Box(Modifier.fillMaxSize())
         return
     }
 
