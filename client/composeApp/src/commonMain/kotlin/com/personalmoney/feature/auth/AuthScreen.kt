@@ -54,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.core.ui.theme.Accent
 import com.personalmoney.core.ui.webChrome
-import com.personalmoney.core.ui.theme.AccentLight
 import com.personalmoney.core.ui.theme.LocalFinanceColors
 import com.personalmoney.core.ui.theme.PmButtonShape
 import com.personalmoney.core.ui.theme.StatusCyan
@@ -125,7 +124,12 @@ fun AuthScreen(
                                     else Res.string.auth_need_account
                                 ),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = AccentLight,
+                                // The scheme's accent, not the palette's light step: that
+                                // one is the indigo picked to carry on near-black, and on
+                                // the light theme's page it is 3.0:1 - a link that reads as
+                                // disabled. `primary` is the same colour in dark and the
+                                // darker step in light.
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
@@ -191,10 +195,11 @@ private fun BrandRow() {
     ) {
         BrandMark(size = 32.dp, iconSize = 16.dp, corner = 10.dp)
         Spacer(Modifier.size(10.dp))
+        val brand = MaterialTheme.colorScheme.primary
         Text(
             buildAnnotatedString {
                 append("Personal")
-                withStyle(SpanStyle(color = AccentLight)) { append("Money") }
+                withStyle(SpanStyle(color = brand)) { append("Money") }
             },
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,

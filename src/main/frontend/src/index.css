@@ -65,24 +65,53 @@
   color-scheme: dark;
 }
 
-/* ─── Light Mode Tokens ────────────────────────────────────────────────── */
+/* ─── Light Mode Tokens ────────────────────────────────────────────────── *
+ * Light is not the dark palette with the numbers flipped, because depth does not
+ * flip: on a dark page a raised layer is lighter, on a light page it can only be
+ * whiter, and white is the ceiling. So the ladder is built downwards from the
+ * card - the page sits a tinted step below white, hover a step below that. The
+ * first version of this block put the page at #F8FAFC under white cards, 1.05:1
+ * apart, with a #E2E8F0 border at 1.23:1 holding them apart; on anything but a
+ * colour-calibrated monitor the whole app read as one flat sheet of white. These
+ * values put a card 1.20:1 above the page, which is the separation dark has.
+ * ----------------------------------------------------------------------- */
 [data-theme="light"] {
-  --bg-base-rgb:      248 250 252;
+  --bg-base-rgb:      230 235 243;
   --bg-surface-rgb:   255 255 255;
   --bg-card-rgb:      255 255 255;
-  --bg-hover-rgb:     241 245 249;
-  --border-rgb:       226 232 240;
-  --border-light-rgb: 203 213 225;
+  --bg-hover-rgb:     212 221 233;
+  --border-rgb:       195 204 218;
+  --border-light-rgb: 148 163 184;
 
   --text-primary-rgb:   15 23 42;
+  /* Slate 500 was 4.76:1 on white and fell under AA the moment the same text
+     landed on a hover row; this clears 4.5:1 on every surface above. */
   --text-secondary-rgb: 71 85 105;
-  --text-muted-rgb:     100 116 139;
+  --text-muted-rgb:     90 103 121;
+
+  /* Every accent and status hue goes one or two steps down here. They were picked
+     to glow on near-black; on white the same values are pastels - the indigo is
+     4.47:1, the amber 2.15:1 - so a filled button in white text looks disabled and
+     an icon in --yellow is barely a smudge. The dark palette keeps the bright set.
+     --accent-light keeps its name and loses its literal meaning: it is the emphasis
+     step - the wordmark, a link, a primary button under the cursor - and emphasis on
+     white means going down, not up. Anything reading it gets a stronger indigo here,
+     which is what those call sites wanted from it in dark too. */
+  --accent-rgb:       79 70 229;
+  --accent-light-rgb: 67 56 202;
+  --accent-dark-rgb:  55 48 163;
+
+  --green-rgb:  4 120 87;
+  --red-rgb:    200 30 30;
+  --yellow-rgb: 180 83 9;
+  --cyan-rgb:   14 116 144;
+  --purple-rgb: 126 34 206;
 
   --accent-glow: rgb(var(--accent-rgb) / 0.15);
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-  --shadow:    0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 2px rgba(15,23,42,0.10);
+  --shadow:    0 4px 10px -2px rgba(15,23,42,0.14), 0 2px 4px -2px rgba(15,23,42,0.08);
+  --shadow-lg: 0 12px 28px -6px rgba(15,23,42,0.20), 0 6px 10px -6px rgba(15,23,42,0.10);
 
   color-scheme: light;
 }

@@ -90,13 +90,16 @@ export function useChartColors(): ChartColors {
     // would be unreadable if the variable ever failed to resolve in light mode.
     return useMemo(
         () => ({
-            axis: readToken('--text-muted', isDark ? '#555D7C' : '#64748B'),
-            grid: readToken('--border', isDark ? '#2D3448' : '#E2E8F0'),
+            axis: readToken('--text-muted', isDark ? '#555D7C' : '#5A6779'),
+            grid: readToken('--border', isDark ? '#2D3448' : '#C3CCDA'),
             tooltipBg: readToken('--bg-card', isDark ? '#1E2330' : '#FFFFFF'),
-            tooltipBorder: readToken('--border', isDark ? '#2D3448' : '#E2E8F0'),
+            tooltipBorder: readToken('--border', isDark ? '#2D3448' : '#C3CCDA'),
             text: readToken('--text-primary', isDark ? '#F0F2F8' : '#0F172A'),
-            income: readToken('--green', '#10B981'),
-            expense: readToken('--red', '#EF4444'),
+            // Per-theme like the rest now: --green and --red are themselves overridden
+            // in light mode, so a single fallback would hand the chart the dark palette's
+            // pastels on white in exactly the case the fallback exists for.
+            income: readToken('--green', isDark ? '#10B981' : '#047857'),
+            expense: readToken('--red', isDark ? '#EF4444' : '#C81E1E'),
         }),
         [isDark],
     );
