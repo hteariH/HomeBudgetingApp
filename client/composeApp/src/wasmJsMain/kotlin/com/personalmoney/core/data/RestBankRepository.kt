@@ -93,9 +93,10 @@ class RestBankRepository(private val api: RestApi) : BankRepository {
         from: LocalDate,
         to: LocalDate,
         categories: Map<String, Long?>,
+        transfers: Map<String, Long?>,
     ): ImportResult {
         val result = api.confirmBankImport(
-            ImportConfirmRequest(accountId, from.toString(), to.toString(), categories)
+            ImportConfirmRequest(accountId, from.toString(), to.toString(), categories, transfers)
         )
         // Not refresh(): the connections are unchanged. What moved is the ledger, and the
         // transaction and account repositories own that.

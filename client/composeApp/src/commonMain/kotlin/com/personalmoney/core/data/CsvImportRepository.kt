@@ -33,7 +33,10 @@ interface CsvImportRepository {
 
     /**
      * Imports [rows]. [categories] maps [CsvRow.externalId] to a category, or to null to
-     * import that row uncategorised.
+     * import that row uncategorised. [transfers] maps it instead to another account, for a
+     * line that only moved money between the user's own accounts: those become a transfer
+     * pair rather than an expense, which is the difference between a month that reads right
+     * and one that reads as if the savings top-up had been spent.
      *
      * The rows go back up because the server has no copy of the file to re-read. It still
      * checks each one against the ledger, so a row imported by another tab in the meantime
@@ -43,5 +46,6 @@ interface CsvImportRepository {
         accountId: Long,
         rows: List<CsvRow>,
         categories: Map<String, Long?>,
+        transfers: Map<String, Long?> = emptyMap(),
     ): ImportResult
 }

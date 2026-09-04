@@ -57,6 +57,12 @@ data class ImportDraft(
     val rows: List<PendingImport>? = null,
     /** External id to category. This is the selection the confirm sends, not just a display. */
     val categories: Map<String, Long?> = emptyMap(),
+    /**
+     * External id to the other account, for lines the user marked as a transfer instead of
+     * giving them a category. Separate from [categories] because the two have different
+     * consequences: one is spending, the other only moved money the user already had.
+     */
+    val transfers: Map<String, Long?> = emptyMap(),
     val busy: Boolean = false,
     /** Held rather than formatted, so the screen renders it in the user's language. */
     val result: ImportResult? = null,
@@ -285,6 +291,7 @@ class BanksViewModel(
             accountId = accountId,
             rows = null,
             categories = emptyMap(),
+            transfers = emptyMap(),
             result = null,
             error = null,
         )
@@ -298,8 +305,18 @@ class BanksViewModel(
         it.copy(to = date, rows = null, result = null)
     }
 
-    fun setRowCategory(externalId: String, categoryId: Long?) = importFlow.update {
-        it.copy(categories = it.categories + (externalId to categoryId))
+    /**
+     * Records one line's choice from the shared dropdown - see [ImportChoice].
+     *
+     * Exclusive by construction: a line is either spending in a category or a move between
+     * the user's own accounts, and a stale category left behind would come back the moment
+     * they changed their mind.
+     */
+    fun setRowChoice(externalId: String, optionId: Long?) = importFlow.update {
+        it.copy(
+            categories = it.categories + (externalId to ImportChoice.categoryIdOf(optionId)),
+            transfers = it.transfers + (externalId to ImportChoice.accountIdOf(optionId)),
+        )
     }
 
     fun preview() {
@@ -317,6 +334,7 @@ class BanksViewModel(
                         // suggestion: nothing is written until the user presses import.
                         categories = rows.filter { row -> !row.alreadyImported }
                             .associate { row -> row.externalId to row.suggestedCategoryId },
+                        transfers = emptyMap(),
                     )
                 }
             } catch (e: Exception) {
@@ -335,12 +353,23 @@ class BanksViewModel(
             try {
                 // Fresh rows only. The map is the selection as well as the categorisation,
                 // so leaving the duplicates out of it is what keeps them out of the ledger.
-                val selection = rows
-                    .filter { !it.alreadyImported }
-                    .associate { it.externalId to draft.categories[it.externalId] }
-                val result = banks.confirmImport(accountId, draft.from, draft.to, selection)
+                val fresh = rows.filter { !it.alreadyImported }
+                val selection = fresh.associate { it.externalId to draft.categories[it.externalId] }
+                // Only the lines actually marked as transfers: a null entry here means "no
+                // counterpart", which is what every other line is.
+                val transfers = fresh.mapNotNull { row ->
+                    draft.transfers[row.externalId]?.let { row.externalId to it }
+                }.toMap()
+                val result =
+                    banks.confirmImport(accountId, draft.from, draft.to, selection, transfers)
                 importFlow.update {
-                    it.copy(busy = false, rows = null, categories = emptyMap(), result = result)
+                    it.copy(
+                        busy = false,
+                        rows = null,
+                        categories = emptyMap(),
+                        transfers = emptyMap(),
+                        result = result,
+                    )
                 }
                 onLedgerChanged()
             } catch (e: Exception) {

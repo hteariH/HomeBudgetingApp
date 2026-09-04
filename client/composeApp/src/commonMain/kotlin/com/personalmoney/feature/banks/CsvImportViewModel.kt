@@ -27,6 +27,12 @@ data class CsvImportUiState(
     val preview: CsvPreview? = null,
     /** External id to category, and the selection the confirm sends. */
     val categories: Map<String, Long?> = emptyMap(),
+    /**
+     * External id to the other account, for rows the user marked as a transfer instead of
+     * giving them a category. Kept apart from [categories] because they are answers to the
+     * same question with different consequences: one is spending, the other is not.
+     */
+    val transfers: Map<String, Long?> = emptyMap(),
     val busy: Boolean = false,
     val error: String? = null,
     /** Held rather than formatted, so the screen renders it in the user's language. */
@@ -61,20 +67,43 @@ class CsvImportViewModel(private val repository: CsvImportRepository) : ViewMode
 
     /** Changing the account drops the preview: those rows were read for the old one. */
     fun setAccount(accountId: Long?) = _state.update {
-        it.copy(accountId = accountId, preview = null, categories = emptyMap(), result = null)
+        it.copy(
+            accountId = accountId,
+            preview = null,
+            categories = emptyMap(),
+            transfers = emptyMap(),
+            result = null,
+        )
     }
 
     fun setFile(file: PickedFile) {
         picked = file
         _state.update {
-            it.copy(fileName = file.name, preview = null, categories = emptyMap(), result = null, error = null)
+            it.copy(
+                fileName = file.name,
+                preview = null,
+                categories = emptyMap(),
+                transfers = emptyMap(),
+                result = null,
+                error = null,
+            )
         }
     }
 
     fun toggleMapping() = _state.update { it.copy(mappingExpanded = !it.mappingExpanded) }
 
-    fun setRowCategory(externalId: String, categoryId: Long?) = _state.update {
-        it.copy(categories = it.categories + (externalId to categoryId))
+    /**
+     * Records one row's choice from the shared dropdown - see [ImportChoice].
+     *
+     * The two maps are kept exclusive here rather than on the server: a row is either
+     * spending in a category or a move between accounts, and leaving a stale category
+     * behind would have it reappear the moment the user changed their mind back.
+     */
+    fun setRowChoice(externalId: String, optionId: Long?) = _state.update {
+        it.copy(
+            categories = it.categories + (externalId to ImportChoice.categoryIdOf(optionId)),
+            transfers = it.transfers + (externalId to ImportChoice.accountIdOf(optionId)),
+        )
     }
 
     /**
@@ -97,6 +126,7 @@ class CsvImportViewModel(private val repository: CsvImportRepository) : ViewMode
                         categories = preview.fresh.associate { row ->
                             row.externalId to row.suggestedCategoryId
                         },
+                        transfers = emptyMap(),
                     )
                 }
             } catch (e: Exception) {
@@ -130,10 +160,16 @@ class CsvImportViewModel(private val repository: CsvImportRepository) : ViewMode
         viewModelScope.launch {
             try {
                 val chosen = _state.value.categories
+                val transfers = _state.value.transfers
                 val result = repository.confirm(
                     accountId = accountId,
                     rows = fresh,
                     categories = fresh.associate { it.externalId to chosen[it.externalId] },
+                    // Only the rows actually marked as transfers: a null here would be read
+                    // as "no counterpart" for every other row, which is what it means.
+                    transfers = fresh.mapNotNull { row ->
+                        transfers[row.externalId]?.let { row.externalId to it }
+                    }.toMap(),
                 )
                 // The file is spent: importing the same rows again would only find them
                 // already in the ledger, so the panel goes back to asking for a new one.
@@ -144,6 +180,7 @@ class CsvImportViewModel(private val repository: CsvImportRepository) : ViewMode
                         fileName = null,
                         preview = null,
                         categories = emptyMap(),
+                        transfers = emptyMap(),
                         result = result,
                     )
                 }

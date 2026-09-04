@@ -424,6 +424,10 @@
     <string name="csv_currency_mismatch">В файле встречается %1$s, а счёт %2$s ведётся в %3$s. Суммы загружаются как есть, без конвертации.</string>
     <string name="csv_truncated">Показаны первые 200 из %1$s; загружены будут все.</string>
 
+    <!-- Stroka, kotoraya lish peremestila dengi mezhdu schetami polzovatelya. -->
+    <string name="import_transfer_to">Перевод на %1$s</string>
+    <string name="import_transfer_from">Перевод с %1$s</string>
+
     <!-- Import iz homemoney.ua. Tolko veb; sm. navigation.homeMoneyImportAvailable. -->
     <string name="nav_homemoney">HomeMoney</string>
     <string name="homemoney_title">Импорт из HomeMoney</string>

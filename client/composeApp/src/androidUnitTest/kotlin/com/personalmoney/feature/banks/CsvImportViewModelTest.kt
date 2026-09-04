@@ -57,7 +57,7 @@ class CsvImportViewModelTest {
 
     private fun vm(rows: List<CsvRow>): CsvImportViewModel {
         coEvery { repository.preview(any(), any(), any(), any()) } returns preview(rows)
-        coEvery { repository.confirm(any(), any(), any()) } returns ImportResult(1, 0)
+        coEvery { repository.confirm(any(), any(), any(), any()) } returns ImportResult(1, 0)
         return CsvImportViewModel(repository)
     }
 
@@ -78,7 +78,7 @@ class CsvImportViewModelTest {
             while (state.result == null) state = awaitItem()
 
             val sent = slot<List<CsvRow>>()
-            coVerify { repository.confirm(eq(7L), capture(sent), any()) }
+            coVerify { repository.confirm(eq(7L), capture(sent), any(), any()) }
             // The duplicate never leaves: the server writes what it is handed, so sending
             // it would be asking for the row twice.
             assertEquals(listOf("a"), sent.captured.map { it.externalId })
@@ -105,6 +105,34 @@ class CsvImportViewModelTest {
             val used = slot<CsvColumnMapping>()
             coVerify { repository.preview(eq(7L), eq("statement.csv"), any(), capture(used)) }
             assertEquals("Completed", used.captured.date)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a row marked as a transfer is sent as a counterpart account, not as a category`() = runTest {
+        val model = vm(listOf(row("a")))
+        model.state.test {
+            skipItems(1)
+            model.setAccount(7L)
+            model.setFile(file())
+            model.read()
+            var state = awaitItem()
+            while (state.preview == null) state = awaitItem()
+
+            model.setRowChoice("a", ImportChoice.encodeAccount(9L))
+            model.confirm(onImported = {})
+            while (state.result == null) state = awaitItem()
+
+            val sentCategories = slot<Map<String, Long?>>()
+            val sentTransfers = slot<Map<String, Long?>>()
+            coVerify {
+                repository.confirm(eq(7L), any(), capture(sentCategories), capture(sentTransfers))
+            }
+            // The row still has to appear in the categories map: that map is the selection,
+            // and a row missing from it would not be imported at all.
+            assertEquals(mapOf("a" to null), sentCategories.captured)
+            assertEquals(mapOf("a" to 9L), sentTransfers.captured)
             cancelAndIgnoreRemainingEvents()
         }
     }

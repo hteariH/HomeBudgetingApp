@@ -111,7 +111,7 @@ fun CsvImportCard(
                     onChange = viewModel::setMappingColumn,
                 )
                 PreviewWarnings(preview, account)
-                PreviewRows(preview, state, account, categories, viewModel)
+                PreviewRows(preview, state, account, accounts, categories, viewModel)
                 Button(
                     onClick = { viewModel.confirm(onImported) },
                     enabled = !state.busy && state.freshCount > 0,
@@ -325,6 +325,7 @@ private fun PreviewRows(
     preview: CsvPreview,
     state: CsvImportUiState,
     account: Account?,
+    accounts: List<Account>,
     categories: List<Category>,
     viewModel: CsvImportViewModel,
 ) {
@@ -332,7 +333,7 @@ private fun PreviewRows(
         preview.rows.take(ROWS_SHOWN).forEach { row ->
             // The account's currency when the file names none: the server rescales into
             // the account's units on import, so that is what these amounts become.
-            CsvRowLine(row, account?.currencyCode, state, categories, viewModel)
+            CsvRowLine(row, account?.currencyCode, state, accounts, categories, viewModel)
         }
     }
 
@@ -352,6 +353,7 @@ private fun CsvRowLine(
     row: CsvRow,
     fallbackCurrency: String?,
     state: CsvImportUiState,
+    accounts: List<Account>,
     categories: List<Category>,
     viewModel: CsvImportViewModel,
 ) {
@@ -359,7 +361,9 @@ private fun CsvRowLine(
     val wanted =
         if (row.type == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
     val forType = categories.filter { !it.archived && it.type == wanted }
-    val chosen = state.categories[row.externalId]
+    // One id for both answers - a category, or the account a transfer moved to or from.
+    val chosen = state.transfers[row.externalId]?.let { ImportChoice.encodeAccount(it) }
+        ?: state.categories[row.externalId]
 
     FlowRow(
         Modifier.fillMaxWidth().alpha(if (row.alreadyImported) 0.45f else 1f),
@@ -396,13 +400,11 @@ private fun CsvRowLine(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            val uncategorised = stringResource(Res.string.common_uncategorised)
             PickerField(
                 label = stringResource(Res.string.common_category),
-                value = forType.firstOrNull { it.id == chosen }?.name ?: uncategorised,
-                options = listOf(PickerOption(null, uncategorised)) +
-                    forType.map { PickerOption(it.id, it.name) },
-                onSelect = { id -> viewModel.setRowCategory(row.externalId, id) },
+                value = importChoiceLabel(chosen, row.type, forType, accounts),
+                options = importChoiceOptions(row.type, forType, accounts, state.accountId),
+                onSelect = { id -> viewModel.setRowChoice(row.externalId, id) },
                 modifier = Modifier.widthIn(min = 180.dp, max = 240.dp),
             )
         }

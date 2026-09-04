@@ -79,6 +79,7 @@ interface BankRepository {
         from: LocalDate,
         to: LocalDate,
         categories: Map<String, Long?>,
+        transfers: Map<String, Long?> = emptyMap(),
     ): ImportResult
 
     suspend fun refresh()

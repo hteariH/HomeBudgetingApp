@@ -69,4 +69,10 @@ data class CsvConfirmRequest(
     val rows: List<RestCsvRow> = emptyList(),
     /** External id to category id, or null to import that row uncategorised. */
     val categories: Map<String, Long?> = emptyMap(),
+    /**
+     * External id to the other account, for rows the user marked as a transfer between
+     * their own accounts rather than as spending or income. Wins over [categories] for the
+     * same row.
+     */
+    val transfers: Map<String, Long?> = emptyMap(),
 )

@@ -448,6 +448,10 @@
     <string name="csv_currency_mismatch">The file contains %1$s but %2$s is in %3$s. Amounts are imported as-is, without conversion.</string>
     <string name="csv_truncated">Showing the first 200 of %1$s; all of them are imported.</string>
 
+    <!-- A row that only moved money between the user's own accounts, chosen in place of a category. -->
+    <string name="import_transfer_to">Transfer to %1$s</string>
+    <string name="import_transfer_from">Transfer from %1$s</string>
+
     <!-- Import from homemoney.ua. Web only; see navigation.homeMoneyImportAvailable. -->
     <string name="nav_homemoney">HomeMoney</string>
     <string name="homemoney_title">Import from HomeMoney</string>

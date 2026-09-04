@@ -70,7 +70,7 @@ class BanksViewModelTest {
         every { banks.observeConnections() } returns flowOf(listOf(connection))
         coEvery { banks.providers() } returns emptyList()
         coEvery { banks.previewImport(any(), any(), any()) } returns rows
-        coEvery { banks.confirmImport(any(), any(), any(), any()) } returns ImportResult(1, 0)
+        coEvery { banks.confirmImport(any(), any(), any(), any(), any()) } returns ImportResult(1, 0)
         every { accounts.observeActive() } returns flowOf(listOf(checking, savings))
         every { categories.observeAll() } returns flowOf(listOf(groceries))
         return BanksViewModel(banks, accounts, transactions, categories)
@@ -128,14 +128,38 @@ class BanksViewModelTest {
             model.preview()
             while (state.import.rows == null) state = awaitItem()
 
-            model.setRowCategory("a", null)
+            model.setRowChoice("a", null)
             model.confirmImport()
             while (state.import.result == null) state = awaitItem()
 
             // "b" is absent rather than present-and-ignored: absence is what keeps a row
             // that is already in the ledger from being written a second time.
-            coVerify { banks.confirmImport(7L, any(), any(), mapOf("a" to null)) }
+            coVerify { banks.confirmImport(7L, any(), any(), mapOf("a" to null), emptyMap()) }
             assertEquals(ImportResult(1, 0), state.import.result)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a line marked as a transfer travels as a counterpart account, not as a category`() = runTest {
+        val model = vm(listOf(row("a", suggested = 3L)))
+        model.uiState.test {
+            var state = awaitItem()
+            while (state.accounts.isEmpty()) state = awaitItem()
+
+            model.setImportAccount(7L)
+            model.preview()
+            while (state.import.rows == null) state = awaitItem()
+
+            model.setRowChoice("a", ImportChoice.encodeAccount(savings.id))
+            model.confirmImport()
+            while (state.import.result == null) state = awaitItem()
+
+            // The suggested category has to go with it: a line cannot be both a move
+            // between the user's own accounts and money spent on groceries.
+            coVerify {
+                banks.confirmImport(7L, any(), any(), mapOf("a" to null), mapOf("a" to 9L))
+            }
             cancelAndIgnoreRemainingEvents()
         }
     }

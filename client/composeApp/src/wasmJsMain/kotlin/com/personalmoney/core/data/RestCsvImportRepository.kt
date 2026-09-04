@@ -32,12 +32,14 @@ class RestCsvImportRepository(private val api: RestApi) : CsvImportRepository {
         accountId: Long,
         rows: List<CsvRow>,
         categories: Map<String, Long?>,
+        transfers: Map<String, Long?>,
     ): ImportResult {
         val result = api.confirmCsv(
             CsvConfirmRequest(
                 accountId = accountId,
                 rows = rows.map { it.toDto() },
                 categories = categories,
+                transfers = transfers,
             )
         )
         return ImportResult(imported = result.imported, skipped = result.skipped)

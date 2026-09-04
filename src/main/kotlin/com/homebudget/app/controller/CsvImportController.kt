@@ -54,7 +54,13 @@ data class CsvPreviewResponse(
 data class CsvConfirmRequest(
     val accountId: Long,
     val rows: List<CsvRowDto> = emptyList(),
-    val categories: Map<String, Long?> = emptyMap()
+    val categories: Map<String, Long?> = emptyMap(),
+    /**
+     * External transaction id to the *other* account the money moved to or from, for rows
+     * the user marked as a transfer rather than as spending or income. Takes precedence
+     * over [categories] for the same row.
+     */
+    val transfers: Map<String, Long?> = emptyMap()
 )
 
 /**
@@ -146,7 +152,8 @@ class CsvImportController(
                     type = it.type
                 )
             },
-            categoryByExternalId = req.categories
+            categoryByExternalId = req.categories,
+            transferAccountByExternalId = req.transfers
         )
         return ImportResultResponse(result.imported, result.skipped)
     }

@@ -7,13 +7,17 @@ import com.homebudget.app.repository.BankConnectionRepository
 import com.homebudget.app.repository.CategoryRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.security.SecurityUtils
+import com.homebudget.app.service.FxService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * Bank connections and the import that runs off them.
@@ -30,6 +34,7 @@ class BankConnectionService(
     private val categoryRepo: CategoryRepository,
     private val transactionRepo: TransactionRepository,
     private val securityUtils: SecurityUtils,
+    private val fxService: FxService,
     private val objectMapper: ObjectMapper,
     private val clock: Clock
 ) {
@@ -212,11 +217,18 @@ class BankConnectionService(
      * Shared by the bank APIs and the CSV importer so the rules that matter - dedup by
      * external id, category-type agreement, currency rescaling, MCC learning - exist
      * once rather than once per source.
+     *
+     * [transferAccountByExternalId] names, per row, the *other* account the money moved
+     * to or from. Such a row becomes a transfer pair instead of a categorised income or
+     * expense: a statement's "moved to savings" line is not spending, and counting it as
+     * spending is what makes an imported month look wrong. A row named there is imported
+     * as a transfer whatever [categoryByExternalId] says about it.
      */
     fun importRows(
         accountId: Long,
         rows: List<ImportableRow>,
-        categoryByExternalId: Map<String, Long?>
+        categoryByExternalId: Map<String, Long?>,
+        transferAccountByExternalId: Map<String, Long?> = emptyMap()
     ): ImportResult {
         val user = securityUtils.getCurrentUser()
         val account = accountRepo.findByIdAndUser(accountId, user)
@@ -227,8 +239,21 @@ class BankConnectionService(
         var skipped = 0
 
         for (row in rows) {
-            if (!categoryByExternalId.containsKey(row.externalId)) continue
+            val counterpartId = transferAccountByExternalId[row.externalId]
+            // The maps are the selection as well as the choice: a row named by neither was
+            // never in front of the user, so it stays out of the ledger.
+            if (counterpartId == null && !categoryByExternalId.containsKey(row.externalId)) continue
             if (transactionRepo.existsByAccountAndExternalId(account, row.externalId)) { skipped++; continue }
+
+            if (counterpartId != null) {
+                val counterpart = accountRepo.findByIdAndUser(counterpartId, user)
+                // A counterpart that is gone, or is the account itself, would make a
+                // transfer with nowhere to go rather than a ledger row worth keeping.
+                if (counterpart == null || counterpart.id == account.id) { skipped++; continue }
+                saveTransferPair(user, account, counterpart, row)
+                imported++
+                continue
+            }
 
             val category = categoryByExternalId[row.externalId]?.let { categoryRepo.findByIdAndUser(it, user) }
             val expectedType =
@@ -263,9 +288,10 @@ class BankConnectionService(
         accountId: Long,
         from: LocalDate,
         to: LocalDate,
-        categoryByExternalId: Map<String, Long?>
+        categoryByExternalId: Map<String, Long?>,
+        transferAccountByExternalId: Map<String, Long?> = emptyMap()
     ): ImportResult {
-        if (categoryByExternalId.isEmpty()) return ImportResult(0, 0)
+        if (categoryByExternalId.isEmpty() && transferAccountByExternalId.isEmpty()) return ImportResult(0, 0)
 
         val account = linkedAccount(accountId)
         val connection = account.bankConnection!!
@@ -283,13 +309,94 @@ class BankConnectionService(
             remote.map {
                 ImportableRow(it.externalId, it.occurredAt, it.description, it.amountMinor, it.type, it.mcc)
             },
-            categoryByExternalId
+            categoryByExternalId,
+            transferAccountByExternalId
         )
         log.info("Imported {} and skipped {} from {}", result.imported, result.skipped, connection.provider)
         return result
     }
 
     // ── Internals ───────────────────────────────────────────────────────────
+
+    /**
+     * Writes an imported row as the two rows a transfer is made of - see [Transaction].
+     *
+     * The direction comes from the row itself: money leaving the statement's account went
+     * *to* the counterpart, money arriving came *from* it. Across currencies the far leg
+     * is converted at the stored rate, the same one the clients convert with, so an
+     * imported cross-currency transfer lands with what the other account received rather
+     * than the source figure repeated.
+     */
+    private fun saveTransferPair(
+        user: User,
+        account: Account,
+        counterpart: Account,
+        row: ImportableRow
+    ) {
+        val nearDecimals = account.currency.decimals
+        val farDecimals = counterpart.currency.decimals
+        val nearMinor = rescale(row.amountMinor, nearDecimals)
+        val rate = fxService.rate(user, account.currency.code, counterpart.currency.code) ?: BigDecimal.ONE
+        val farMinor = MinorUnits.toMinor(
+            MinorUnits.toDecimal(nearMinor, nearDecimals).multiply(rate),
+            farDecimals
+        )
+
+        val incoming = row.type == TransactionType.INCOME
+        val groupId = UUID.randomUUID().toString()
+
+        // The credit leg carries the from-to rate, which is where a TransferResponse reads
+        // the exchange rate it shows.
+        val debitMajor = MinorUnits.toDecimal(
+            if (incoming) farMinor else nearMinor,
+            if (incoming) farDecimals else nearDecimals
+        )
+        val creditMajor = MinorUnits.toDecimal(
+            if (incoming) nearMinor else farMinor,
+            if (incoming) nearDecimals else farDecimals
+        )
+        val creditRate = if (debitMajor.signum() != 0) {
+            creditMajor.divide(debitMajor, 10, RoundingMode.HALF_UP)
+        } else {
+            BigDecimal.ONE
+        }
+
+        val near = Transaction(
+            user = user,
+            account = account,
+            category = null,
+            // Signed: the balance query adds TRANSFER rows as-is.
+            amountMinor = if (incoming) nearMinor else -nearMinor,
+            currencyCode = account.currency.code,
+            accountAmountMinor = if (incoming) nearMinor else -nearMinor,
+            fxRateToAccount = if (incoming) creditRate else BigDecimal.ONE,
+            type = TransactionType.TRANSFER,
+            occurredAt = row.occurredAt,
+            description = row.description,
+            transferGroupId = groupId,
+            transferCounterpartAccountId = counterpart.id,
+            // Only the imported side carries it: it is that statement's id, and the far
+            // account has a statement of its own where this movement has another.
+            externalId = row.externalId
+        )
+        val far = Transaction(
+            user = user,
+            account = counterpart,
+            category = null,
+            amountMinor = if (incoming) -farMinor else farMinor,
+            currencyCode = counterpart.currency.code,
+            accountAmountMinor = if (incoming) -farMinor else farMinor,
+            fxRateToAccount = if (incoming) BigDecimal.ONE else creditRate,
+            type = TransactionType.TRANSFER,
+            occurredAt = row.occurredAt,
+            description = row.description,
+            transferGroupId = groupId,
+            transferCounterpartAccountId = account.id
+        )
+
+        // Both legs in one save: a half-written transfer is a corrupted balance.
+        transactionRepo.saveAll(listOf(near, far))
+    }
 
     private fun linkedAccount(accountId: Long): Account {
         val account = accountRepo.findByIdAndUser(accountId, securityUtils.getCurrentUser())

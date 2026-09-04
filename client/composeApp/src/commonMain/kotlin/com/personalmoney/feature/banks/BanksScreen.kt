@@ -563,8 +563,9 @@ private fun DateField(label: String, date: LocalDate, onClick: () -> Unit) {
 private fun PendingRow(row: PendingImport, state: BanksUiState, viewModel: BanksViewModel) {
     val currency = state.importAccount?.currencyCode ?: return
     val categories = state.categoriesFor(row.type)
-    val chosen = state.import.categories[row.externalId]
-    val chosenName = categories.firstOrNull { it.id == chosen }?.name
+    // One id for both answers - a category, or the account a transfer moved to or from.
+    val chosen = state.import.transfers[row.externalId]?.let { ImportChoice.encodeAccount(it) }
+        ?: state.import.categories[row.externalId]
 
     FlowRow(
         Modifier.fillMaxWidth().alpha(if (row.alreadyImported) 0.45f else 1f),
@@ -601,11 +602,14 @@ private fun PendingRow(row: PendingImport, state: BanksUiState, viewModel: Banks
         } else {
             PickerField(
                 label = stringResource(Res.string.common_category),
-                value = chosenName ?: stringResource(Res.string.common_uncategorised),
-                options = listOf(
-                    PickerOption(null, stringResource(Res.string.common_uncategorised)),
-                ) + categories.map { PickerOption(it.id, it.name) },
-                onSelect = { id -> viewModel.setRowCategory(row.externalId, id) },
+                value = importChoiceLabel(chosen, row.type, categories, state.accounts),
+                options = importChoiceOptions(
+                    type = row.type,
+                    categories = categories,
+                    accounts = state.accounts,
+                    currentAccountId = state.import.accountId,
+                ),
+                onSelect = { id -> viewModel.setRowChoice(row.externalId, id) },
                 modifier = Modifier.widthIn(min = 180.dp, max = 240.dp),
             )
         }

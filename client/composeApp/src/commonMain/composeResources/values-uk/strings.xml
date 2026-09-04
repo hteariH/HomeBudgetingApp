@@ -424,6 +424,10 @@
     <string name="csv_currency_mismatch">У файлі зустрічається %1$s, а рахунок %2$s ведеться в %3$s. Суми завантажуються як є, без конвертації.</string>
     <string name="csv_truncated">Показано перші 200 з %1$s; завантажені будуть усі.</string>
 
+    <!-- Ryadok, yakyy lyshe peremistyv hroshi mizh rakhunkamy korystuvacha. -->
+    <string name="import_transfer_to">Переказ на %1$s</string>
+    <string name="import_transfer_from">Переказ з %1$s</string>
+
     <!-- Import z homemoney.ua. Lyshe veb; dyv. navigation.homeMoneyImportAvailable. -->
     <string name="nav_homemoney">HomeMoney</string>
     <string name="homemoney_title">Імпорт з HomeMoney</string>

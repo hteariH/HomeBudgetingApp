@@ -96,7 +96,13 @@ data class ImportConfirmRequest(
     val dateFrom: LocalDate,
     val dateTo: LocalDate,
     /** external transaction id → category id, or null to import uncategorised. */
-    val categories: Map<String, Long?> = emptyMap()
+    val categories: Map<String, Long?> = emptyMap(),
+    /**
+     * External transaction id to the *other* account the money moved to or from, for rows
+     * the user marked as a transfer rather than as spending or income. Takes precedence
+     * over [categories] for the same row.
+     */
+    val transfers: Map<String, Long?> = emptyMap()
 )
 
 data class ImportResultResponse(val imported: Int, val skipped: Int)
@@ -186,7 +192,7 @@ class BankController(
 
     @PostMapping("/import/confirm")
     fun confirm(@RequestBody req: ImportConfirmRequest): ImportResultResponse {
-        val result = service.confirm(req.accountId, req.dateFrom, req.dateTo, req.categories)
+        val result = service.confirm(req.accountId, req.dateFrom, req.dateTo, req.categories, req.transfers)
         return ImportResultResponse(result.imported, result.skipped)
     }
 
