@@ -460,6 +460,8 @@
     <string name="homemoney_connect">Connect HomeMoney</string>
     <string name="homemoney_connected_as">Connected as %1$s</string>
     <string name="homemoney_invalid">HomeMoney is refusing the stored authorisation. Connect again.</string>
+    <string name="homemoney_denied">HomeMoney did not grant access. Nothing was connected.</string>
+    <string name="homemoney_link_expired">That connection attempt has expired. Start again from Connect HomeMoney.</string>
     <string name="homemoney_disconnect">Disconnect</string>
     <string name="homemoney_confirm_disconnect">Disconnect? Everything already imported stays.</string>
     <string name="homemoney_load_plan">See what would be imported</string>

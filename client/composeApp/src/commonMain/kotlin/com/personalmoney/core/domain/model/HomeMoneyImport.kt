@@ -10,6 +10,16 @@ import kotlinx.datetime.LocalDate
  * repository translates, and nothing above the repository knows what the wire looks like.
  */
 
+/**
+ * Where to send the browser for consent, and the state to keep while it is away.
+ *
+ * Two values rather than one because homemoney.ua does not return the state it was given:
+ * the redirect comes back with a code alone, so the app has to have kept its own copy to
+ * pair with it. Neither value is a credential - the state names this user to our server
+ * and nothing else.
+ */
+data class HomeMoneyAuthorization(val url: String, val state: String)
+
 /** Whether HomeMoney is linked, and to whom. Never carries a token; see `HomeMoneyDtos`. */
 data class HomeMoneyConnection(
     val connected: Boolean,

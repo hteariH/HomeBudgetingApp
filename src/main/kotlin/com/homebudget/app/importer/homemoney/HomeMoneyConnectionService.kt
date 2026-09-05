@@ -26,6 +26,16 @@ import javax.crypto.SecretKey
 const val HOMEMONEY_PROVIDER = "HOMEMONEY"
 
 /**
+ * Where to send the browser for consent, and the state minted alongside it.
+ *
+ * The state comes back to the caller rather than only travelling to homemoney.ua because
+ * homemoney.ua does not return it. Their `/api/oauth/authorize/` accepts the parameter and
+ * drops it: the redirect arrives with `code` and nothing else. So the copy that proves
+ * this user started the round trip is the one the client keeps.
+ */
+data class HomeMoneyAuthorization(val url: String, val state: String)
+
+/**
  * The HomeMoney OAuth link, and the tokens it produces.
  *
  * Stored in `bank_connections` rather than a table of its own. It is the same kind of
@@ -55,10 +65,10 @@ class HomeMoneyConnectionService(
     /**
      * A key of its own, derived from the JWT secret with a domain-separation label.
      *
-     * Deliberately not the JWT key. The state token names a user and is handed to a third
-     * party, which goes through the browser and comes back on a `permitAll` endpoint - if
-     * it were signed with the same key, anyone holding one could present it as a bearer
-     * token and be that user.
+     * Deliberately not the JWT key. The state token names a user and travels through the
+     * browser to a third party, ending up in a URL and a browser history - if it were
+     * signed with the same key, anyone holding one could present it as a bearer token and
+     * be that user.
      */
     private val stateKey: SecretKey = Keys.hmacShaKeyFor(
         MessageDigest.getInstance("SHA-256").digest("homemoney-oauth-state:$jwtSecret".toByteArray())
@@ -97,28 +107,38 @@ class HomeMoneyConnectionService(
      *
      * Returned to the client to navigate to, rather than being a redirect of our own: the
      * page has a bearer token and an XHR can carry it, a top-level navigation cannot.
+     *
+     * The state still goes to homemoney.ua, because that is what the parameter is for and
+     * costs nothing if they ever start honouring it. What the flow actually relies on is
+     * the copy handed back here - see [HomeMoneyAuthorization].
      */
-    fun authorizationUrl(): String {
+    fun authorizationUrl(): HomeMoneyAuthorization {
         val user = securityUtils.getCurrentUser()
+        val state = newState(user)
         val params = mapOf(
             "client_id" to clientId,
             "response_type" to "code",
             "redirect_uri" to redirectUri,
             "scope" to "api",
-            "state" to newState(user)
+            "state" to state
         ).entries.joinToString("&") { (k, v) -> "$k=${encode(v)}" }
-        return "${homeMoneyBaseUrl.trimEnd('/')}/api/oauth/authorize/?$params"
+        return HomeMoneyAuthorization("${homeMoneyBaseUrl.trimEnd('/')}/api/oauth/authorize/?$params", state)
     }
 
     /**
-     * Completes the consent round trip.
+     * Completes the consent round trip, for the user this call is authenticated as.
      *
-     * Runs without a security context - HomeMoney redirects a browser here and browsers
-     * do not carry bearer tokens - so the user comes from the signed state and nowhere
-     * else.
+     * Runs *with* a security context, unlike the callback that precedes it. The identity
+     * comes from the bearer token, because the redirect from homemoney.ua carries no state
+     * to take it from; the state is checked as well, and only as a second condition:
+     * without it a code obtained on somebody else's consent screen could be handed to a
+     * logged-in browser and quietly attached to their account.
      */
     fun completeAuthorization(code: String, state: String): BankConnection {
-        val user = userOfState(state)
+        val user = securityUtils.getCurrentUser()
+        if (userOfState(state).id != user.id) {
+            throw HomeMoneyAuthException("The HomeMoney authorisation link is no longer valid; start again")
+        }
         val token = api.tokenByAuthorizationCode(clientId, clientSecret, redirectUri, code)
         val access = token.accessToken
             ?: throw HomeMoneyAuthException("HomeMoney returned no access token")

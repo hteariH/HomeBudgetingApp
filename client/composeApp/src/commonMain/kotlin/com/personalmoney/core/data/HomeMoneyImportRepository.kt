@@ -1,6 +1,7 @@
 package com.personalmoney.core.data
 
 import com.personalmoney.core.domain.model.HomeMoneyAccountMapping
+import com.personalmoney.core.domain.model.HomeMoneyAuthorization
 import com.personalmoney.core.domain.model.HomeMoneyCategoryMapping
 import com.personalmoney.core.domain.model.HomeMoneyConnection
 import com.personalmoney.core.domain.model.HomeMoneyImportPlan
@@ -28,12 +29,21 @@ interface HomeMoneyImportRepository {
     suspend fun connection(): HomeMoneyConnection
 
     /**
-     * Where to send the browser to ask HomeMoney for consent.
+     * Where to send the browser to ask HomeMoney for consent, and the state to keep.
      *
      * Fetched rather than built here: the URL carries a signed state naming this user, and
-     * only the server can mint one.
+     * only the server can mint one. The state comes back to us as well because
+     * homemoney.ua will not return it - see [HomeMoneyAuthorization].
      */
-    suspend fun authorizationUrl(): String
+    suspend fun authorizationUrl(): HomeMoneyAuthorization
+
+    /**
+     * Spends the code homemoney.ua left in the URL, finishing the link.
+     *
+     * The step the server's redirect handler cannot do on its own: it has no way to tell
+     * whose consent came back, and this call does, because it is authenticated.
+     */
+    suspend fun completeAuthorization(code: String, state: String): HomeMoneyConnection
 
     /** Drops the stored token. Everything already imported stays. */
     suspend fun disconnect()

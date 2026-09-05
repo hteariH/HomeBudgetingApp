@@ -1,6 +1,7 @@
 package com.personalmoney.core.data
 
 import com.personalmoney.core.domain.model.HomeMoneyAccountMapping
+import com.personalmoney.core.domain.model.HomeMoneyAuthorization
 import com.personalmoney.core.domain.model.HomeMoneyCategoryMapping
 import com.personalmoney.core.domain.model.HomeMoneyConnection
 import com.personalmoney.core.domain.model.HomeMoneyImportPlan
@@ -24,7 +25,11 @@ class RestHomeMoneyImportRepository(private val api: RestApi) : HomeMoneyImportR
 
     override suspend fun connection(): HomeMoneyConnection = api.homeMoneyConnection().toConnection()
 
-    override suspend fun authorizationUrl(): String = api.authorizeHomeMoney().authorizationUrl
+    override suspend fun authorizationUrl(): HomeMoneyAuthorization =
+        api.authorizeHomeMoney().let { HomeMoneyAuthorization(url = it.authorizationUrl, state = it.state) }
+
+    override suspend fun completeAuthorization(code: String, state: String): HomeMoneyConnection =
+        api.connectHomeMoneyWithCode(code, state).toConnection()
 
     override suspend fun disconnect() = api.disconnectHomeMoney()
 

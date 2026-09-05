@@ -145,9 +145,16 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
   `navigation/homeMoneyImportAvailable`): the server owns it end to end
   (`com.homebudget.app.importer.homemoney`), because homemoney.ua sends no CORS headers and
   a browser cannot call it at all. Consent is an OAuth redirect: `POST /authorize` returns a
-  URL carrying a signed state, the page *navigates* to it (`core/ui/rememberPageNavigator`,
-  not `rememberUrlOpener` - a new tab would swallow the return), and the callback lands back
-  on `/app/?homemoney=…`, which `main.kt` turns into the nav host's `deepLink`. Their API
+  URL *and* the signed state minted with it, the page stores the state
+  (`UserPreferences.homeMoneyAuthState`) and *navigates* to the URL
+  (`core/ui/rememberPageNavigator`, not `rememberUrlOpener` - a new tab would swallow the
+  return). **homemoney.ua does not return `state`** - their redirect carries `code` alone -
+  so the callback cannot tell whose consent came back and does not try: it bounces to
+  `/app/?homemoney=pending&code=…`, `main.kt` parses that into a `HomeMoneyRedirect` and
+  drops the query (the code is single-use), and the ViewModel spends it over
+  `POST /connection/code`, which is authenticated and checks the stored state against the
+  signed-in user. Requiring `state` on the callback instead is what made a refused import
+  look like nothing happening at all - no row, no log line, no message. Their API
   answers **HTTP 200 even for errors** and rejects a trailing slash on the path; both are
   documented on `HomeMoneyApi`. Dedup is `transactions.external_id = "homemoney:<GUID>"`, so
   re-running imports nothing twice.

@@ -30,7 +30,20 @@ data class HomeMoneyConnectionResponse(
     val lastVerifiedAt: LocalDateTime? = null
 )
 
-data class HomeMoneyAuthorizationResponse(val authorizationUrl: String)
+/**
+ * Where to send the browser, and the state to keep until it comes back.
+ *
+ * The state is handed to the client because homemoney.ua does not return it: their
+ * redirect arrives with `code` alone, so the client's stored copy is the only evidence
+ * that this browser is the one that started the round trip.
+ */
+data class HomeMoneyAuthorizationResponse(val authorizationUrl: String, val state: String)
+
+/** The authorisation code the redirect left in the URL, sent back by the page that read it. */
+data class HomeMoneyCodeRequest(
+    @field:NotBlank val code: String = "",
+    @field:NotBlank val state: String = ""
+)
 
 /** Only reachable while `app.homemoney.allow-password-grant` is on; see the controller. */
 data class HomeMoneyPasswordRequest(
@@ -143,43 +156,54 @@ class HomeMoneyImportController(
 
     @PostMapping("/authorize")
     fun authorize(): HomeMoneyAuthorizationResponse =
-        HomeMoneyAuthorizationResponse(connections.authorizationUrl())
+        connections.authorizationUrl().let { HomeMoneyAuthorizationResponse(it.url, it.state) }
 
     /**
      * Where HomeMoney sends the browser back to.
      *
+     * Hands the code to the page rather than spending it here. It cannot be spent here:
+     * homemoney.ua drops the `state` parameter, so this request - which carries no bearer
+     * token either, being a top-level navigation - has nothing to say whose authorisation
+     * just arrived. The page that receives it does have a token, and finishes the exchange
+     * over [connectWithCode].
+     *
      * Answers with a redirect into the app rather than JSON: whatever is on the other end
      * of this is a browser window the user is looking at, and a page of JSON is not an
-     * answer to "did that work". The outcome travels as a query parameter the import
-     * screen reads.
+     * answer to "did that work".
      */
     @GetMapping("/callback")
     fun callback(
         @RequestParam(required = false) code: String?,
-        @RequestParam(required = false) state: String?,
         @RequestParam(required = false) error: String?
     ): ResponseEntity<Void> {
-        val outcome = when {
-            error != null -> "denied"
-            code.isNullOrBlank() || state.isNullOrBlank() -> "denied"
-            else -> try {
-                connections.completeAuthorization(code, state)
-                "connected"
-            } catch (e: Exception) {
-                // Every failure, not just the two HomeMoney ones. Whatever is on the
-                // other end of this is a browser window the user is watching, and the
-                // exception handler's JSON 500 would land in it as a page of text with
-                // no way back into the app.
-                log.warn("HomeMoney authorisation could not be completed", e)
-                "failed"
-            }
+        val target = UriComponentsBuilder.fromUriString("${appBaseUrl.trimEnd('/')}/app/")
+        if (error != null || code.isNullOrBlank()) {
+            // Logged, because the silent version of this cost an afternoon: the screen
+            // showed a disconnected state and nothing anywhere said why.
+            log.warn("HomeMoney returned no authorisation code (error={})", error)
+            target.queryParam("homemoney", "denied")
+        } else {
+            target.queryParam("homemoney", "pending").queryParam("code", code)
         }
-        val target = UriComponentsBuilder
-            .fromUriString("${appBaseUrl.trimEnd('/')}/app/")
-            .queryParam("homemoney", outcome)
-            .build()
-            .toUriString()
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(target)).build()
+        val uri = target.build().encode().toUriString()
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(uri)).build()
+    }
+
+    /**
+     * Finishes what [callback] started, as the signed-in user.
+     *
+     * Separate from the callback because only this call knows who the user is - the
+     * redirect that precedes it does not, and cannot be made to.
+     */
+    @PostMapping("/connection/code")
+    fun connectWithCode(@RequestBody req: HomeMoneyCodeRequest): HomeMoneyConnectionResponse {
+        val connection = connections.completeAuthorization(req.code, req.state)
+        return HomeMoneyConnectionResponse(
+            connected = true,
+            label = connection.label,
+            status = connection.status.name,
+            lastVerifiedAt = connection.lastVerifiedAt
+        )
     }
 
     /**

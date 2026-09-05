@@ -216,6 +216,18 @@ class RestApi(private val client: HttpClient) {
     suspend fun authorizeHomeMoney(): RestHomeMoneyAuthorization =
         client.post("api/import/homemoney/authorize").body()
 
+    /**
+     * Spends the code homemoney.ua left in the URL.
+     *
+     * The exchange happens from here rather than in the server's redirect handler because
+     * that handler has no way to tell whose authorisation arrived - homemoney.ua returns
+     * no state - whereas this call carries the bearer token.
+     */
+    suspend fun connectHomeMoneyWithCode(code: String, state: String): RestHomeMoneyConnection =
+        client.post("api/import/homemoney/connection/code") {
+            jsonBody(HomeMoneyCodeRequest(code = code, state = state))
+        }.body()
+
     suspend fun disconnectHomeMoney() { client.delete("api/import/homemoney/connection") }
 
     /** Reads HomeMoney and proposes a mapping. Writes nothing. */

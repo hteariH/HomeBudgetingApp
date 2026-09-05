@@ -43,6 +43,16 @@ class UserPreferences(private val store: KeyValueStore) {
         store.observeBoolean(Keys.ADS_CONSENT_OBTAINED).map { it ?: false }
     val biometricLockEnabled: Flow<Boolean> =
         store.observeBoolean(Keys.BIOMETRIC_LOCK_ENABLED).map { it ?: false }
+    /**
+     * The OAuth state minted when the user set off for homemoney.ua's consent screen.
+     *
+     * Stored rather than held in memory because the round trip leaves the page: the app is
+     * reloaded from scratch on the way back, and homemoney.ua returns no state of its own,
+     * so this is the only thing tying the returning code to the browser that asked for it.
+     * Cleared the moment it is spent.
+     */
+    val homeMoneyAuthState: Flow<String?> = store.observeString(Keys.HOMEMONEY_AUTH_STATE)
+
     val syncCursor: Flow<String> = store.observeString(Keys.SYNC_CURSOR).map { it ?: "" }
     val syncLastOkMs: Flow<Long> = store.observeLong(Keys.SYNC_LAST_OK_MS).map { it ?: 0L }
 
@@ -72,6 +82,10 @@ class UserPreferences(private val store: KeyValueStore) {
         store.putBoolean(Keys.BIOMETRIC_LOCK_ENABLED, value)
 
 
+    suspend fun setHomeMoneyAuthState(state: String?) =
+        if (state == null) store.remove(Keys.HOMEMONEY_AUTH_STATE)
+        else store.putString(Keys.HOMEMONEY_AUTH_STATE, state)
+
     suspend fun setSyncCursor(cursor: String) = store.putString(Keys.SYNC_CURSOR, cursor)
 
     suspend fun setSyncLastOkMs(ms: Long) = store.putLong(Keys.SYNC_LAST_OK_MS, ms)
@@ -95,6 +109,10 @@ internal object PreferenceKeys {
     const val TRANSACTION_SAVE_COUNT = "transaction_save_count"
     const val ADS_CONSENT_OBTAINED = "ads_consent_obtained"
     const val BIOMETRIC_LOCK_ENABLED = "biometric_lock_enabled"
+
+    // Outstanding HomeMoney OAuth state, written before leaving for their consent screen
+    // and read once on the way back. Web-only in practice, like the import itself.
+    const val HOMEMONEY_AUTH_STATE = "homemoney_auth_state"
 
     // Server-issued cursor for the last successful sync pull. Kept as the exact string
     // the server sent rather than a parsed instant, so no local clock or formatting quirk

@@ -10,6 +10,8 @@ import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.di.webModule
 import com.personalmoney.core.ui.theme.PersonalMoneyTheme
 import com.personalmoney.core.ui.theme.isDark
+import com.personalmoney.feature.homemoney.HomeMoneyRedirect
+import com.personalmoney.feature.homemoney.PendingHomeMoneyRedirect
 import com.personalmoney.navigation.PersonalMoneyNavHost
 import com.personalmoney.navigation.Routes
 import kotlinx.browser.document
@@ -32,11 +34,56 @@ import org.koin.core.context.startKoin
 @JsFun("() => window.location.search")
 private external fun locationSearch(): String
 
+@JsFun("(s) => decodeURIComponent(s)")
+private external fun decodeUriComponent(s: String): String
+
+/**
+ * Drops the query string, keeping the path and the fragment the router works in.
+ *
+ * Done before the code is spent rather than after: it is single-use, and leaving it in the
+ * address bar means a reload - or a restored tab - tries it again and shows a failure for
+ * an import that actually worked.
+ */
+@JsFun("() => window.history.replaceState(null, '', window.location.pathname + window.location.hash)")
+private external fun dropQueryString()
+
+private fun queryParams(search: String): Map<String, String> =
+    search.removePrefix("?")
+        .split("&")
+        .mapNotNull { part ->
+            val separator = part.indexOf('=')
+            if (separator <= 0) null
+            else decodeUriComponent(part.take(separator)) to decodeUriComponent(part.substring(separator + 1))
+        }
+        .toMap()
+
+/**
+ * What the server's redirect is telling us, if this load is one.
+ *
+ * `pending` carries a code that still has to be exchanged; anything else the server can
+ * say means no token was obtained, and the screen should say so rather than look untouched.
+ */
+private fun redirectFrom(search: String): HomeMoneyRedirect? {
+    val params = queryParams(search)
+    val outcome = params["homemoney"] ?: return null
+    val code = params["code"]
+    return if (outcome == "pending" && !code.isNullOrBlank()) {
+        HomeMoneyRedirect.Pending(code)
+    } else {
+        HomeMoneyRedirect.Denied
+    }
+}
+
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     startKoin { modules(webModule) }
     val koin = GlobalContext.get()
     val preferences = koin.get<UserPreferences>()
+    // Read and cleared before the first frame: the ViewModel picks it up from here, and
+    // the address bar stops holding a code that must not be spent twice.
+    val redirect = redirectFrom(locationSearch())
+    PendingHomeMoneyRedirect.set(redirect)
+    if (redirect != null) dropQueryString()
     ComposeViewport(document.body!!) {
         // The stored choice, not just the system's. Until the header had a theme switch
         // nothing in the browser could set this, so the preference existed and was ignored
@@ -44,11 +91,9 @@ fun main() {
         val themeMode by preferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
         PersonalMoneyTheme(darkTheme = themeMode.isDark()) {
             PersonalMoneyNavHost(
-                // Whatever the outcome, the import screen is where it makes sense: it
-                // reads the connection back from the server, which is the only side that
-                // knows whether a token was actually stored.
-                deepLink = Routes.IMPORT_HOMEMONEY
-                    .takeIf { "homemoney=" in locationSearch() },
+                // Whatever the outcome, the import screen is where it belongs - it is the
+                // screen the user left from, and the one that finishes the exchange.
+                deepLink = Routes.IMPORT_HOMEMONEY.takeIf { redirect != null },
                 userPreferences = preferences,
                 tokenStore = koin.get<TokenStore>(),
             )

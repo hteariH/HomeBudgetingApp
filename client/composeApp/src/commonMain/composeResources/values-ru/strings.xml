@@ -436,6 +436,8 @@
     <string name="homemoney_connect">Подключить HomeMoney</string>
     <string name="homemoney_connected_as">Подключено как %1$s</string>
     <string name="homemoney_invalid">HomeMoney больше не принимает сохранённую авторизацию. Подключитесь заново.</string>
+    <string name="homemoney_denied">HomeMoney не выдал доступ. Ничего не подключено.</string>
+    <string name="homemoney_link_expired">Эта попытка подключения устарела. Начните заново с «Подключить HomeMoney».</string>
     <string name="homemoney_disconnect">Отключить</string>
     <string name="homemoney_confirm_disconnect">Отключить? Всё уже импортированное останется.</string>
     <string name="homemoney_load_plan">Посмотреть, что будет импортировано</string>

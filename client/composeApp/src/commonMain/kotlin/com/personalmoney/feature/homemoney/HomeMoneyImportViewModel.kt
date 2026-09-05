@@ -6,6 +6,7 @@ import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
 import com.personalmoney.core.data.CurrencyRepository
 import com.personalmoney.core.data.HomeMoneyImportRepository
+import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.model.Currency
@@ -15,10 +16,13 @@ import com.personalmoney.core.domain.model.HomeMoneyImportProgress
 import com.personalmoney.core.network.serverMessage
 import com.personalmoney.resources.Res
 import com.personalmoney.resources.common_request_failed
+import com.personalmoney.resources.homemoney_denied
+import com.personalmoney.resources.homemoney_link_expired
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
@@ -60,6 +64,7 @@ class HomeMoneyImportViewModel(
     private val accountRepository: AccountRepository,
     private val categoryRepository: CategoryRepository,
     private val currencyRepository: CurrencyRepository,
+    private val preferences: UserPreferences,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeMoneyImportUiState())
@@ -67,7 +72,8 @@ class HomeMoneyImportViewModel(
 
     init {
         observeLocalData()
-        refresh()
+        val redirect = PendingHomeMoneyRedirect.take()
+        if (redirect == null) refresh() else finishAuthorization(redirect)
     }
 
     /**
@@ -97,29 +103,79 @@ class HomeMoneyImportViewModel(
     /**
      * Re-reads the connection.
      *
-     * Also what runs when the screen opens after HomeMoney has redirected back, which is
-     * why the outcome is read from the server rather than from the redirect's own query
-     * parameter: the server is the side that knows whether a token was actually stored.
+     * The ordinary way in. A screen opened by HomeMoney's redirect goes through
+     * [finishAuthorization] instead, which has a code to spend first.
      */
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
-            try {
-                val connection = repository.connection()
-                val progress = repository.progress()
-                _state.update { it.copy(loading = false, connection = connection, progress = progress) }
-                // An import left running by an earlier visit is still running on the
-                // server; pick the watch back up rather than showing a stale figure.
-                if (progress.running) pollProgress()
-            } catch (e: Exception) {
-                _state.update { it.copy(loading = false, error = messageFor(e)) }
+            reload(message = null)
+        }
+    }
+
+    /**
+     * Reads the connection and any running import back, keeping [message] if there is one.
+     *
+     * The message outlives the reload on purpose: after a refused or expired consent the
+     * server has nothing to report - there simply is no connection - and the only account
+     * of what went wrong is the one carried in from the redirect.
+     */
+    private suspend fun reload(message: String?) {
+        try {
+            val connection = repository.connection()
+            val progress = repository.progress()
+            _state.update {
+                it.copy(loading = false, connection = connection, progress = progress, error = message)
             }
+            // An import left running by an earlier visit is still running on the
+            // server; pick the watch back up rather than showing a stale figure.
+            if (progress.running) pollProgress()
+        } catch (e: Exception) {
+            _state.update { it.copy(loading = false, error = message ?: messageFor(e)) }
+        }
+    }
+
+    /**
+     * Picks the consent round trip up where the page reload left it.
+     *
+     * This is the half that cannot happen on the server: homemoney.ua's redirect carries no
+     * state, so the request that lands there cannot tell whose consent it is. This one can
+     * - it is signed in - and it pairs the returning code with the state stored before the
+     * browser left.
+     */
+    private fun finishAuthorization(redirect: HomeMoneyRedirect) {
+        viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = null) }
+            val message = when (redirect) {
+                HomeMoneyRedirect.Denied -> getString(Res.string.homemoney_denied)
+                is HomeMoneyRedirect.Pending -> exchange(redirect.code)
+            }
+            // Spent or refused, the stored state has done its job and a stale one would
+            // only be offered to a code it never belonged to.
+            preferences.setHomeMoneyAuthState(null)
+            reload(message)
+        }
+    }
+
+    /** Null once the token is stored; a sentence for the user when it is not. */
+    private suspend fun exchange(code: String): String? {
+        val state = preferences.homeMoneyAuthState.first()
+        if (state.isNullOrBlank()) return getString(Res.string.homemoney_link_expired)
+        return try {
+            repository.completeAuthorization(code, state)
+            null
+        } catch (e: Exception) {
+            messageFor(e)
         }
     }
 
     fun connect() = withBusy {
-        val url = repository.authorizationUrl()
-        _state.update { it.copy(authorizationUrl = url) }
+        val authorization = repository.authorizationUrl()
+        // Written before the page leaves for their consent screen, because that is the
+        // last moment this browser is ours: it comes back reloaded from scratch, and
+        // homemoney.ua returns no state of its own to pair the code with.
+        preferences.setHomeMoneyAuthState(authorization.state)
+        _state.update { it.copy(authorizationUrl = authorization.url) }
     }
 
     /** Called once the screen has navigated, so a recomposition does not send it twice. */

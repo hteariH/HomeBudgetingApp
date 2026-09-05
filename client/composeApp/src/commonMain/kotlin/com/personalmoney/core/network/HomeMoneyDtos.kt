@@ -32,8 +32,19 @@ data class RestHomeMoneyConnection(
     val lastVerifiedAt: String? = null,
 )
 
+/**
+ * Where to send the browser, and the state to hold on to while it is gone.
+ *
+ * homemoney.ua accepts the `state` parameter and does not return it - their redirect
+ * arrives with `code` alone. So the app keeps this copy across the page reload and sends
+ * it back with the code; it is what proves this browser started the round trip.
+ */
 @Serializable
-data class RestHomeMoneyAuthorization(val authorizationUrl: String)
+data class RestHomeMoneyAuthorization(val authorizationUrl: String, val state: String = "")
+
+/** The code the redirect left in the URL, on its way back to the server to be spent. */
+@Serializable
+data class HomeMoneyCodeRequest(val code: String, val state: String)
 
 /**
  * [EncodeDefault] on the two fields whose default is not the harmless answer.
