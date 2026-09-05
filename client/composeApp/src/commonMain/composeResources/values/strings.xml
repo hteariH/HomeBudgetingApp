@@ -473,7 +473,7 @@
     <string name="homemoney_start">Import</string>
     <string name="homemoney_rerun_note">Safe to run more than once: anything already imported is skipped.</string>
     <string name="homemoney_accounts_title">Accounts</string>
-    <string name="homemoney_accounts_hint">An account held in several currencies arrives as one account per currency.</string>
+    <string name="homemoney_accounts_hint">An account held in several currencies arrives as one account per currency. A currency that is empty and was never used comes unticked - tick it if you want the account anyway.</string>
     <string name="homemoney_target_account">Import into</string>
     <string name="homemoney_target_category">File under</string>
     <string name="homemoney_create_new">Create a new one</string>

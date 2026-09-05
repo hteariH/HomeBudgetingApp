@@ -78,19 +78,21 @@ class HomeMoneyImportService(
             )
         }
 
-        val plannedAccounts = HomeMoneyMapper.plannedAccounts(accounts) { label ->
-            HomeMoneyCurrencyLabels.toIsoCode(label)?.takeIf { currencyRepo.findByCode(it) != null }
-        }.map { it.copy(targetAccountId = matchAccount(user, it)?.id) }
-
-        val plannedCategories = HomeMoneyMapper.plannedCategories(categories)
-            .map { it.copy(targetCategoryId = matchCategory(user, it)?.id) }
-
         // The count and the range have to describe the same thing: what would actually
         // be imported. Taking the dates from the raw history instead stretched the range
         // over a scheduled operation in December and a deleted one in February - neither
         // of which the count included, and neither of which would ever land.
         val rows = history.mapNotNull { runCatching { HomeMoneyMapper.toRow(it) }.getOrNull() }
         val dates = rows.map { it.occurredAt.atZone(ZoneOffset.UTC).toLocalDate() }
+        val plannedAccounts = HomeMoneyMapper.untickUnusedCurrencySlots(
+            HomeMoneyMapper.plannedAccounts(accounts) { label ->
+                HomeMoneyCurrencyLabels.toIsoCode(label)?.takeIf { currencyRepo.findByCode(it) != null }
+            }.map { it.copy(targetAccountId = matchAccount(user, it)?.id) },
+            rows
+        )
+
+        val plannedCategories = HomeMoneyMapper.plannedCategories(categories)
+            .map { it.copy(targetCategoryId = matchCategory(user, it)?.id) }
 
         return HomeMoneyPlan(
             accounts = plannedAccounts,
@@ -98,7 +100,12 @@ class HomeMoneyImportService(
             transactionCount = rows.size,
             firstDate = dates.minOrNull(),
             lastDate = dates.maxOrNull(),
-            blockedReason = accountCapReason(user, plannedAccounts.count { it.targetAccountId == null })
+            // Only the ones that would actually be created. Counting the unticked ones
+            // here would block a free account on currency slots nothing is going to make.
+            blockedReason = accountCapReason(
+                user,
+                plannedAccounts.count { it.included && it.targetAccountId == null }
+            )
         )
     }
 

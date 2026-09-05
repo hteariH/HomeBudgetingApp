@@ -449,7 +449,7 @@
     <string name="homemoney_start">Імпортувати</string>
     <string name="homemoney_rerun_note">Можна запускати повторно: уже імпортоване пропускається.</string>
     <string name="homemoney_accounts_title">Рахунки</string>
-    <string name="homemoney_accounts_hint">Рахунок із кількома валютами стане окремим рахунком на кожну валюту.</string>
+    <string name="homemoney_accounts_hint">Рахунок із кількома валютами стане окремим рахунком на кожну валюту. Валюта, у якій нічого немає й не було, знята з галочки - позначте її, якщо рахунок усе ж потрібен.</string>
     <string name="homemoney_target_account">Імпортувати в</string>
     <string name="homemoney_target_category">Віднести до</string>
     <string name="homemoney_create_new">Створити нову</string>

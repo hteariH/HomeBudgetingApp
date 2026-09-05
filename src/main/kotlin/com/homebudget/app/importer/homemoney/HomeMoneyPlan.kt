@@ -23,7 +23,8 @@ data class HomeMoneyPlan(
      */
     val blockedReason: String? = null
 ) {
-    val newAccountCount: Int get() = accounts.count { it.targetAccountId == null }
+    /** What would be created, so an unticked account is not counted or announced. */
+    val newAccountCount: Int get() = accounts.count { it.included && it.targetAccountId == null }
     val newCategoryCount: Int get() = categories.count { it.targetCategoryId == null }
 }
 

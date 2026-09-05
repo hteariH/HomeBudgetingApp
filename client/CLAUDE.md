@@ -157,7 +157,12 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
   look like nothing happening at all - no row, no log line, no message. Their API
   answers **HTTP 200 even for errors** and rejects a trailing slash on the path; both are
   documented on `HomeMoneyApi`. Dedup is `transactions.external_id = "homemoney:<GUID>"`, so
-  re-running imports nothing twice.
+  re-running imports nothing twice. An account-and-currency pair that is **empty and never
+  appeared in any operation** arrives unticked (`HomeMoneyMapper.untickUnusedCurrencySlots`):
+  HomeMoney's accounts carry currency slots that cost nothing to add, so one deposit reports
+  itself in five currencies that were never used. Both conditions matter - a zero balance
+  alone would drop the history of an account merely spent down to nothing, and with it the
+  far end of every transfer it took part in.
 - **Receipt scanning** (`core/ocr`, Android only - `receiptScanAvailable` gates the button
   the way `homeMoneyImportAvailable` gates Banks): the system camera via
   `ActivityResultContracts.TakePicture` (full resolution - the preview contract's thumbnail is

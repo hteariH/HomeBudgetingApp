@@ -279,6 +279,82 @@ class HomeMoneyMapperTest {
         assertNull(HomeMoneyCurrencyLabels.toIsoCode(" "))
     }
 
+    // ── Unused currency slots ───────────────────────────────────────────────
+
+    private fun planned(externalId: String, balance: String) = PlannedAccount(
+        externalId = externalId,
+        homeMoneyAccountId = externalId.substringAfter("homemoney:").substringBefore(":"),
+        homeMoneyCurrencyId = externalId.substringAfterLast(":"),
+        name = externalId,
+        currencyLabel = "UAH",
+        currencyCode = "UAH",
+        balance = BigDecimal(balance)
+    )
+
+    private fun single(accountExternalId: String) = HomeMoneyMapper.PlannedRow.Single(
+        externalId = "homemoney:op",
+        occurredAt = Instant.EPOCH,
+        description = null,
+        accountExternalId = accountExternalId,
+        categoryExternalId = null,
+        income = false,
+        amount = BigDecimal("10")
+    )
+
+    private fun transfer(from: String, to: String) = HomeMoneyMapper.PlannedRow.Transfer(
+        externalId = "homemoney:tx",
+        occurredAt = Instant.EPOCH,
+        description = null,
+        fromAccountExternalId = from,
+        toAccountExternalId = to,
+        fromAmount = BigDecimal("10"),
+        toAmount = BigDecimal("10")
+    )
+
+    @Test
+    fun `a currency slot that is empty and was never used comes unticked`() {
+        // What HomeMoney reports for one deposit: the currency it is actually in, and
+        // four slots somebody added to it years ago and never put anything in.
+        val accounts = listOf(
+            planned("homemoney:7:980", "1500.00"),
+            planned("homemoney:7:840", "0"),
+            planned("homemoney:7:978", "0.0000"),
+            planned("homemoney:7:946", "0")
+        )
+
+        val result = HomeMoneyMapper.untickUnusedCurrencySlots(accounts, listOf(single("homemoney:7:980")))
+
+        assertEquals(listOf(true, false, false, false), result.map { it.included })
+    }
+
+    @Test
+    fun `an empty account with history stays ticked, and so does the far end of a transfer`() {
+        val accounts = listOf(
+            // Spent down to nothing, but a decade of operations behind it: unticking this
+            // would drop that history, and with it the transfers it took part in.
+            planned("homemoney:1:980", "0"),
+            planned("homemoney:2:840", "0.00"),
+            planned("homemoney:3:978", "0")
+        )
+
+        val result = HomeMoneyMapper.untickUnusedCurrencySlots(
+            accounts,
+            listOf(single("homemoney:1:980"), transfer("homemoney:2:840", "homemoney:3:978"))
+        )
+
+        assertTrue(result.all { it.included })
+    }
+
+    @Test
+    fun `a slot with a balance is kept even when nothing ever moved through it`() {
+        val accounts = listOf(planned("homemoney:9:840", "20.00"))
+
+        val result = HomeMoneyMapper.untickUnusedCurrencySlots(accounts, emptyList())
+
+        // Money with no history is still money: the opening balance is the whole account.
+        assertTrue(result.single().included)
+    }
+
     private fun assertIsSingle(row: HomeMoneyMapper.PlannedRow?): HomeMoneyMapper.PlannedRow.Single {
         assertTrue(row is HomeMoneyMapper.PlannedRow.Single, "expected a single-account row, got $row")
         return row as HomeMoneyMapper.PlannedRow.Single

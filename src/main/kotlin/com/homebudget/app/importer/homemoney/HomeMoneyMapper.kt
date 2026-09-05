@@ -56,6 +56,38 @@ object HomeMoneyMapper {
     }
 
     /**
+     * Unticks the currency slots that were added to an account and never used.
+     *
+     * HomeMoney lets an account carry several currencies, and adding one costs nothing -
+     * so a single "Deposit" routinely reports slots in USD, EUR, HUF and RON that hold
+     * nothing and never held anything. They are not accounts anybody has: importing them
+     * turns one real account into five empty ones, and on the free plan they count five
+     * against the cap.
+     *
+     * Both conditions, not just the balance. An account can sit at zero today and still
+     * have a decade behind it, and dropping that would take its history with it - and,
+     * since a transfer needs both ends, a slice of the history of whatever it traded with
+     * as well. Untouched *and* empty is the slot that never existed.
+     *
+     * Unticked rather than removed: it stays on the confirmation screen, so anyone who
+     * does want an empty account can say so.
+     */
+    fun untickUnusedCurrencySlots(
+        accounts: List<PlannedAccount>,
+        rows: List<PlannedRow>
+    ): List<PlannedAccount> {
+        val everUsed = rows.flatMapTo(mutableSetOf()) { row ->
+            when (row) {
+                is PlannedRow.Single -> listOf(row.accountExternalId)
+                is PlannedRow.Transfer -> listOf(row.fromAccountExternalId, row.toAccountExternalId)
+            }
+        }
+        return accounts.map {
+            if (it.balance.signum() == 0 && it.externalId !in everUsed) it.copy(included = false) else it
+        }
+    }
+
+    /**
      * The categories worth carrying over.
      *
      * HomeMoney's type 2 is a transfer category, and our transfers have no category at
