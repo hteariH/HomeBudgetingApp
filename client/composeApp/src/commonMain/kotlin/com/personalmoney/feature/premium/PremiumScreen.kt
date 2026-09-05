@@ -236,6 +236,7 @@ private fun Pitch() {
 private fun Benefits() {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Benefit(stringResource(Res.string.premium_benefit_accounts))
+        Benefit(stringResource(Res.string.premium_benefit_no_ads))
         Benefit(stringResource(Res.string.premium_benefit_everywhere))
         Benefit(stringResource(Res.string.premium_benefit_support))
     }

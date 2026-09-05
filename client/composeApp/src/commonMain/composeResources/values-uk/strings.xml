@@ -497,6 +497,7 @@
     <string name="premium_pitch_title">Більше п'яти рахунків</string>
     <string name="premium_pitch_body">На безкоштовному плані — п'ять рахунків, якими ви користуєтесь. Архівні не рахуються ніколи.</string>
     <string name="premium_benefit_accounts">Скільки завгодно рахунків — картки, готівка, депозити, чужий гаманець.</string>
+    <string name="premium_benefit_no_ads">Жодної реклами — ніде в застосунку.</string>
     <string name="premium_benefit_everywhere">Одна підписка на всі пристрої, де ви увійшли: і телефон, і веб.</string>
     <string name="premium_benefit_support">Це оплачує роботу над застосунком.</string>
     <string name="premium_active">Преміум увімкнено</string>

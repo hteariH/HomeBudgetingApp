@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.Instant
 
 /** Where an entitlement came from, as the server reports it. */
@@ -64,13 +66,21 @@ class EntitlementRepository(
     val entitlement: StateFlow<Entitlement> = state.asStateFlow()
 
     /**
-     * Premium as the app should *show* it, cache included.
+     * Premium as the app should *show* it, cache included. **Null means not known yet.**
      *
      * Separate from [entitlement] because the two answer different questions: this one is
-     * "hide the upsell", which has to work before the first request comes back, while
-     * [entitlement] is "what exactly does this account have", which does not.
+     * "hide the ads and the upsell", which has to work before the first request comes
+     * back, while [entitlement] is "what exactly does this account have", which does not.
+     *
+     * The null is load-bearing rather than tidy. The cached answer arrives from storage a
+     * moment after launch, and a plain `false` in the meantime would show a subscriber the
+     * banner they paid to be rid of - so callers are made to say what they do while nobody
+     * knows, and every one of them chooses to show nothing.
      */
-    val premium: Flow<Boolean> = combine(state, preferences.premium) { live, cached ->
+    val premium: Flow<Boolean?> = combine(
+        state,
+        preferences.premium.map<Boolean, Boolean?> { it }.onStart { emit(null) }
+    ) { live, cached ->
         if (live.source != EntitlementSource.NONE || live.premium) live.premium else cached
     }
 

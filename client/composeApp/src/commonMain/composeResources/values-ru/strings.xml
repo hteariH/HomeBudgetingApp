@@ -497,6 +497,7 @@
     <string name="premium_pitch_title">Больше пяти счетов</string>
     <string name="premium_pitch_body">На бесплатном плане — пять счетов, которыми вы пользуетесь. Архивные не считаются никогда.</string>
     <string name="premium_benefit_accounts">Сколько угодно счетов — карты, наличные, депозиты, чужой кошелёк.</string>
+    <string name="premium_benefit_no_ads">Никакой рекламы — нигде в приложении.</string>
     <string name="premium_benefit_everywhere">Одна подписка на все устройства, где вы вошли: и телефон, и веб.</string>
     <string name="premium_benefit_support">Это оплачивает работу над приложением.</string>
     <string name="premium_active">Премиум включён</string>

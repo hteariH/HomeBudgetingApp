@@ -513,6 +513,7 @@
     <string name="premium_pitch_title">More than five accounts</string>
     <string name="premium_pitch_body">The free plan covers five accounts you actually use. Archived ones never count.</string>
     <string name="premium_benefit_accounts">As many accounts as you need — cards, cash, deposits, someone else's wallet.</string>
+    <string name="premium_benefit_no_ads">No ads, anywhere in the app.</string>
     <string name="premium_benefit_everywhere">One subscription, every device you sign in on — phone and web alike.</string>
     <string name="premium_benefit_support">It pays for the work on the app.</string>
     <string name="premium_active">Premium is on</string>

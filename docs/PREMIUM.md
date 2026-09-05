@@ -1,8 +1,17 @@
 # Premium
 
-The free plan covers **5 accounts in play** (archived ones do not count). Everything past
-that needs premium. The cap is enforced on the server in three places — REST account
-creation, sync push, and the HomeMoney importer — so no client can talk its way around it.
+Premium is two things: **more than five accounts**, and **no ads**.
+
+The free plan covers 5 accounts in play (archived ones do not count). That cap is enforced
+on the server in three places — REST account creation, sync push, and the HomeMoney
+importer — so no client can talk its way around it.
+
+The ads are the other half, and they are the opposite kind of rule: nothing on the server
+enforces them, because there is nothing to enforce. A client that wrongly believes it is
+premium simply shows itself fewer ads, which costs the user nothing and costs us a little
+revenue we were never going to collect from a tampered build anyway. The check lives in
+`ads/BannerAd` in the client's shared code, and on Android a subscriber never starts the
+AdMob SDK at all — no consent form, no preloaded interstitial.
 
 There are exactly two ways to become a subscriber, and they are the same kind of
 subscriber afterwards:

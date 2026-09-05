@@ -17,6 +17,7 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
@@ -177,7 +178,18 @@ class EntitlementRepositoryTest {
 
         val repository = repository(freeBody, preferences = preferences)
 
-        assertTrue(repository.premium.first(), "a subscriber should not be shown the free plan on launch")
+        assertEquals(
+            true,
+            repository.premium.filterNotNull().first(),
+            "a subscriber should not be shown the free plan on launch"
+        )
+    }
+
+    @Test
+    fun `premium is unknown before anything has answered at all`() = runTest {
+        // The beat the banner slot relies on: guessing `false` here would show an ad to
+        // somebody who paid for there not to be one.
+        assertNull(repository(freeBody).premium.first())
     }
 
     @Test
@@ -188,7 +200,7 @@ class EntitlementRepositoryTest {
 
         repository.refresh()
 
-        assertFalse(repository.premium.first(), "the server said the subscription is over")
+        assertEquals(false, repository.premium.filterNotNull().first(), "the server said the subscription is over")
         assertFalse(preferences.premium.first(), "and the cache should have been corrected")
     }
 

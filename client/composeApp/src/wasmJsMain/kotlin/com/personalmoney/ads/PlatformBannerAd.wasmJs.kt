@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
  * still in the way; the code below is the intended shape, not a working feature.
  */
 @Composable
-actual fun BannerAd(modifier: Modifier, enabled: Boolean) {
+internal actual fun PlatformBannerAd(modifier: Modifier, enabled: Boolean) {
     if (!enabled || !adSenseConfigured()) return
 
     val density = LocalDensity.current.density

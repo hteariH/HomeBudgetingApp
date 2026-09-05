@@ -153,7 +153,16 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
   server asks Google what it bought - **the client's opinion of its own subscription is
   never used**, and `UserPreferences.premium` is a display cache, never a decision.
   `syncOwnedPurchases()` runs on launch from `PersonalMoneyApplication` and is what makes
-  a reinstall or a second device work with nothing to press. The paywall renders on both
+  a reinstall or a second device work with nothing to press.
+  **Premium removes the ads**, and the check lives in one place: `ads/BannerAd` in
+  commonMain wraps the platform's `PlatformBannerAd` and hides it for a subscriber, so a
+  screen that forgot to ask cannot sell a paying user to an advertiser. `MainActivity`
+  additionally skips the UMP consent form, `MobileAds.initialize` and the interstitial
+  preload outright - a subscriber is served nothing, so there is nothing to consent to or
+  fetch. `EntitlementRepository.premium` is `Flow<Boolean?>` for exactly this: **null means
+  not known yet**, and the banner draws nothing until the answer arrives, because guessing
+  `false` for the few hundred milliseconds DataStore takes is a flash of advertising in
+  front of somebody who paid it away. The paywall renders on both
   platforms; in the browser it says where to buy instead. Premium can also be granted by
   hand - `POST /api/admin/entitlements/users/{id}`, ADMIN only. The whole arrangement is
   written up in `../docs/PREMIUM.md`.

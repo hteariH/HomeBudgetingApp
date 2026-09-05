@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.biometric.BiometricPrompt
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.personalmoney.ads.AdsConsentManager
@@ -25,6 +26,8 @@ import com.personalmoney.core.ui.theme.isDark
 import com.personalmoney.navigation.PersonalMoneyNavHost
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
 class MainActivity : AppCompatActivity() {
@@ -40,9 +43,17 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        consentManager.requestConsentIfNeeded(this) {
-            adsInitializer.initIfAllowed()
-            interstitialManager.preload()
+        // Nothing about ads happens for a subscriber: no consent form to answer, no SDK
+        // to start, no interstitial to fetch and never show. Read from the cached
+        // entitlement rather than the server, because this runs before any request could
+        // come back - and getting it wrong for one launch after a subscription lapses is
+        // the cheap direction to be wrong in.
+        lifecycleScope.launch {
+            if (preferences.premium.first()) return@launch
+            consentManager.requestConsentIfNeeded(this@MainActivity) {
+                adsInitializer.initIfAllowed()
+                interstitialManager.preload()
+            }
         }
 
         setContent {
