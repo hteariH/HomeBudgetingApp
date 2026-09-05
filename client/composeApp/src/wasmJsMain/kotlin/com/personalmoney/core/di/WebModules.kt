@@ -1,6 +1,9 @@
 package com.personalmoney.core.di
 
 import com.personalmoney.core.auth.AuthRepository
+import com.personalmoney.core.billing.EntitlementRepository
+import com.personalmoney.core.billing.StoreBilling
+import com.personalmoney.core.billing.UnavailableStoreBilling
 import com.personalmoney.core.auth.BrowserTokenStore
 import com.personalmoney.core.auth.TokenStore
 import com.personalmoney.core.data.AccountRepository
@@ -83,4 +86,10 @@ val webModule = module {
     single { RestApi(get()) }
     single { HomeBudgetApi(get()) }
     singleOf(::AuthRepository)
+
+    // No store in a browser, and no rail that would serve one: Play is the only place
+    // this can be bought. The paywall still works here - it shows what the account has
+    // and says where to buy - which is why this is a real implementation and not a null.
+    single<StoreBilling> { UnavailableStoreBilling }
+    singleOf(::EntitlementRepository)
 }

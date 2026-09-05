@@ -41,6 +41,18 @@ app:
     # Off here on purpose: the redirect flow exists so this server never sees somebody's
     # HomeMoney password, and a flag that quietly stays on undoes that.
     allow-password-grant: ${HOMEMONEY_ALLOW_PASSWORD_GRANT:false}
+  billing:
+    play:
+      # A Google Play service-account key: either the JSON itself or a path to the file.
+      # Empty - the state of every development machine - means the server cannot verify a
+      # purchase, and says so through `purchasesAccepted` on /api/billing/status rather
+      # than failing a request nobody could have made work. Manual grants still work.
+      service-account: ${PLAY_SERVICE_ACCOUNT:}
+      # The app the purchases belong to. A token is only meaningful against one package.
+      package-name: ${PLAY_PACKAGE_NAME:com.personalmoney}
+      # The subscription products that buy premium, in the order the paywall shows them.
+      # Served to the client so a renamed base plan does not need an app release.
+      products: ${PLAY_PRODUCTS:premium_monthly,premium_yearly}
 
 logging:
   level:

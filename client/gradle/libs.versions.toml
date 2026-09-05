@@ -41,6 +41,11 @@ ktor = "3.5.2"
 # Ukrainian. The language data is bundled in assets, so a first scan needs no network.
 tesseract4android = "4.9.0"
 
+# Google Play Billing. v8 or later is what Play has required of new releases since
+# 31 August 2026; v9 is the current major and adds nothing that has to be migrated
+# away from v8, so there is no reason to ship the older one.
+playBilling = "9.1.0"
+
 playServicesAds = "23.6.0"
 userMessagingPlatform = "3.1.0"
 
@@ -128,6 +133,7 @@ ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serializatio
 
 tesseract4android = { group = "cz.adaptech.tesseract4android", name = "tesseract4android", version.ref = "tesseract4android" }
 
+play-billing = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "playBilling" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
 google-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "userMessagingPlatform" }

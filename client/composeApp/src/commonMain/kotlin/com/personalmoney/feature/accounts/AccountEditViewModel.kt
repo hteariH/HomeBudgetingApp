@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.data.UserPreferences
+import com.personalmoney.core.network.isPlanLimit
 import com.personalmoney.core.network.serverMessage
 import org.jetbrains.compose.resources.getString
 import com.personalmoney.resources.*
@@ -39,7 +40,15 @@ data class AccountEditUiState(
     val transactionCount: Int = 0,
     val saving: Boolean = false,
     val saved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    /**
+     * The last refusal was the free plan's cap, not a bad request.
+     *
+     * Kept apart from [error] because it changes what the screen can *offer*: the message
+     * says an account cannot be added, and this is what lets the same snackbar carry the
+     * one action that would fix it.
+     */
+    val planLimit: Boolean = false
 ) {
     val isEditing: Boolean get() = id != null
     val canSave: Boolean get() = name.isNotBlank() && currencyCode.isNotBlank() && !saving
@@ -162,7 +171,9 @@ class AccountEditViewModel constructor(
                 internalState.update { it.copy(saving = false, saved = true) }
             } else {
                 val message = failure.serverMessage() ?: getString(Res.string.common_request_failed)
-                internalState.update { it.copy(saving = false, error = message) }
+                internalState.update {
+                    it.copy(saving = false, error = message, planLimit = failure.isPlanLimit())
+                }
             }
         }
     }

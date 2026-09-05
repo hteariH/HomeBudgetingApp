@@ -22,9 +22,10 @@ Kotlin · Jetpack Compose · Material 3 · Hilt · Room · DataStore · WorkMana
 Retrofit + OkHttp (server API) · AdMob + UMP · Frankfurter FX API. Min SDK 26, Target SDK 35.
 Package `com.personalmoney` (debug app id `com.personalmoney.debug`).
 
-> Being migrated to Kotlin Multiplatform (Compose Multiplatform · Ktor · Room KMP · Koin ·
-> RevenueCat) so the same code serves Android, iOS and the web. Hilt→Koin and Retrofit→Ktor are
+> Being migrated to Kotlin Multiplatform (Compose Multiplatform · Ktor · Room KMP · Koin)
+> so the same code serves Android, iOS and the web. Hilt→Koin and Retrofit→Ktor are
 > in flight; prefer the multiplatform-friendly option when touching `core/`.
+> Premium is sold through **Google Play Billing**, not RevenueCat — see Plans below.
 
 ## Build / test / run
 
@@ -137,10 +138,25 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
 - **Plans:** the free plan caps accounts at `PlanLimits.FREE_ACCOUNTS` (5) on the *server*,
   on both the REST and the sync path - a client is never asked whether it has paid. The
   server answers **402** with a sentence meant for the user; `PaymentRequired` is in
-  `core/network/ApiErrors.kt`'s `USER_FACING` set so `serverMessage()` surfaces it. Whether
-  an account is premium is `User.isPremium(now)` on the server, which reads the expiry
-  rather than trusting the stored value. `GET /api/users/me` carries `entitlement` for
-  display only.
+  `core/network/ApiErrors.kt`'s `USER_FACING` set so `serverMessage()` surfaces it, and
+  `isPlanLimit()` next to it is what lets a screen offer the paywall alongside that
+  sentence (see `AccountEditScreen`). Whether an account is premium is
+  `User.isPremium(now)` on the server, which reads the expiry rather than trusting the
+  stored value. `GET /api/users/me` carries `entitlement` for display only.
+- **Buying premium** (`core/billing`, `feature/premium`): **Google Play Billing only, and
+  therefore phone only.** Not a preference - Stripe does not accept merchants in Ukraine,
+  which rules out every provider built on it including RevenueCat Web Billing, so there is
+  no rail to sell on the web. `StoreBilling` is an interface with `PlayStoreBilling`
+  (androidMain, `billing-ktx`) and `UnavailableStoreBilling` (web) behind it, bound in
+  Koin like `KeyValueStore`. The flow: the store returns a **purchase token**,
+  `EntitlementRepository.submit` posts it to `POST /api/billing/play/purchase`, and the
+  server asks Google what it bought - **the client's opinion of its own subscription is
+  never used**, and `UserPreferences.premium` is a display cache, never a decision.
+  `syncOwnedPurchases()` runs on launch from `PersonalMoneyApplication` and is what makes
+  a reinstall or a second device work with nothing to press. The paywall renders on both
+  platforms; in the browser it says where to buy instead. Premium can also be granted by
+  hand - `POST /api/admin/entitlements/users/{id}`, ADMIN only. The whole arrangement is
+  written up in `../docs/PREMIUM.md`.
 - **Importing from HomeMoney** (`feature/homemoney`, web only like Banks - see
   `navigation/homeMoneyImportAvailable`): the server owns it end to end
   (`com.homebudget.app.importer.homemoney`), because homemoney.ua sends no CORS headers and

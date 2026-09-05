@@ -490,4 +490,31 @@
         <item quantity="many">%1$d строк не удалось прочитать</item>
         <item quantity="other">%1$d строки не удалось прочитать</item>
     </plurals>
+
+    <!-- Premium -->
+    <string name="premium_title">Премиум</string>
+    <string name="premium_menu">Премиум</string>
+    <string name="premium_pitch_title">Больше пяти счетов</string>
+    <string name="premium_pitch_body">На бесплатном плане — пять счетов, которыми вы пользуетесь. Архивные не считаются никогда.</string>
+    <string name="premium_benefit_accounts">Сколько угодно счетов — карты, наличные, депозиты, чужой кошелёк.</string>
+    <string name="premium_benefit_everywhere">Одна подписка на все устройства, где вы вошли: и телефон, и веб.</string>
+    <string name="premium_benefit_support">Это оплачивает работу над приложением.</string>
+    <string name="premium_active">Премиум включён</string>
+    <string name="premium_active_forever">Без срока окончания.</string>
+    <string name="premium_active_until">Оплачено до %1$s.</string>
+    <string name="premium_renews_on">Продлится %1$s.</string>
+    <string name="premium_lapsing">Продление отключено. Премиум действует до %1$s.</string>
+    <string name="premium_granted">Выдан вам напрямую, не куплен.</string>
+    <string name="premium_buy_elsewhere_title">Купить можно с телефона</string>
+    <string name="premium_buy_elsewhere_body">Подписка покупается только через Google Play, поэтому оформить её нужно в приложении для Android. После покупки она работает везде, где вы вошли, включая этот браузер.</string>
+    <string name="premium_unavailable">Подписки на этом сервере пока не включены.</string>
+    <string name="premium_no_offers">Google Play пока ничего не предлагает. Попробуйте через минуту.</string>
+    <string name="premium_restore">Я уже платил</string>
+    <string name="premium_restore_none">Покупок для этого аккаунта не нашлось.</string>
+    <string name="premium_purchase_pending">Google Play ещё проводит платёж. Премиум включится, как только он пройдёт.</string>
+    <string name="premium_purchase_problem">Покупка не прошла.</string>
+    <string name="premium_manage">Управлять подпиской</string>
+    <string name="premium_per_month">в месяц</string>
+    <string name="premium_per_year">в год</string>
+    <string name="premium_upsell_action">О премиуме</string>
 </resources>

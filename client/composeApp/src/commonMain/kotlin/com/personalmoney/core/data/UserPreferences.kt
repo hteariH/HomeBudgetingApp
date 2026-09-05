@@ -53,6 +53,18 @@ class UserPreferences(private val store: KeyValueStore) {
      */
     val homeMoneyAuthState: Flow<String?> = store.observeString(Keys.HOMEMONEY_AUTH_STATE)
 
+    /**
+     * The last entitlement the server reported, so a launch with no network knows what to
+     * show instead of flashing the free plan at a subscriber.
+     *
+     * A cache of what to *display*, never a decision: every limit is enforced on the
+     * server, which is why it is safe for this to live in a store the user can edit.
+     */
+    val premium: Flow<Boolean> = store.observeBoolean(Keys.PREMIUM).map { it ?: false }
+
+    /** Epoch millis, or null for an entitlement that does not expire. */
+    val premiumExpiresAtMs: Flow<Long?> = store.observeLong(Keys.PREMIUM_EXPIRES_AT_MS)
+
     val syncCursor: Flow<String> = store.observeString(Keys.SYNC_CURSOR).map { it ?: "" }
     val syncLastOkMs: Flow<Long> = store.observeLong(Keys.SYNC_LAST_OK_MS).map { it ?: 0L }
 
@@ -86,12 +98,25 @@ class UserPreferences(private val store: KeyValueStore) {
         if (state == null) store.remove(Keys.HOMEMONEY_AUTH_STATE)
         else store.putString(Keys.HOMEMONEY_AUTH_STATE, state)
 
+    suspend fun setPremium(premium: Boolean, expiresAtMs: Long?) {
+        store.putBoolean(Keys.PREMIUM, premium)
+        if (expiresAtMs == null) store.remove(Keys.PREMIUM_EXPIRES_AT_MS)
+        else store.putLong(Keys.PREMIUM_EXPIRES_AT_MS, expiresAtMs)
+    }
+
     suspend fun setSyncCursor(cursor: String) = store.putString(Keys.SYNC_CURSOR, cursor)
 
     suspend fun setSyncLastOkMs(ms: Long) = store.putLong(Keys.SYNC_LAST_OK_MS, ms)
 
-    /** Wipes sync bookkeeping on sign-out so the next account starts from scratch. */
-    suspend fun clearSyncState() = store.remove(Keys.SYNC_CURSOR, Keys.SYNC_LAST_OK_MS)
+    /**
+     * Wipes sync bookkeeping on sign-out so the next account starts from scratch.
+     *
+     * The cached entitlement goes with it: it belongs to the account that just left, and
+     * leaving it behind would show the next person to sign in on this device a
+     * subscription that is not theirs.
+     */
+    suspend fun clearSyncState() =
+        store.remove(Keys.SYNC_CURSOR, Keys.SYNC_LAST_OK_MS, Keys.PREMIUM, Keys.PREMIUM_EXPIRES_AT_MS)
 }
 
 /**
@@ -117,6 +142,11 @@ internal object PreferenceKeys {
     // Server-issued cursor for the last successful sync pull. Kept as the exact string
     // the server sent rather than a parsed instant, so no local clock or formatting quirk
     // can shift it and skip changes.
+    // What the server last said about this account's entitlement. A display cache only -
+    // see the note on UserPreferences.premium.
+    const val PREMIUM = "premium"
+    const val PREMIUM_EXPIRES_AT_MS = "premium_expires_at_ms"
+
     const val SYNC_CURSOR = "sync_cursor"
     const val SYNC_LAST_OK_MS = "sync_last_ok_ms"
 }

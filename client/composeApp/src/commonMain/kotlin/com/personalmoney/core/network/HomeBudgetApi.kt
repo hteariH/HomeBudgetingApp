@@ -41,6 +41,24 @@ class HomeBudgetApi(private val client: HttpClient) {
 
     suspend fun currencies(): List<CurrencyDto> = client.get("api/currencies").body()
 
+    // -- billing ---------------------------------------------------------------
+
+    suspend fun billingStatus(): BillingStatusDto = client.get("api/billing/status").body()
+
+    /**
+     * Hands a Play purchase token to the server, which asks Google what it bought.
+     *
+     * Also how a purchase is restored: presenting a token that is still good re-grants
+     * the entitlement whatever the server had recorded, so there is no separate call for
+     * "I already paid on my other phone".
+     */
+    suspend fun registerPurchase(body: RegisterPurchaseRequestDto): BillingStatusDto =
+        client.post("api/billing/play/purchase") { jsonBody(body) }.body()
+
+    /** Asks the server to re-check this account's purchases with Google now. */
+    suspend fun refreshPurchases(): BillingStatusDto =
+        client.post("api/billing/play/refresh").body()
+
     /** Server-side rates, so the phone does not hold a Frankfurter dependency of its own. */
     suspend fun fxRates(): List<FxRateDto> = client.get("api/fx/rates").body()
 

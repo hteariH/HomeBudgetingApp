@@ -14,4 +14,13 @@ interface UserRepository : JpaRepository<User, Long> {
     fun baseCurrencyCodes(): List<String>
     fun findByEmail(email: String): Optional<User>
     fun existsByEmail(email: String): Boolean
+
+    /**
+     * Accounts whose address contains [fragment], for the administrator's user lookup.
+     *
+     * Capped in the method name rather than by a Pageable: the caller is a person typing
+     * part of an address into a search box, and a result set they cannot read is no more
+     * useful than a short one.
+     */
+    fun findTop50ByEmailContainingIgnoreCaseOrderByIdAsc(fragment: String): List<User>
 }

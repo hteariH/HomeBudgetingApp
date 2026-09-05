@@ -20,6 +20,18 @@ enum class Entitlement {
     FREE, PREMIUM
 }
 
+/**
+ * How the current [Entitlement] was come by.
+ *
+ * Recorded so the two sources cannot undo each other. The nightly Play re-check has to be
+ * able to take premium away when a subscription lapses; without knowing where the
+ * entitlement came from it would also take away one handed out by hand, and a promotional
+ * grant would quietly disappear overnight.
+ */
+enum class EntitlementSource {
+    NONE, PLAY, MANUAL
+}
+
 /** What a [Entitlement.FREE] account may have. */
 object PlanLimits {
     /**
@@ -73,8 +85,9 @@ data class User(
     var emailVerified: Boolean = false,
 
     /**
-     * Written only by the RevenueCat webhook. Never by a client, and never by a request
-     * the user can make - which is what makes it worth checking on the server.
+     * Written only by the server - from a purchase Google Play confirmed, or from an
+     * administrator's grant. Never by a client, and never by a request the user can
+     * make, which is what makes it worth checking on the server.
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -83,6 +96,11 @@ data class User(
     /** When [entitlement] lapses. Null means it does not. */
     @Column(name = "entitlement_expires_at")
     var entitlementExpiresAt: Instant? = null,
+
+    /** Which door [entitlement] came through - see [EntitlementSource]. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "entitlement_source", nullable = false, length = 20)
+    var entitlementSource: EntitlementSource = EntitlementSource.NONE,
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "base_currency_id")

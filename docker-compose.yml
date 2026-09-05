@@ -59,6 +59,12 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME:-resend}
       # The Resend API key (re_...).
       MAIL_PASSWORD: ${MAIL_PASSWORD}
+      # Verifies Play purchases with Google. Empty means nothing can be bought; the
+      # paywall reports that rather than taking money into a void, and premium granted
+      # by hand keeps working either way.
+      PLAY_SERVICE_ACCOUNT: ${PLAY_SERVICE_ACCOUNT:-}
+      PLAY_PACKAGE_NAME: ${PLAY_PACKAGE_NAME:-com.personalmoney}
+      PLAY_PRODUCTS: ${PLAY_PRODUCTS:-premium_monthly,premium_yearly}
     # No `ports:` on purpose. The edge Caddy terminates TLS and reaches us over the
     # shared network; publishing a host port would expose plain HTTP alongside it.
     networks:

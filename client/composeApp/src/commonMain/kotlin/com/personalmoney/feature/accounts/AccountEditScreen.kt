@@ -33,7 +33,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,6 +68,13 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AccountEditScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
+    /**
+     * Where to send somebody the free plan has just refused.
+     *
+     * Nullable because not every host of this screen has a paywall to send them to -
+     * without one the refusal is still shown, just with nothing to press.
+     */
+    onOpenPremium: (() -> Unit)? = null,
     viewModel: AccountEditViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -73,10 +82,21 @@ fun AccountEditScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) { if (state.saved) onSaved() }
+
+    // The server's sentence already names the limit and what to do about it; the action
+    // is the doing. Only offered when the refusal was the plan's - every other error has
+    // nothing to buy one's way out of.
+    val seePremium = stringResource(Res.string.premium_upsell_action)
     LaunchedEffect(state.error) {
         state.error?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
+            val offerPremium = state.planLimit && onOpenPremium != null
+            val result = snackbarHostState.showSnackbar(
+                message = msg,
+                actionLabel = if (offerPremium) seePremium else null,
+                duration = if (offerPremium) SnackbarDuration.Long else SnackbarDuration.Short
+            )
             viewModel.clearError()
+            if (result == SnackbarResult.ActionPerformed) onOpenPremium?.invoke()
         }
     }
 

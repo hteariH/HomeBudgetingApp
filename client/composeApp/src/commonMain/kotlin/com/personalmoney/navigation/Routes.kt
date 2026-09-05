@@ -13,6 +13,7 @@ object Routes {
     const val SUBSCRIPTIONS = "subscriptions"
     const val SUBSCRIPTION_EDIT = "subscription/edit?subscriptionId={subscriptionId}"
     const val SETTINGS = "settings"
+    const val PREMIUM = "premium"
     const val CURRENCIES = "currencies"
     const val BANKS = "banks"
     const val IMPORT_HOMEMONEY = "import/homemoney"

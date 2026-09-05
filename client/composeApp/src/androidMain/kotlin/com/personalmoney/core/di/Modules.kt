@@ -52,6 +52,10 @@ import com.personalmoney.feature.subscriptions.SubscriptionWorkScheduler
 import com.personalmoney.feature.subscriptions.SubscriptionWorker
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
+import com.personalmoney.core.billing.CurrentActivity
+import com.personalmoney.core.billing.EntitlementRepository
+import com.personalmoney.core.billing.PlayStoreBilling
+import com.personalmoney.core.billing.StoreBilling
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.workmanager.dsl.workerOf
 import org.koin.core.module.dsl.singleOf
@@ -134,6 +138,12 @@ val dataModule = module {
     singleOf(::SyncScheduler)
     singleOf(::FxScheduler)
     singleOf(::SubscriptionWorkScheduler)
+
+    // Buying, and what the server says it bought. Play Billing is Android-only by
+    // necessity rather than by choice - see ../../../../../../../docs/PREMIUM.md in the
+    // server repository - so the browser binds UnavailableStoreBilling instead.
+    single<StoreBilling> { PlayStoreBilling(androidContext(), CurrentActivity::get) }
+    singleOf(::EntitlementRepository)
 }
 
 val adsModule = module {

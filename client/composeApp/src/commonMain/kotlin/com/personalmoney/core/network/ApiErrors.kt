@@ -34,6 +34,16 @@ private val USER_FACING = setOf(
 )
 
 /**
+ * Whether this failure was the free plan's doing rather than a mistake in the request.
+ *
+ * The server answers 402 for exactly one reason - see its `PlanLimitException` - which is
+ * what lets a screen offer the way out (the paywall) alongside the server's sentence,
+ * instead of showing a refusal with nothing to do about it.
+ */
+fun Throwable.isPlanLimit(): Boolean =
+    (this as? ResponseException)?.response?.status == HttpStatusCode.PaymentRequired
+
+/**
  * The message the server meant for the user, or null when there is not one.
  *
  * Null rather than a default so the caller supplies a *localised* fallback - this layer has

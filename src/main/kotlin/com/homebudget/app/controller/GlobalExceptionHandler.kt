@@ -60,6 +60,22 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 402, error = "Plan Limit Reached", message = ex.message)
         )
 
+    /**
+     * Google could not be asked, so nothing is known about the purchase.
+     *
+     * 503 rather than 500 or 400 because it says the right thing to all three readers:
+     * the client should offer "try again" instead of "your purchase is invalid", a
+     * monitor should see a dependency being down rather than this server being broken,
+     * and the user has not lost their money.
+     */
+    @ExceptionHandler(com.homebudget.app.billing.BillingUnavailableException::class)
+    fun handleBillingUnavailable(
+        ex: com.homebudget.app.billing.BillingUnavailableException
+    ): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+            ErrorResponse(status = 503, error = "Billing Unavailable", message = ex.message)
+        )
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         val messages = ex.bindingResult.fieldErrors.joinToString("; ") {
@@ -85,6 +101,23 @@ class GlobalExceptionHandler {
     fun handleBankRequest(ex: com.homebudget.app.bank.BankRequestException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(
             ErrorResponse(status = 502, error = "Bank Unavailable", message = ex.message)
+        )
+
+    /**
+     * Signed in, but not allowed to do this.
+     *
+     * Without a handler of its own, `@PreAuthorize` refusing lands in the catch-all below
+     * and comes back as a 500 - which reads as "the server is broken" to a client and
+     * fills the log with stack traces for what is a working access check. The message is
+     * fixed rather than the exception's: telling a caller *why* they were refused is a
+     * hint about what exists on the other side.
+     */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException::class)
+    fun handleAccessDenied(
+        ex: org.springframework.security.access.AccessDeniedException
+    ): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+            ErrorResponse(status = 403, error = "Forbidden", message = "Not allowed")
         )
 
     /**

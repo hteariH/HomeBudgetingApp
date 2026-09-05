@@ -169,6 +169,12 @@ kotlin {
 
             implementation(libs.play.services.ads)
             implementation(libs.user.messaging.platform)
+
+            // Play Billing, Android only and deliberately not in commonMain: buying is
+            // the one part of premium that cannot be shared. The browser has no store,
+            // and Play is the only rail this project can sell through - see
+            // ../docs/PREMIUM.md.
+            implementation(libs.play.billing)
         }
 
         androidUnitTest.dependencies {

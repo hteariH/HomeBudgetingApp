@@ -75,6 +75,7 @@ import com.personalmoney.feature.dashboard.DashboardScreen
 import com.personalmoney.feature.homemoney.HomeMoneyImportScreen
 import com.personalmoney.feature.more.MoreScreen
 import com.personalmoney.feature.onboarding.OnboardingScreen
+import com.personalmoney.feature.premium.PremiumScreen
 import com.personalmoney.feature.quickadd.QuickAddScreen
 import com.personalmoney.feature.quickadd.QuickAddViewModel
 import com.personalmoney.feature.settings.SettingsScreen
@@ -267,6 +268,7 @@ fun PersonalMoneyNavHost(
             onOpenMenu = { scope.launch { drawerState.open() } },
             email = shell.email,
             onOpenSettings = { navController.switchTab(Routes.SETTINGS) },
+            onOpenPremium = { navController.navigate(Routes.PREMIUM) },
             onSignOut = { shell.signOut() },
             dark = dark,
             onToggleTheme = { shell.setDark(!dark) },
@@ -354,6 +356,7 @@ fun PersonalMoneyNavHost(
                     onOpenAccounts = { navController.navigate(Routes.ACCOUNTS) },
                     onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
                     onOpenSubscriptions = { navController.navigate(Routes.SUBSCRIPTIONS) },
+                    onOpenPremium = { navController.navigate(Routes.PREMIUM) },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) }
                 )
             }
@@ -427,7 +430,8 @@ fun PersonalMoneyNavHost(
             ) {
                 AccountEditScreen(
                     onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() }
+                    onSaved = { navController.popBackStack() },
+                    onOpenPremium = { navController.navigate(Routes.PREMIUM) }
                 )
             }
 
@@ -514,6 +518,9 @@ fun PersonalMoneyNavHost(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() }
                 )
+            }
+            composable(Routes.PREMIUM) {
+                PremiumScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
