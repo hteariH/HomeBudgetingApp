@@ -2,6 +2,8 @@ package com.personalmoney.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.personalmoney.core.auth.AuthRepository
+import com.personalmoney.core.auth.AuthResult
 import com.personalmoney.core.data.ThemeMode
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.CurrencyRepository
@@ -33,8 +35,18 @@ data class SettingsUiState(
  */
 class SettingsViewModel(
     private val preferences: UserPreferences,
+    private val auth: AuthRepository,
     currencyRepository: CurrencyRepository,
 ) : ViewModel() {
+
+    private val _deletion = MutableStateFlow(AccountDeletionState())
+
+    /**
+     * Separate from [uiState] rather than folded into it: that one is derived from
+     * preference flows and is rebuilt whenever any of them emits, which would drop a
+     * transient error the moment anything else changed.
+     */
+    val deletion: StateFlow<AccountDeletionState> = _deletion.asStateFlow()
 
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(preferences.baseCurrency, preferences.themeMode, preferences.dynamicColor) { base, theme, dynamic ->
@@ -68,4 +80,45 @@ class SettingsViewModel(
     fun setBiometricLockEnabled(value: Boolean) {
         viewModelScope.launch { preferences.setBiometricLockEnabled(value) }
     }
+
+    fun confirmDeleteAccount() {
+        _deletion.value = AccountDeletionState(confirming = true)
+    }
+
+    fun dismissDeleteAccount() {
+        // Only while idle: dismissing mid-request would put the confirmation dialog away
+        // while the delete is still in flight, and the next thing the user sees would be
+        // the sign-in screen with no explanation.
+        if (!_deletion.value.inProgress) _deletion.value = AccountDeletionState()
+    }
+
+    /**
+     * There is no success branch to handle: a deleted account clears the tokens, which
+     * flips `signedIn` and swaps the whole nav host for the sign-in screen. Only the
+     * failure is ours to report, and it leaves the dialog open so the user can retry.
+     */
+    fun deleteAccount() {
+        if (_deletion.value.inProgress) return
+        _deletion.value = AccountDeletionState(confirming = true, inProgress = true)
+        viewModelScope.launch {
+            when (val result = auth.deleteAccount()) {
+                is AuthResult.Success -> Unit
+                is AuthResult.Failure ->
+                    _deletion.value = AccountDeletionState(confirming = true, error = result.message)
+            }
+        }
+    }
+
+    fun clearDeleteError() {
+        _deletion.value = _deletion.value.copy(error = null)
+    }
 }
+
+/**
+ * Where the "delete my account" flow has got to: nothing, asking, working, or failed.
+ */
+data class AccountDeletionState(
+    val confirming: Boolean = false,
+    val inProgress: Boolean = false,
+    val error: String? = null,
+)

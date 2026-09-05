@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -91,7 +94,12 @@ fun AuthScreen(
         Box(Modifier.fillMaxSize()) {
             AuthBackdrop()
 
-            Column(Modifier.fillMaxSize()) {
+            // Inset the content, not the backdrop: the gradient behind should still run
+            // under the status bar and the gesture pill, which is the point of drawing
+            // edge to edge. Without this the wordmark shared a line with the clock - the
+            // screen has no Scaffold to apply insets for it, and MainActivity's
+            // enableEdgeToEdge() means nobody else will either.
+            Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                 // The site header already carries the wordmark on the web, and drawing both
                 // put it on the page twice. This row exists for the platforms where sign-in
                 // has no shell around it at all.

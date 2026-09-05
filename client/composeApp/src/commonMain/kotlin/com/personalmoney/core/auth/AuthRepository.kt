@@ -1,5 +1,6 @@
 package com.personalmoney.core.auth
 
+import com.personalmoney.core.data.LocalDataWiper
 import com.personalmoney.core.util.AppLog
 import com.personalmoney.core.network.HomeBudgetApi
 import com.personalmoney.core.network.LoginRequestDto
@@ -23,7 +24,8 @@ sealed interface AuthResult {
  */
 class AuthRepository constructor(
     private val api: HomeBudgetApi,
-    private val tokenStore: TokenStore
+    private val tokenStore: TokenStore,
+    private val localData: LocalDataWiper,
 ) {
     val signedIn: StateFlow<Boolean> = tokenStore.signedIn
     val email: String? get() = tokenStore.email
@@ -58,6 +60,31 @@ class AuthRepository constructor(
         } catch (e: Exception) {
             AppLog.w(TAG, "Server logout failed, clearing locally anyway: ${e.message}")
         }
+        endSession()
+    }
+
+    /**
+     * Deletes the account on the server, then leaves this device as if it had never been
+     * signed in.
+     *
+     * Unlike [logout] the server call is *not* best-effort. If it fails the account still
+     * exists, and wiping the phone anyway would tell the user their data is gone while it
+     * sits on the server waiting for the next sign-in - so the failure is reported and
+     * nothing local is touched.
+     */
+    suspend fun deleteAccount(): AuthResult = runCatchingAuth {
+        api.deleteMe()
+        endSession()
+        AuthResult.Success
+    }
+
+    /**
+     * Local data first, tokens last. Clearing the tokens is what flips `signedIn` and
+     * swaps the nav host for the sign-in screen, so doing it first would leave the
+     * outgoing account's rows on screen for as long as the wipe takes.
+     */
+    private suspend fun endSession() {
+        localData.wipe()
         tokenStore.clear()
     }
 

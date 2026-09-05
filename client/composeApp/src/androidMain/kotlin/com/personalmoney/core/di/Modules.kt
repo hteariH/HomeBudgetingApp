@@ -15,6 +15,8 @@ import com.personalmoney.core.currency.FxScheduler
 import com.personalmoney.core.data.AccountRepository as SharedAccountRepository
 import com.personalmoney.core.data.DataStoreKeyValueStore
 import com.personalmoney.core.data.KeyValueStore
+import com.personalmoney.core.data.LocalDataWiper
+import com.personalmoney.core.data.RoomLocalDataWiper
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.CategoryRepository as SharedCategoryRepository
 import com.personalmoney.core.data.CurrencyRepository as SharedCurrencyRepository
@@ -115,6 +117,7 @@ val dataModule = module {
     singleOf(::DataStoreKeyValueStore) bind KeyValueStore::class
     singleOf(::UserPreferences)
     singleOf(::AndroidTokenStore) bind TokenStore::class
+    singleOf(::RoomLocalDataWiper) bind LocalDataWiper::class
     singleOf(::AuthRepository)
     singleOf(::AccountRepository)
     // The shared contract the migrating screens use; the entity-level repository above

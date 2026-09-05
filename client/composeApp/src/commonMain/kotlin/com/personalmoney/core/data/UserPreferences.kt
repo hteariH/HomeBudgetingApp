@@ -109,14 +109,30 @@ class UserPreferences(private val store: KeyValueStore) {
     suspend fun setSyncLastOkMs(ms: Long) = store.putLong(Keys.SYNC_LAST_OK_MS, ms)
 
     /**
-     * Wipes sync bookkeeping on sign-out so the next account starts from scratch.
+     * Drops every preference that belongs to the account rather than to the device, so the
+     * next sign-in on this phone starts clean.
      *
-     * The cached entitlement goes with it: it belongs to the account that just left, and
-     * leaving it behind would show the next person to sign in on this device a
-     * subscription that is not theirs.
+     * What goes: sync bookkeeping, because the next account's history has nothing to do
+     * with this cursor; the cached entitlement, because leaving it would show the next
+     * person to sign in a subscription that is not theirs; the default account and the
+     * base currency, which name rows and settings that are about to stop existing; and any
+     * half-finished HomeMoney consent.
+     *
+     * What stays: theme, language, dynamic colour, the biometric lock, the ads-consent
+     * record and the save counter. Those describe this device and this phone's owner, not
+     * the account - resetting someone's dark mode because they signed out would be a
+     * strange thing to do, and re-asking for ad consent already granted is not ours to
+     * decide.
      */
-    suspend fun clearSyncState() =
-        store.remove(Keys.SYNC_CURSOR, Keys.SYNC_LAST_OK_MS, Keys.PREMIUM, Keys.PREMIUM_EXPIRES_AT_MS)
+    suspend fun clearAccountScoped() = store.remove(
+        Keys.SYNC_CURSOR,
+        Keys.SYNC_LAST_OK_MS,
+        Keys.PREMIUM,
+        Keys.PREMIUM_EXPIRES_AT_MS,
+        Keys.DEFAULT_ACCOUNT,
+        Keys.BASE_CURRENCY,
+        Keys.HOMEMONEY_AUTH_STATE,
+    )
 }
 
 /**

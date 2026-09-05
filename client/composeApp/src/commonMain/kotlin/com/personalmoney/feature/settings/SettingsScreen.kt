@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -53,6 +54,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val deletion by viewModel.deletion.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val openUrl = rememberUrlOpener()
@@ -139,8 +141,88 @@ fun SettingsScreen(
                 subtitle = stringResource(Res.string.settings_version) + " " + AppInfo.versionName,
                 onClick = { }
             )
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+            DeleteAccountSection(
+                state = deletion,
+                onAsk = viewModel::confirmDeleteAccount,
+                onDismiss = viewModel::dismissDeleteAccount,
+                onConfirm = viewModel::deleteAccount,
+            )
         }
     }
+}
+
+/**
+ * The way out of the product, at the bottom of the last screen where it belongs.
+ *
+ * Play requires an in-app route to deleting an account for any app that lets people
+ * create one, so this is not optional dressing. It is deliberately awkward to trigger by
+ * accident - error colour, a dialog that spells out what goes - and deliberately not
+ * hidden behind a support email, which is the pattern Play rejects.
+ */
+@Composable
+private fun DeleteAccountSection(
+    state: AccountDeletionState,
+    onAsk: () -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    SectionLabel(stringResource(Res.string.settings_danger_zone))
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !state.inProgress, onClick = onAsk)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Text(
+            text = stringResource(Res.string.settings_delete_account),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.error,
+        )
+        Text(
+            text = stringResource(Res.string.settings_delete_account_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    if (!state.confirming) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.settings_delete_account_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(Res.string.settings_delete_account_body))
+                if (state.error != null) {
+                    Text(
+                        text = state.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !state.inProgress) {
+                Text(
+                    text = stringResource(
+                        if (state.inProgress) Res.string.settings_delete_account_working
+                        else Res.string.settings_delete_account_confirm
+                    ),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !state.inProgress) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+        },
+    )
 }
 
 @Composable

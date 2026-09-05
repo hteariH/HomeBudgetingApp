@@ -518,4 +518,13 @@
     <string name="premium_per_month">в месяц</string>
     <string name="premium_per_year">в год</string>
     <string name="premium_upsell_action">О премиуме</string>
+
+    <!-- Удаление аккаунта. -->
+    <string name="settings_danger_zone">Опасная зона</string>
+    <string name="settings_delete_account">Удалить аккаунт</string>
+    <string name="settings_delete_account_subtitle">Безвозвратно удаляет аккаунт и все его данные</string>
+    <string name="settings_delete_account_title">Удалить аккаунт?</string>
+    <string name="settings_delete_account_body">Счета, операции, категории, подписки и банковские подключения будут стёрты с сервера и с этого устройства. Отменить это нельзя, а экспорт после удаления будет пустым.</string>
+    <string name="settings_delete_account_confirm">Удалить навсегда</string>
+    <string name="settings_delete_account_working">Удаляем\u2026</string>
 </resources>

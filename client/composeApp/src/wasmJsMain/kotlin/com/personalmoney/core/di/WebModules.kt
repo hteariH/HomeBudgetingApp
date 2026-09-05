@@ -13,6 +13,8 @@ import com.personalmoney.core.data.CategoryRepository
 import com.personalmoney.core.data.BrowserKeyValueStore
 import com.personalmoney.core.data.CurrencyRepository
 import com.personalmoney.core.data.KeyValueStore
+import com.personalmoney.core.data.LocalDataWiper
+import com.personalmoney.core.data.PreferencesLocalDataWiper
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.sync.NoOpSyncTrigger
 import com.personalmoney.core.sync.SyncTrigger
@@ -64,6 +66,7 @@ val webModule = module {
     singleOf(::BrowserTokenStore) bind TokenStore::class
     singleOf(::BrowserKeyValueStore) bind KeyValueStore::class
     singleOf(::UserPreferences)
+    singleOf(::PreferencesLocalDataWiper) bind LocalDataWiper::class
     single<SyncTrigger> { NoOpSyncTrigger }
     singleOf(::RestAccountRepository) bind AccountRepository::class
     singleOf(::RestCategoryRepository) bind CategoryRepository::class

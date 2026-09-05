@@ -2,6 +2,7 @@ package com.personalmoney.core.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -38,6 +39,17 @@ class HomeBudgetApi(private val client: HttpClient) {
     }
 
     suspend fun me(): UserDto = client.get("api/users/me").body()
+
+    /**
+     * Deletes the account and everything the server holds for it, irreversibly.
+     *
+     * Required by Play of any app that lets people register, which is why it is here
+     * rather than waiting for someone to ask for it. The server erases rather than
+     * tombstones, so there is nothing left for another device to sync down.
+     */
+    suspend fun deleteMe() {
+        client.delete("api/users/me")
+    }
 
     suspend fun currencies(): List<CurrencyDto> = client.get("api/currencies").body()
 

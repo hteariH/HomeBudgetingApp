@@ -534,4 +534,14 @@
     <string name="premium_per_month">per month</string>
     <string name="premium_per_year">per year</string>
     <string name="premium_upsell_action">See Premium</string>
+
+    <!-- Deleting the account. Required by Play of any app with registration, so these
+         are user-facing copy rather than a developer affordance: say plainly what goes. -->
+    <string name="settings_danger_zone">Danger zone</string>
+    <string name="settings_delete_account">Delete account</string>
+    <string name="settings_delete_account_subtitle">Permanently removes your account and all of its data</string>
+    <string name="settings_delete_account_title">Delete your account?</string>
+    <string name="settings_delete_account_body">Your accounts, transactions, categories, subscriptions and bank connections will be erased from the server and from this device. This cannot be undone, and an export made afterwards will be empty.</string>
+    <string name="settings_delete_account_confirm">Delete for ever</string>
+    <string name="settings_delete_account_working">Deleting\u2026</string>
 </resources>
