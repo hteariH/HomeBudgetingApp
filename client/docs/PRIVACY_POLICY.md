@@ -1,120 +1,137 @@
 # Privacy Policy — PersonalMoney
 
-_Last updated: 2026-06-11_
+_Last updated: 2026-09-05_
 
-This Privacy Policy describes how the PersonalMoney Android application (the **App**) handles your information.
+This Privacy Policy describes how the PersonalMoney Android application and the
+PersonalMoney service at <https://personalmoney.app> (together, the **Service**) handle
+your information.
 
-The App is operated by the developer **mamoru** ("we", "us", "our"). If you have any questions about this policy, contact us at **aberkunsky@gmail.com**.
+The Service is operated by **mamoru** ("we", "us", "our"). Contact:
+**aberkunsky@gmail.com**.
 
 ## TL;DR
 
-- Your financial data (accounts, transactions, categories, subscriptions, settings) stays **on your device**. We never see it, and we never upload it anywhere.
-- The App makes two kinds of outbound network requests:
-  1. **Currency exchange rates** from the public [Frankfurter API](https://www.frankfurter.app/) — only currency codes (e.g. "USD,EUR,RUB") are sent. No user identifiers, no transaction details.
-  2. **Advertising** through Google AdMob, which uses Google's standard advertising identifiers.
-- We support deleting all data by uninstalling the App or by tapping **Settings → Clear all data**.
+- PersonalMoney is an **account-based** service. You register with an email address and a
+  name, and your accounts, transactions, categories and subscriptions are **stored on our
+  server** so the same data reaches every device you sign in on.
+- The app is **offline-first**: everything is kept in a local database on your device and
+  works with no network, then synchronises with the server when there is one.
+- If you connect a bank, the credentials you give us are **encrypted and stored on the
+  server only**. They are never sent back to a device.
+- We show ads through **Google AdMob** and sell an optional subscription through **Google
+  Play Billing**.
+- You can **delete your account and everything in it** at any time, permanently.
 
 ---
 
-## 1. Data we store on your device
+## 1. Data you give us
 
-The App writes the following data to your device's private storage:
-
-| Category | Examples | Storage |
+| What | Why | Where it is stored |
 | --- | --- | --- |
-| Accounts | Account name, currency, initial balance, icon, color | Room database (local) |
-| Categories | Category name, type (income / expense), icon, color | Room database (local) |
-| Transactions | Amount, currency, account, category, date, note | Room database (local) |
-| Subscriptions | Name, amount, frequency, next charge date | Room database (local) |
-| Cached exchange rates | Public ECB rates (no personal data) | Room database (local) |
-| Preferences | Base currency, theme, language, biometric lock toggle | DataStore (local) |
+| Email address | Identifies your account, confirms the address, password resets | Server (PostgreSQL) |
+| First and last name | Shown in the app | Server |
+| Password | Authentication. Stored only as a bcrypt hash — we cannot read it | Server |
+| Accounts, categories, transactions, transfers, subscriptions, currency settings | The purpose of the app | Device (Room) **and** server, kept in sync |
+| Bank connection credentials (e.g. a Monobank personal token, a HomeMoney OAuth token) | Importing your statements automatically | Server only, **encrypted at rest**; never returned to a device |
+| Imported statement files (CSV) | Turning a statement into transactions | Parsed on the server, not retained as files |
 
-This data **never leaves your device** through the App.
+Transaction data includes amounts, currencies, dates, the account and category you chose,
+and any note you typed. It is financial data about you, and we treat it as such.
 
-If you enable Android Auto Backup, Google Play services may include the App's data in your Google account backup. The App excludes the local settings file `device.xml` from backup. You control Auto Backup in your device's system settings.
+## 2. Data collected automatically
 
-## 2. Data we collect about you
+| What | By whom | Why |
+| --- | --- | --- |
+| Advertising ID, approximate location (from IP), device model / OS / language, app version, ad impressions and clicks | Google AdMob and the User Messaging Platform SDK | Serving and measuring ads |
+| Google Play purchase token, purchase state, subscription expiry | Google Play Billing, then our server | Knowing whether your Premium subscription is active |
+| Server access logs (IP address, timestamp, request path) | Our server and its Cloudflare / Caddy front end | Security, rate limiting, debugging. Retained short-term |
+| Session tokens (JWT access + refresh) | Our server | Keeping you signed in. Stored on the device in Android `EncryptedSharedPreferences` |
 
-We do not collect, store, or transmit any personally identifiable information through the App.
+## 3. What stays on your device and never reaches us
 
-We do **not** request the following permissions: contacts, SMS, location, camera, microphone, files outside what you explicitly pick via the system file picker.
+- **Receipt photos.** Scanning a receipt opens the system camera through
+  `ACTION_IMAGE_CAPTURE`, recognises the text on-device with Tesseract (the language data
+  ships inside the app), and deletes the image from the cache as soon as it has been read.
+  The app declares no `CAMERA` permission and reads no photo library. No image, and no text
+  extracted from one, is ever uploaded.
+- **Biometric unlock.** Handled entirely by Android's `BiometricPrompt`. We never see a
+  fingerprint or a face.
+- **Your theme, language and app preferences.**
+- **Exported backup files.** You choose where they are written through the system file
+  picker; they do not pass through us.
 
-## 3. Third-party services
+## 4. Third parties
 
-### 3.1 Google AdMob (advertising)
+### 4.1 Google AdMob (advertising)
 
-The App displays banner advertisements on the dashboard and transaction history screens via Google AdMob, the Mobile Ads SDK, and the User Messaging Platform (UMP) SDK. To deliver and measure ads, Google may collect and process:
+The app shows banner ads. Google may collect the data listed in §2 to serve and measure
+them. You can opt out of personalised advertising through the in-app consent dialog (shown
+where required, e.g. in the EEA and the UK) or in **Android Settings → Google → Ads**.
+Google's policies: <https://policies.google.com/technologies/partner-sites> and
+<https://support.google.com/admob/answer/6128543>.
 
-- the Advertising ID assigned to your device by Google Play services,
-- approximate location based on IP address,
-- the App's package name and version,
-- device information (model, OS version, screen size, language),
-- ad event signals (impressions, clicks).
+### 4.2 Google Play Billing (payments)
 
-You can opt out of personalized advertising via:
+Premium is sold through Google Play. **We never see your card or payment details** — Google
+processes the payment and tells us only that a purchase exists and whether it is still
+active. See <https://policies.google.com/privacy>.
 
-- the in-app consent dialog (shown on first launch in the EEA / UK and in jurisdictions where required), or
-- your device settings → **Google → Ads → Reset advertising ID / Opt out of Ads Personalization**.
+### 4.3 Resend (transactional email)
 
-Google's privacy notices apply:
+Address-confirmation and password-reset mail is sent through Resend, which therefore
+processes your email address. <https://resend.com/legal/privacy-policy>
 
-- AdMob: <https://support.google.com/admob/answer/6128543>
-- Google Privacy Policy: <https://policies.google.com/privacy>
-- How Google uses data: <https://policies.google.com/technologies/partner-sites>
+### 4.4 Banks and aggregators you choose to connect
 
-We never share your financial data with AdMob. The advertising SDK has no access to your transactions, accounts, or other in-app data.
+If you connect Monobank or HomeMoney, we call their APIs on your behalf with the
+credentials you supplied, and import the transactions they return. We ask them for nothing
+beyond statement data. Disconnecting a connection in the app deletes the stored credential.
 
-### 3.2 Frankfurter (currency exchange rates)
+### 4.5 Exchange rates
 
-When the App refreshes currency exchange rates, it sends a request to `https://api.frankfurter.app/latest` containing only the base currency code and the list of currency codes you have activated. No user identifiers, no transaction data, no IP-linked profile is sent by the App. The Frankfurter service is operated by a third party — see <https://www.frankfurter.app/> for their terms.
+Rates come from the European Central Bank via the public Frankfurter API
+(<https://frankfurter.app>) and from our own server. Only currency codes are sent — never
+amounts, never identifiers.
 
-You can avoid this network request entirely by leaving the device offline or by setting exchange rates manually.
+## 5. Where the data lives
 
-## 4. Permissions used
+On a virtual server in the European Union, in a PostgreSQL database, behind HTTPS. All
+traffic between the app and the server is encrypted in transit. Bank credentials are
+additionally encrypted at rest with a key held only on that server.
 
-| Permission | Why |
-| --- | --- |
-| `INTERNET`, `ACCESS_NETWORK_STATE` | Currency rate refresh and ad delivery |
-| `POST_NOTIFICATIONS` | Optional reminders for upcoming subscription charges |
-| `RECEIVE_BOOT_COMPLETED` | Re-schedule subscription reminder jobs after restart |
-| `USE_BIOMETRIC`, `USE_FINGERPRINT` | Optional biometric / device-credential app lock |
-| `VIBRATE` | Haptic feedback for keypad |
-| `AD_ID` | Google AdMob advertising identifier (Android 13+) |
+## 6. How long we keep it
 
-## 5. Children
+- Your content, for as long as your account exists.
+- Deleted account → everything belonging to it is **erased immediately and irreversibly**,
+  including bank credentials. There is no tombstone and no recovery.
+- Server access logs, a short rolling window.
+- Purchase records are retained where tax or accounting law requires it.
 
-The App is not directed at children under 13. We do not knowingly collect personal data from children.
+## 7. Your rights and how to use them
 
-## 6. Security
+- **Delete your account** — in the app, **Settings → Delete account**, or on the web at
+  <https://personalmoney.app/app/>, or by emailing **aberkunsky@gmail.com**.
+- **Export your data** — **Settings → Export** writes a full JSON backup.
+- **Correct or access your data** — everything we hold about you is visible in the app;
+  write to us if something is missing.
+- If you are in the EEA or the UK, the GDPR applies: our legal basis is performance of a
+  contract (running the service you signed up for), consent (personalised advertising), and
+  legitimate interest (security and abuse prevention). You may complain to your national
+  data protection authority.
 
-Your data is stored in your device's app-private storage and is therefore protected by the device's standard sandbox. You can additionally enable biometric / device-credential lock in **Settings → Biometric lock**.
+## 8. Children
 
-We do not transmit your financial data over the network, so we do not encrypt it in transit (because we never transmit it).
+PersonalMoney is not directed at children and we do not knowingly collect data from anyone
+under 13 (or the local equivalent). If you believe a child has created an account, write to
+us and we will delete it.
 
-## 7. Your rights
+## 9. Security
 
-Because we do not collect personal data, there is no "user account" for us to delete. You retain full control over your data:
+Passwords are bcrypt-hashed, bank credentials are encrypted at rest, transport is HTTPS
+only, sessions expire and can be revoked, and the login endpoint is rate-limited. No system
+is perfect; if you find a problem, please report it to **aberkunsky@gmail.com**.
 
-- **Export:** Settings → Export data — produces a JSON file you save anywhere you choose.
-- **Import:** Settings → Import data — restores from a JSON file you select.
-- **Erase:** uninstall the App, or use Android system settings → Apps → PersonalMoney → Storage → Clear data.
+## 10. Changes
 
-If you live in the EEA, UK, California, or a similar jurisdiction, you can also reset your AdMob advertising identifier or opt out of personalized ads via the system settings above, and use the in-app **Manage consent** option (if shown) to change your ad consent at any time.
-
-## 8. Changes to this policy
-
-We may update this policy from time to time. Material changes will be reflected by updating the "Last updated" date at the top. Continued use of the App after such updates constitutes acceptance.
-
-## 9. Contact
-
-Questions, requests, or complaints regarding this policy:
-
-- Email: **aberkunsky@gmail.com**
-- Postal address: available on request.
-
----
-
-_The canonical, publicly hosted copy of this policy lives at
-<https://gist.github.com/hteariH/bfd7d6412cc41a227bcc53646655bfc2>, linked from the Google Play
-listing and from the App's **Settings → Privacy policy** screen. Keep this gist in sync when the
-policy changes._
+We will update the date at the top when this policy changes, and announce material changes
+in the app.

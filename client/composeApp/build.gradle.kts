@@ -219,14 +219,21 @@ compose.resources {
 android {
     namespace = "com.personalmoney"
     // 36 because androidx.activity 1.12+ (pulled in by Koin) refuses to compile against 35.
-    // targetSdk stays at 35 deliberately: that one opts the app into new runtime behaviour
-    // and is a release decision, not a dependency-migration one.
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.personalmoney"
         minSdk = 26
-        targetSdk = 35
+        // 36 because Play stopped accepting anything lower on 31 August 2026 - a new app
+        // targeting 35 is rejected at upload, so this is no longer a free choice.
+        //
+        // The Android 16 behaviour it opts into costs this app nothing: MainActivity
+        // already calls enableEdgeToEdge(), the manifest already sets
+        // enableOnBackInvokedCallback and pins no screenOrientation, and none of the
+        // health, Bluetooth or local-network changes touch anything here. What is left is
+        // insets - verify the header, the bottom bar and the Quick Add sheet on a device
+        // before a release goes out.
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
 

@@ -1,128 +1,226 @@
 # Release checklist — PersonalMoney
 
-Step-by-step from "working debug build" to "live on Google Play". Tick each box once; the next release just re-runs sections marked **every release**.
+From a working build to Google Play. Section 0 happens once for the app, section 1 happens
+every release.
+
+The Gradle module is **`composeApp`**, not `app` — every path below reflects that.
 
 ---
 
-## 0. One-time setup
+## 0. One-time, per app
 
-### 0.1 Create the upload keystore
-```bash
-keytool -genkeypair -v \
-  -keystore personalmoney.keystore \
-  -alias upload \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -dname "CN=PersonalMoney, O=YourName, C=XX"
+### 0.1 Upload keystore — done
+
+```powershell
+keytool -genkeypair -v -keystore personalmoney.keystore -alias upload `
+  -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=PersonalMoney, O=mamoru, C=UA"
 ```
-Move the resulting `personalmoney.keystore` to the repository root (it is git-ignored).
 
-### 0.2 Configure signing & ad IDs
+`client/personalmoney.keystore` and `client/keystore.properties` exist and are **git-ignored**
+on purpose. Two consequences, both real:
+
+- **Back them up somewhere off this machine** (password manager / encrypted drive). The
+  passwords cannot be recovered from anywhere else.
+- Losing the key is survivable but not free: with Play App Signing, Google can reset the
+  *upload* key on request, so users keep getting updates. Losing it before the first upload
+  means simply making a new one.
+
+`composeApp/build.gradle.kts` reads `keystore.properties` at configuration time and skips
+release signing entirely if the file is absent, so a clean checkout still builds.
+
+### 0.2 AdMob
+
+The publisher id `pub-4510992616986316` is already served at
+`https://personalmoney.app/app-ads.txt` (see `deploy/personalmoney.caddy`).
+
+**The current build ships Google's test ad unit ids** — `keystore.properties` leaves
+`admobAppId` / `admobBannerUnitId` / `admobInterstitialUnitId` commented out and the build
+falls back to the test units. That is fine for a closed test and **must not reach
+production**: serving test ads to real users, or real ads you click yourself, both breach
+AdMob policy.
+
+Before the production track: create the app and its ad units at <https://apps.admob.com>,
+uncomment those three keys, and rebuild. The AdMob **app id** is baked into the manifest, so
+changing it needs a new build and a new versionCode.
+
+### 0.3 Privacy policy — hosted
+
+`https://personalmoney.app/privacy.html`, served from
+`src/main/frontend/public/privacy.html`. `SpaFallbackController` only forwards paths without
+a dot, so the `.html` is load-bearing — the static resource handler answers it directly, which
+matters because Play's crawler runs no JavaScript.
+
+It sits in the CRA `public/` directory rather than `src/main/resources/static/`, which is
+git-ignored build output: react-scripts copies `public/` verbatim into the bundle, and Maven
+copies that into `target/classes/static`. A file dropped straight into the resources
+directory works when you run locally and ships nothing.
+
+The wording lives twice, in that file and in [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md). Change
+both together.
+
+**The page is only live after the server is deployed.** Check it before filling in the Play
+form:
+
 ```bash
-cp keystore.properties.example keystore.properties
-# edit keystore.properties — set keystore passwords, AdMob production IDs, privacy URL
+curl -sI https://personalmoney.app/privacy.html | head -1
 ```
-`app/build.gradle.kts` reads this file at configuration time; without it, debug still builds but release won't be signed.
 
-### 0.3 Set up AdMob
-1. Create the app in <https://apps.admob.com>.
-2. Create one **Banner** ad unit and one **Interstitial** ad unit (we keep interstitial off by default but the unit must exist for the SDK init).
-3. Paste the IDs into `keystore.properties`.
-4. Run a debug build at least once with real IDs — AdMob's first impression takes ~24 h to start counting.
+### 0.4 Create the app in Play Console
 
-### 0.4 Host the Privacy Policy
-- Take [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md), fill in your contact info, render to HTML.
-- Host at a stable public URL (GitHub Pages, Vercel, your own domain).
-- Put that URL into `keystore.properties` under `privacyPolicyUrl=`.
-- Verify it loads in a private browser window (no auth).
+<https://play.google.com/console> → **Create app**.
 
-### 0.5 Generate the production app icon
-Current icons are placeholder vectors. Use [Android Studio → Image Asset → Launcher Icons (Adaptive)] with a 512×512 PNG. Export will overwrite:
-- `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`
-- `app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml`
-- `app/src/main/res/drawable/ic_launcher_foreground.xml`
-- `app/src/main/res/mipmap-*/ic_launcher.png` (legacy fallbacks)
+| Field | Value |
+| --- | --- |
+| App name | PersonalMoney: Budget Tracker |
+| Default language | English (United States) |
+| App or game | App |
+| Free or paid | Free |
 
-Also generate a 512×512 Play Store icon and a 1024×500 feature graphic (see [`STORE_LISTING.md`](STORE_LISTING.md)).
+The application id is fixed at **`com.personalmoney`** and can never be changed after the
+first upload. Neither can the upload key, nor the AdMob app id in the manifest without a new
+build.
+
+### 0.5 First upload is manual
+
+The Play Developer API cannot create an app and refuses the first artifact for an app that has
+never had one. Upload `composeApp-release.aab` by hand in Play Console. Automating later
+releases (Gradle Play Publisher + a service account) is optional and only worth it once the
+cadence justifies it.
 
 ---
 
 ## 1. Every release
 
-### 1.1 Bump version
-In `app/build.gradle.kts`:
+### 1.1 Bump the version
+
+In `composeApp/build.gradle.kts` → `defaultConfig`:
+
 ```kotlin
 versionCode = <previous + 1>     // monotonic integer, never reused
-versionName = "0.1.1"            // human-readable, semver-ish
+versionName = "0.1.1"
 ```
 
-### 1.2 Pre-flight checks (local)
-```bash
-./gradlew clean
-./gradlew lint test
-./gradlew :app:assembleRelease   # signed APK — install on a real device to smoke-test
-./gradlew :app:bundleRelease     # signed AAB — what you upload to Play
+A versionCode is consumed the moment an AAB is uploaded, whether or not it is rolled out.
+
+### 1.2 Check the target API level is still accepted
+
+Play raises the floor every year, on 31 August. `targetSdk` was moved to **36** for this
+release because 35 stopped being accepted on **31 August 2026** — an upload below the floor
+is rejected outright, not warned about.
+
+Next deadline: expect API 37 around 31 August 2027. Check
+<https://support.google.com/googleplay/android-developer/answer/11926878> before each
+release rather than trusting this line.
+
+A `targetSdk` bump is a behaviour change, not a number: re-run the smoke test in 1.4 on a
+device after one.
+
+### 1.3 Build and test
+
+```powershell
+$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
+cd client
+./gradlew.bat testDebugUnitTest assembleDebug --no-daemon      # the standing gate
+./gradlew.bat :composeApp:assembleRelease --no-daemon          # signed APK, for the device
+./gradlew.bat :composeApp:bundleRelease --no-daemon            # signed AAB, for Play
 ```
-Smoke-test on the release APK:
-- [ ] Onboarding completes
+
+Outputs land in `composeApp/build/outputs/apk/release/` and
+`composeApp/build/outputs/bundle/release/composeApp-release.aab`.
+
+Confirm the AAB really is signed — an unsigned one is rejected on upload, and the build
+succeeds either way:
+
+```powershell
+& "C:\Program Files\Android\Android Studio\jbr\bin\jarsigner.exe" -verify -verbose:summary `
+  composeApp\build\outputs\bundle\release\composeApp-release.aab
+```
+
+### 1.4 Smoke-test the **release** APK on a device
+
+R8 only breaks things in release builds, and the release build is the one that talks to
+production (`apiBaseUrl` from `keystore.properties`; debug points at `10.0.2.2:8085`).
+
+- [ ] Register a new account, confirm the email arrives
+- [ ] Sign in, sign out, sign back in
 - [ ] Quick Add → save → appears in Transactions
+- [ ] Sync: make a change, open the web client, see it there
 - [ ] Widget pin → tap → opens Quick Add
-- [ ] Biometric lock toggle on → relaunch → prompt shown
-- [ ] AdMob banner loads on Dashboard (test ad, since you're on debug AdMob IDs locally)
-- [ ] Settings → Export → file opens in Files
-- [ ] Settings → Import → previously exported file restores
-- [ ] All three languages (System / English / Русский / Українська) switch instantly
+- [ ] Biometric lock on → relaunch → prompt shown
+- [ ] Receipt scan reads a real receipt
+- [ ] Monobank / HomeMoney / CSV import
+- [ ] Premium purchase flow (needs a licence tester, see 1.6)
+- [ ] Export → file opens; Import → restores
+- [ ] Delete account → the account is really gone
+- [ ] AdMob banner appears on Dashboard
+- [ ] All three languages switch instantly
 
-### 1.3 ProGuard / R8 sanity
-After `assembleRelease`, ensure these features still work in the obfuscated build:
-- [ ] Frankfurter currency rate refresh (turn off & on the network, watch logs)
-- [ ] Subscription auto-charge (use `adb shell cmd jobscheduler run -f com.personalmoney 0`)
-- [ ] Backup JSON round-trip
+Anything that works in debug and not here is R8. Add a `-keep` to
+`composeApp/proguard-rules.pro` and rebuild — do not disable minification.
 
-If anything is missing, R8 has stripped something. Add a `-keep` rule to `proguard-rules.pro` and re-test.
+> `proguard-rules.pro` still carries Hilt and Retrofit rules from before the Koin/Ktor
+> migration. Harmless, but it means the file is not evidence that the current stack is
+> covered — check Ktor, Koin and Play Billing behaviour on the device rather than assuming.
 
-### 1.4 Play Console upload
-1. Open <https://play.google.com/console>.
-2. **Internal testing → Create new release**.
-3. Upload `app/build/outputs/bundle/release/app-release.aab`.
-4. Paste **release notes** (max 500 chars per language) — keep one in `docs/RELEASE_NOTES_<version>.md` for history.
-5. **Save → Review release → Roll out to Internal testing**.
-6. Wait ~10 min, install via Play Internal testing link on a real device, repeat the smoke-test from §1.2.
+### 1.5 Upload
 
-### 1.5 Promote
-After 24–48 h on Internal testing with no crashes:
-- **Promote to Closed testing** (private testers from email list)
-- **Promote to Production** with **staged rollout 10 % → 25 % → 50 % → 100 %**
+Play Console → **Testing → Closed testing → Create new release** → upload the AAB → paste the
+release notes from [`STORE_LISTING.md`](STORE_LISTING.md) → **Save → Review release → Start
+rollout**.
 
-Watch the Play Console **Android vitals** tab between rollout stages. ANR rate > 0.47 % or crash rate > 1.09 % means halt and investigate.
+Track names differ between the Console and the API:
 
----
+| Console | API track |
+| --- | --- |
+| Internal testing | `internal` |
+| Closed testing | `alpha` |
+| Open testing | `beta` |
+| Production | `production` |
 
-## 2. Required Play Console forms (every release after major changes)
+### 1.6 In-app purchases
 
-| Form | When to update | Source of truth |
-| --- | --- | --- |
-| **App content → Privacy policy** | Whenever you change your privacy URL | `keystore.properties` → `privacyPolicyUrl` |
-| **App content → Data safety** | When SDKs change (e.g. you add Firebase, Crashlytics) | [`DATA_SAFETY.md`](DATA_SAFETY.md) |
-| **App content → Target audience** | Never (we declared 13+) | — |
-| **App content → Ads** | Never (we declared "Yes, ads") | — |
-| **Store listing** | When marketing copy changes | [`STORE_LISTING.md`](STORE_LISTING.md) |
-| **Pricing & availability** | Country additions | — |
+Premium is sold through Play Billing, so the product has to exist in Play Console
+(**Monetise → Subscriptions**) with the same product id the app asks for, and the build has to
+be on a track, before a purchase can be tested at all. Add yourself under **Setup → Licence
+testing** to buy without being charged.
 
 ---
 
-## 3. Optional but recommended
+## 2. App content forms — all block a release
 
-- [ ] Hook the project up to **Firebase Crashlytics** (zero crashes is a goal, not a default). If you add it, update `DATA_SAFETY.md` to declare crash log collection.
-- [ ] Add **Play App Signing** (Google manages the upload key, you keep a download key) — Play Console offers this on first AAB upload.
-- [ ] Configure **Play Integrity API** if you ever add a backend (we don't have one).
-- [ ] Add an **End-User License Agreement** screen if your jurisdiction requires it.
+| Form | Source of truth |
+| --- | --- |
+| Privacy policy | `https://personalmoney.app/privacy.html` |
+| Data safety | [`DATA_SAFETY.md`](DATA_SAFETY.md) |
+| Ads | Yes, the app contains ads |
+| Content rating | Finance / Utility questionnaire — see `DATA_SAFETY.md` §4 |
+| Target audience | 18+ |
+| Account deletion URL | `https://personalmoney.app/app/` |
+| Financial features | Personal finance tracker; no lending, investing, trading or money movement |
+| Data safety ↔ listing consistency | The listing must not claim anything the form contradicts |
+
+A wrong Data safety answer is a **policy violation**, not a form error. Fill it from
+`DATA_SAFETY.md` rather than from memory of what the app used to do.
 
 ---
 
-## 4. Things you cannot fix after release without a new APK/AAB
+## 3. The closed-testing requirement
 
-- `applicationId` (`com.personalmoney`)
-- The keystore (lose it = lose the app on Play forever; **back it up to encrypted offline storage**)
-- AdMob app ID embedded in the manifest
+A personal developer account created after 13 November 2023 must run a closed test with at
+least **12 testers who stay opted in for 14 continuous days** before it can apply for
+production access. Organisation accounts are exempt.
 
-Sanity-check these now, before the first upload, not after.
+The 14 days start when the twelfth real tester has opted in — not when the build was
+uploaded — and the counter resets if the number drops. Emulators and duplicate accounts do
+not count. Plan the calendar around that, not around the build.
+
+---
+
+## 4. Cannot be changed after the first release
+
+- `applicationId` — `com.personalmoney`
+- The app signing key
+- The AdMob app id in the manifest (needs a new build, not just a Console change)
+- A versionCode, once uploaded
+
+Sanity-check these before the first upload, not after.

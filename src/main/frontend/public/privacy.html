@@ -1,0 +1,210 @@
+<!doctype html>
+<!--
+  Served as a plain static file rather than a route in the SPA. Google Play fetches this
+  URL with a crawler that runs no JavaScript, and SpaFallbackController only forwards
+  paths without a dot, so `/privacy.html` reaches Spring's static resource handler
+  untouched. Keep the `.html` in the URL for that reason.
+
+  It lives in the CRA `public/` directory because that is the only static content that is
+  under version control: react-scripts copies public/ verbatim into
+  src/main/frontend/build, and the Maven build then copies that into
+  target/classes/static. Putting it straight into src/main/resources/static would look
+  like it worked locally and ship nothing - that directory is git-ignored build output.
+
+  Source of truth for the wording: client/docs/PRIVACY_POLICY.md. Change both together.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — PersonalMoney</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1b1b1f;
+    --muted: #5a5a66;
+    --rule: #e2e2e8;
+    --accent: #3d4499;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #131317; --fg: #e6e6ea; --muted: #a0a0ae; --rule: #2d2d36; --accent: #aab4ff; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 .25rem; letter-spacing: -.02em; }
+  h2 { font-size: 1.2rem; margin: 2.5rem 0 .6rem; letter-spacing: -.01em; }
+  h3 { font-size: 1rem; margin: 1.6rem 0 .4rem; color: var(--muted); }
+  .updated { color: var(--muted); font-size: .9rem; margin: 0 0 2rem; }
+  a { color: var(--accent); }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94rem; }
+  th, td { text-align: left; vertical-align: top; padding: .55rem .7rem; border-bottom: 1px solid var(--rule); }
+  th { font-weight: 600; }
+  .scroll { overflow-x: auto; }
+  ul { padding-left: 1.2rem; }
+  li { margin: .35rem 0; }
+  code { font-size: .9em; background: color-mix(in srgb, var(--fg) 8%, transparent); padding: .1em .35em; border-radius: .25em; }
+  .tldr { border-left: 3px solid var(--accent); padding: .1rem 0 .1rem 1rem; margin: 1.5rem 0; }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Privacy Policy — PersonalMoney</h1>
+<p class="updated">Last updated: 5 September 2026</p>
+
+<p>This Privacy Policy describes how the PersonalMoney Android application and the
+PersonalMoney service at <a href="https://personalmoney.app">personalmoney.app</a>
+(together, the <strong>Service</strong>) handle your information.</p>
+
+<p>The Service is operated by <strong>mamoru</strong> (“we”, “us”, “our”). Contact:
+<a href="mailto:aberkunsky@gmail.com">aberkunsky@gmail.com</a>.</p>
+
+<div class="tldr">
+<h2 style="margin-top:0">In short</h2>
+<ul>
+  <li>PersonalMoney is an <strong>account-based</strong> service. You register with an email
+      address and a name, and your accounts, transactions, categories and subscriptions are
+      <strong>stored on our server</strong> so the same data reaches every device you sign in on.</li>
+  <li>The app is <strong>offline-first</strong>: everything is kept in a local database on your
+      device and works with no network, then synchronises when there is one.</li>
+  <li>If you connect a bank, the credentials you give us are <strong>encrypted and stored on the
+      server only</strong>. They are never sent back to a device.</li>
+  <li>We show ads through <strong>Google AdMob</strong> and sell an optional subscription through
+      <strong>Google Play Billing</strong>.</li>
+  <li>You can <strong>delete your account and everything in it</strong> at any time, permanently.</li>
+</ul>
+</div>
+
+<h2>1. Data you give us</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>What</th><th>Why</th><th>Where it is stored</th></tr></thead>
+<tbody>
+<tr><td>Email address</td><td>Identifies your account, confirms the address, password resets</td><td>Server (PostgreSQL)</td></tr>
+<tr><td>First and last name</td><td>Shown in the app</td><td>Server</td></tr>
+<tr><td>Password</td><td>Authentication. Stored only as a bcrypt hash — we cannot read it</td><td>Server</td></tr>
+<tr><td>Accounts, categories, transactions, transfers, subscriptions, currency settings</td><td>The purpose of the app</td><td>Device <em>and</em> server, kept in sync</td></tr>
+<tr><td>Bank connection credentials (e.g. a Monobank personal token, a HomeMoney OAuth token)</td><td>Importing your statements automatically</td><td>Server only, <strong>encrypted at rest</strong>; never returned to a device</td></tr>
+<tr><td>Imported statement files (CSV)</td><td>Turning a statement into transactions</td><td>Parsed on the server, not retained as files</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Transaction data includes amounts, currencies, dates, the account and category you chose,
+and any note you typed. It is financial data about you, and we treat it as such.</p>
+
+<h2>2. Data collected automatically</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>What</th><th>By whom</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Advertising ID, approximate location (from IP), device model / OS / language, app version, ad impressions and clicks</td><td>Google AdMob and the User Messaging Platform SDK</td><td>Serving and measuring ads</td></tr>
+<tr><td>Google Play purchase token, purchase state, subscription expiry</td><td>Google Play Billing, then our server</td><td>Knowing whether your Premium subscription is active</td></tr>
+<tr><td>Server access logs (IP address, timestamp, request path)</td><td>Our server and its front end</td><td>Security, rate limiting, debugging. Retained short-term</td></tr>
+<tr><td>Session tokens</td><td>Our server</td><td>Keeping you signed in. Stored on the device in Android <code>EncryptedSharedPreferences</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>3. What stays on your device and never reaches us</h2>
+<ul>
+  <li><strong>Receipt photos.</strong> Scanning a receipt opens the system camera, recognises the
+      text on-device with Tesseract (the language data ships inside the app), and deletes the
+      image from the cache as soon as it has been read. The app declares no camera permission and
+      reads no photo library. No image, and no text extracted from one, is ever uploaded.</li>
+  <li><strong>Biometric unlock.</strong> Handled entirely by Android. We never see a fingerprint
+      or a face.</li>
+  <li><strong>Your theme, language and app preferences.</strong></li>
+  <li><strong>Exported backup files.</strong> You choose where they are written through the system
+      file picker; they do not pass through us.</li>
+</ul>
+
+<h2>4. Third parties</h2>
+
+<h3>4.1 Google AdMob (advertising)</h3>
+<p>The app shows banner ads. Google may collect the data listed in section 2 to serve and
+measure them. You can opt out of personalised advertising through the in-app consent dialog
+(shown where required, e.g. in the EEA and the UK) or in <strong>Android Settings → Google →
+Ads</strong>. See
+<a href="https://policies.google.com/technologies/partner-sites">Google’s partner-sites notice</a>.</p>
+
+<h3>4.2 Google Play Billing (payments)</h3>
+<p>Premium is sold through Google Play. <strong>We never see your card or payment details</strong>
+— Google processes the payment and tells us only that a purchase exists and whether it is still
+active.</p>
+
+<h3>4.3 Resend (transactional email)</h3>
+<p>Address-confirmation and password-reset mail is sent through
+<a href="https://resend.com/legal/privacy-policy">Resend</a>, which therefore processes your
+email address.</p>
+
+<h3>4.4 Banks and aggregators you choose to connect</h3>
+<p>If you connect Monobank or HomeMoney, we call their APIs on your behalf with the credentials
+you supplied, and import the transactions they return. We ask them for nothing beyond statement
+data. Disconnecting a connection in the app deletes the stored credential.</p>
+
+<h3>4.5 Exchange rates</h3>
+<p>Rates come from the European Central Bank via the public
+<a href="https://frankfurter.app">Frankfurter API</a> and from our own server. Only currency
+codes are sent — never amounts, never identifiers.</p>
+
+<h2>5. Where the data lives</h2>
+<p>On a virtual server in the European Union, in a PostgreSQL database, behind HTTPS. All
+traffic between the app and the server is encrypted in transit. Bank credentials are
+additionally encrypted at rest with a key held only on that server.</p>
+
+<h2>6. How long we keep it</h2>
+<ul>
+  <li>Your content, for as long as your account exists.</li>
+  <li>Deleted account → everything belonging to it is <strong>erased immediately and
+      irreversibly</strong>, including bank credentials. There is no recovery.</li>
+  <li>Server access logs, a short rolling window.</li>
+  <li>Purchase records are retained where tax or accounting law requires it.</li>
+</ul>
+
+<h2>7. Your rights and how to use them</h2>
+<ul>
+  <li><strong>Delete your account</strong> — in the app, <strong>Settings → Delete account</strong>,
+      or on the web at <a href="https://personalmoney.app/app/">personalmoney.app/app</a>, or by
+      emailing <a href="mailto:aberkunsky@gmail.com">aberkunsky@gmail.com</a>.</li>
+  <li><strong>Export your data</strong> — <strong>Settings → Export</strong> writes a full JSON
+      backup.</li>
+  <li><strong>Access or correct your data</strong> — everything we hold about you is visible in the
+      app; write to us if something is missing.</li>
+  <li>If you are in the EEA or the UK, the GDPR applies. Our legal bases are performance of a
+      contract (running the service you signed up for), consent (personalised advertising), and
+      legitimate interest (security and abuse prevention). You may complain to your national data
+      protection authority.</li>
+</ul>
+
+<h2>8. Children</h2>
+<p>PersonalMoney is not directed at children and we do not knowingly collect data from anyone
+under 13 (or the local equivalent). If you believe a child has created an account, write to us
+and we will delete it.</p>
+
+<h2>9. Security</h2>
+<p>Passwords are bcrypt-hashed, bank credentials are encrypted at rest, transport is HTTPS only,
+sessions expire and can be revoked, and the login endpoint is rate-limited. No system is
+perfect; if you find a problem, please report it to
+<a href="mailto:aberkunsky@gmail.com">aberkunsky@gmail.com</a>.</p>
+
+<h2>10. Changes</h2>
+<p>We will update the date at the top when this policy changes, and announce material changes in
+the app.</p>
+
+<footer>
+PersonalMoney · <a href="https://personalmoney.app">personalmoney.app</a> ·
+<a href="mailto:aberkunsky@gmail.com">aberkunsky@gmail.com</a>
+</footer>
+
+</main>
+</body>
+</html>
