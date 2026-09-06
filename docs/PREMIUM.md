@@ -79,8 +79,16 @@ UPDATE users SET role = 'ADMIN' WHERE email = 'you@example.com';
 ```
 
 Locally that is the H2 console at `/h2-console` (the `local` profile turns it on); in
-production it is the MariaDB shell. Sign out and back in afterwards - the role is read
-from the row on every request, but an old token's principal is not.
+production it is a shell into the database container, which already holds the root
+password:
+
+```bash
+sudo docker exec -i homebudget-db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" homebudget'
+```
+
+No need to sign out and back in. `JwtAuthenticationFilter` loads the user from the
+database on every request and takes the authorities from that row, so a token minted
+before the promotion already carries the new role.
 
 Find the account:
 
