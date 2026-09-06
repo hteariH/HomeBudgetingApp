@@ -43,6 +43,10 @@ interface CurrencyDao {
     @Query("DELETE FROM currencies")
     suspend fun deleteAll()
 
+    /** Rows including tombstones. The seeder's counterpart to [CategoryDao.countAll]. */
+    @Query("SELECT COUNT(*) FROM currencies")
+    suspend fun countAll(): Int
+
     @Query(
         """
         SELECT (

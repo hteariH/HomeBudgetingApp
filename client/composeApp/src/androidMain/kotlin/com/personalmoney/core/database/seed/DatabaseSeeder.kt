@@ -20,8 +20,13 @@ class DatabaseSeeder constructor(
     suspend fun seedIfEmpty() {
         db.currencyDao().insertAll(DefaultCurrencies.list.map { it.copy(pendingSync = false) })
 
-        val anyCategory = db.categoryDao().findById(1L)
-        if (anyCategory == null) {
+        // Count the rows rather than probing for id 1. CategoryEntity's id is
+        // autoGenerate, so the defaults only land on 1..24 the very first time a database
+        // is created; once the table has been cleared - a sign-out, an account deletion, a
+        // backup restore - SQLite carries on from where it left off and id 1 never comes
+        // back. The old check therefore read "empty" forever after, and every launch
+        // inserted another 24 categories: 24, then 48, then 72.
+        if (db.categoryDao().countAll() == 0) {
             db.categoryDao().insertAll(DefaultCategories.list.map { it.copy(pendingSync = false) })
         }
     }

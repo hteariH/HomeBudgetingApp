@@ -51,6 +51,14 @@ interface CategoryDao {
     @Query("DELETE FROM categories")
     suspend fun deleteAll()
 
+    /**
+     * Rows including tombstones, which is what the seeder needs: a table holding nothing
+     * but deleted categories has still been seeded, and re-seeding it would resurrect
+     * every default the user has thrown away.
+     */
+    @Query("SELECT COUNT(*) FROM categories")
+    suspend fun countAll(): Int
+
     @Query(
         """
         SELECT (
