@@ -47,11 +47,22 @@ class FxSnapshot private constructor(
     }
 
     companion object {
-        fun from(rates: List<FxRate>): FxSnapshot =
-            FxSnapshot(
-                rates.filter { it.rate.isFinite() && it.rate > 0.0 }
-                    .associate { (it.baseCode to it.quoteCode) to it.rate }
-            )
+        /**
+         * The stored rates, with [FxPegs] filling the gaps no feed can.
+         *
+         * A peg is dropped the moment any stored rate mentions the same currency: a
+         * hand-set rate, or one that arrives from a feed later, is a statement about
+         * that currency and outranks the default.
+         */
+        fun from(rates: List<FxRate>): FxSnapshot {
+            val stored = rates.filter { it.rate.isFinite() && it.rate > 0.0 }
+                .associate { (it.baseCode to it.quoteCode) to it.rate }
+            val quoted = stored.keys.flatMapTo(mutableSetOf()) { listOf(it.first, it.second) }
+            val pegs = FxPegs.toHub
+                .filterKeys { it !in quoted }
+                .mapKeys { (code, _) -> code to FxPegs.HUB }
+            return FxSnapshot(stored + pegs)
+        }
 
         val EMPTY = FxSnapshot(emptyMap())
     }

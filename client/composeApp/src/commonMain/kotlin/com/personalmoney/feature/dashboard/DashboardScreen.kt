@@ -689,6 +689,22 @@ private fun BalanceHeader(state: DashboardUiState) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
             )
+            // An account with no rate to the base currency is left out of the sum, and
+            // used to be left out of this line too: the header counted all 26 accounts
+            // over a total that held 24 of them, and nothing on the screen said which
+            // number was which.
+            val unconverted = state.totalAccountsCount - state.convertibleAccountsCount
+            if (unconverted > 0) {
+                Text(
+                    pluralStringResource(
+                        Res.plurals.dashboard_total_missing_rate,
+                        unconverted,
+                        unconverted,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                )
+            }
         }
     }
 }

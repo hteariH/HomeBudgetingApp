@@ -1,11 +1,13 @@
 package com.personalmoney.core.data
 
+import com.personalmoney.core.currency.FxPegs
 import com.personalmoney.core.currency.FxRate
 import com.personalmoney.core.network.RestApi
 import com.personalmoney.core.network.RestFxRate
 import com.personalmoney.core.util.AppLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 
 /**
  * The shared rate contract, backed by REST. See [RestAccountRepository].
@@ -31,6 +33,25 @@ class RestExchangeRateRepository(private val api: RestApi) : ExchangeRateReposit
 
     override suspend fun refresh() {
         cache.value = api.fxRates().mapNotNull { it.toFxRate() }
+    }
+
+    /**
+     * Read from the cache rather than asked for on its own: the server sends a user's
+     * overrides down the same list as the fetched rates, and a pair quoted against
+     * [FxPegs.HUB] is only ever one of theirs - the nightly job quotes *from* USD, never
+     * into it.
+     */
+    override suspend fun handRate(code: String): Double? = loaded.first()
+        .firstOrNull { it.baseCode == code.uppercase() && it.quoteCode == FxPegs.HUB }
+        ?.rate
+
+    override suspend fun setHandRate(code: String, perUsd: Double?) {
+        if (perUsd == null || !perUsd.isFinite() || perUsd <= 0.0) {
+            api.clearFxOverride(code.uppercase())
+        } else {
+            api.setFxOverride(code.uppercase(), perUsd.toString())
+        }
+        refresh()
     }
 }
 

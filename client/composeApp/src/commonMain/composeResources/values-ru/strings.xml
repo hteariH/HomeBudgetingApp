@@ -165,6 +165,9 @@
     <string name="currencies_in_use">Используется в %1$d объектах — удалить нельзя. Отключить?</string>
     <string name="currencies_code_taken">Этот код уже есть в списке</string>
     <string name="currencies_code_invalid">Код — 2–8 символов: буквы, цифры, подчёркивание</string>
+    <string name="currencies_rate">Курс: 1 %1$s в USD</string>
+    <string name="currencies_rate_hint">Для валют, которых нет у поставщика курсов. Пусто — брать ежедневный курс.</string>
+    <string name="currencies_rate_invalid">Введите число больше нуля</string>
     <string name="settings_manage_currencies">Управление валютами</string>
 
     <string name="onboarding_welcome">Добро пожаловать в PersonalMoney</string>
@@ -384,8 +387,6 @@
     <string name="currencies_edit_title">Изменить валюту</string>
     <string name="currencies_empty">Валют пока нет</string>
     <string name="currencies_code_label">Код (3 символа)</string>
-    <string name="currencies_rate_to_base">Курс к USD</string>
-    <string name="currencies_rate_hint">Сколько единиц этой валюты равны 1 USD</string>
     <string name="currencies_base">Базовая</string>
     <string name="currencies_mark_as_base">Сделать базовой валютой</string>
     <string name="currencies_fields_required">Код, название и символ обязательны</string>
@@ -471,6 +472,12 @@
         <item quantity="few">%1$d счёта</item>
         <item quantity="many">%1$d счетов</item>
         <item quantity="other">%1$d счёта</item>
+    </plurals>
+    <plurals name="dashboard_total_missing_rate">
+        <item quantity="one">%1$d счёт без курса обмена и не входит в эту сумму</item>
+        <item quantity="few">%1$d счёта без курса обмена и не входят в эту сумму</item>
+        <item quantity="many">%1$d счетов без курса обмена и не входят в эту сумму</item>
+        <item quantity="other">%1$d счёта без курса обмена и не входят в эту сумму</item>
     </plurals>
     <plurals name="transactions_total_count">
         <item quantity="one">%1$d операция</item>

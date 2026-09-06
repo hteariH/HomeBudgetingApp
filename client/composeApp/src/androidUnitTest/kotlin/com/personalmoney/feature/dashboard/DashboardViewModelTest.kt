@@ -186,6 +186,45 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `a stablecoin account is in the total even with no rates at all`() = runTest {
+        // The HomeMoney import brought in USDT accounts, Frankfurter has no such currency,
+        // and the balance header quietly counted 3 415 USDT as nothing while still saying
+        // it was summing every account.
+        setupDefaultMocks(baseCurrency = "USD")
+        every { accountRepository.observeActive() } returns flowOf(listOf(
+            testAccount.copy(balanceMinor = 5_000L),
+            testAccount.copy(id = 2L, name = "Crypto", currencyCode = "USDT", balanceMinor = 201_500L),
+        ))
+
+        val vm = createViewModel()
+        vm.uiState.test {
+            val state = awaitItem()
+            assertEquals(206_500L, state.totalBalanceMinor)
+            assertEquals(2, state.convertibleAccountsCount)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `an account with no rate is counted as unconverted rather than silently dropped`() = runTest {
+        setupDefaultMocks(baseCurrency = "USD")
+        every { accountRepository.observeActive() } returns flowOf(listOf(
+            testAccount.copy(balanceMinor = 5_000L),
+            testAccount.copy(id = 2L, name = "Wallet", currencyCode = "BTC", balanceMinor = 100_000_000L),
+        ))
+
+        val vm = createViewModel()
+        vm.uiState.test {
+            val state = awaitItem()
+            assertEquals(5_000L, state.totalBalanceMinor)
+            // The header subtracts these two to say how many are missing from the sum.
+            assertEquals(2, state.totalAccountsCount)
+            assertEquals(1, state.convertibleAccountsCount)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `account count reflects only include-in-total accounts`() = runTest {
         setupDefaultMocks()
         val excluded = testAccount.copy(id = 2L, includeInTotal = false)

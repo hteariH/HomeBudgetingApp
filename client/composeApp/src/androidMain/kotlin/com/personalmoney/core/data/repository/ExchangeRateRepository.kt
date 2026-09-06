@@ -26,5 +26,8 @@ class ExchangeRateRepository constructor(
         )
     }
 
+    /** Drops a hand-set rate, putting the pair back on whatever the feed says. */
+    suspend fun clearManual(base: String, quote: String) = dao.delete(base, quote)
+
     suspend fun upsertAll(rates: List<ExchangeRateEntity>) = dao.upsertAll(rates)
 }

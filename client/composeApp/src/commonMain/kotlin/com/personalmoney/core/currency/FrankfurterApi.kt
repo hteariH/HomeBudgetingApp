@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -22,6 +23,15 @@ class FrankfurterApi(private val client: HttpClient) {
             parameter("base", base)
             if (quotes != null) parameter("quotes", quotes)
         }.body()
+
+    /**
+     * Every currency it will quote.
+     *
+     * Worth a request of its own because one code it does not know makes the *rates* call
+     * fail with 422 for every currency in it - so a single USDT account froze the whole
+     * device's rates, silently and for good. Ask what it carries, send only that.
+     */
+    suspend fun currencies(): List<FrankfurterCurrency> = client.get("v2/currencies").body()
 }
 
 @Serializable
@@ -30,4 +40,9 @@ data class FrankfurterRate(
     val base: String,
     val quote: String,
     val rate: Double
+)
+
+@Serializable
+data class FrankfurterCurrency(
+    @SerialName("iso_code") val isoCode: String
 )

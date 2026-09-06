@@ -114,6 +114,17 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
   `{date,base,quote,rate}`. v2 covers ~165 currencies incl. UAH/RUB (v1 `api.frankfurter.app` is
   ECB-only ~30 and silently omits UAH — do not revert). `FxRefreshWorker` runs daily *and* once on
   launch (`FxScheduler.refreshNow`). Synchronous conversion via `FxSnapshot.from(rates)`.
+  **It carries no crypto, and one unknown code fails the whole request with 422** — so the worker
+  asks `v2/currencies` first and sends only what that list contains. Without it a single imported
+  USDT account froze every rate on the device for good, `Result.retry()` re-running the same
+  doomed request; the server's `FxService` has the same guard for the same reason.
+  Dollar stablecoins convert through `core/currency/FxPegs` (USDT/USDC = 1 USD, a definition
+  rather than a quote), and anything else a feed will not carry — BTC, a voucher currency
+  somebody invented — needs a rate typed on the currency edit screen, stored against USD
+  because that is the pivot `FxSnapshot` triangulates through. **Any stored rate beats a peg**,
+  so a depeg is the user's to state. An account that still cannot be converted is left out of the
+  dashboard total *and said so* under it (`convertibleAccountsCount`) — the header used to count
+  all 26 accounts over a sum that held 24.
 - **Sync & auth:** `core/sync/SyncEngine` pulls, merges in one Room transaction (parents before
   children, uuid→local-id), then pushes. Every syncable row carries `uuid` / `updatedAt` /
   `deleted` / `pendingSync` (`SyncableEntity`); deletes are tombstones, concurrency is

@@ -243,10 +243,21 @@ class RestApi(private val client: HttpClient) {
 
     // ── fx ───────────────────────────────────────────────────────────────────
     /**
-     * The rates the server refreshed overnight. Read-only by design: rates are per-install,
-     * not per-client, so nothing here writes one.
+     * The rates the server refreshed overnight, plus whatever this user set by hand.
+     *
+     * Fetched rates are per-install and nothing here writes one; the two calls below write
+     * only a user's own override, for the currencies no feed carries.
      */
     suspend fun fxRates(): List<RestFxRate> = client.get("api/fx/rates").body()
+
+    /** "1 [code] is [perUsd] USD", as typed by the user. See `FxController.setOverride`. */
+    suspend fun setFxOverride(code: String, perUsd: String) {
+        client.put("api/fx/rates/$code") { jsonBody(RestFxOverride(perUsd)) }
+    }
+
+    suspend fun clearFxOverride(code: String) {
+        client.delete("api/fx/rates/$code")
+    }
 
     // ── currencies ───────────────────────────────────────────────────────────
     suspend fun currencies(): List<RestCurrency> = client.get("api/currencies").body()

@@ -60,6 +60,31 @@ class FxSnapshotTest {
         assertNull(fx.rate("USD", "EUR"))
     }
 
+    @Test fun `a dollar stablecoin converts with no stored rate at all`() {
+        // The whole bug, in one line: Frankfurter has no USDT, so an imported crypto
+        // account converted to null and was dropped from the total in silence.
+        val fx = FxSnapshot.from(emptyList())
+        assertEquals(1.0, fx.rate("USDT", "USD")!!, 0.0001)
+        assertEquals(1.0, fx.rate("USD", "USDC")!!, 0.0001)
+    }
+
+    @Test fun `a pegged coin reaches every currency the feed does carry`() {
+        val fx = FxSnapshot.from(listOf(rate("EUR", "USD", 1.08)))
+        // USDT -> USD -> EUR
+        assertEquals(1.0 / 1.08, fx.rate("USDT", "EUR")!!, 0.0001)
+    }
+
+    @Test fun `a stored rate beats the peg`() {
+        // A depeg is somebody's real problem; the app must not argue with them about it.
+        val fx = FxSnapshot.from(listOf(rate("USDT", "USD", 0.93)))
+        assertEquals(0.93, fx.rate("USDT", "USD")!!, 0.0001)
+    }
+
+    @Test fun `an unpegged crypto still needs a rate of its own`() {
+        val fx = FxSnapshot.from(listOf(rate("EUR", "USD", 1.08)))
+        assertNull(fx.rate("BTC", "EUR"))
+    }
+
     @Test fun `convert respects target decimals`() {
         val fx = FxSnapshot.from(listOf(rate("USD", "JPY", 150.0)))
         // 1 USD = 150 JPY (0 decimals)

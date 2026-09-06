@@ -176,6 +176,9 @@
     <string name="currencies_in_use">Used by %1$d items — can\'t delete. Disable instead?</string>
     <string name="currencies_code_taken">This code is already in your list</string>
     <string name="currencies_code_invalid">Code must be 2–8 characters: letters, digits, underscore</string>
+    <string name="currencies_rate">Rate: 1 %1$s in USD</string>
+    <string name="currencies_rate_hint">For currencies no rates provider carries. Leave empty to use the daily rate.</string>
+    <string name="currencies_rate_invalid">Enter a number greater than zero</string>
     <string name="settings_manage_currencies">Manage currencies</string>
 
     <!-- Onboarding -->
@@ -408,8 +411,6 @@
     <string name="currencies_edit_title">Edit currency</string>
     <string name="currencies_empty">No currencies yet</string>
     <string name="currencies_code_label">Code (3 characters)</string>
-    <string name="currencies_rate_to_base">Rate to USD</string>
-    <string name="currencies_rate_hint">How many units of this currency equal 1 USD</string>
     <string name="currencies_base">Base</string>
     <string name="currencies_mark_as_base">Mark as base currency</string>
     <string name="currencies_fields_required">Code, name and symbol are required</string>
@@ -493,6 +494,10 @@
     <plurals name="dashboard_account_count">
         <item quantity="one">%1$d account</item>
         <item quantity="other">%1$d accounts</item>
+    </plurals>
+    <plurals name="dashboard_total_missing_rate">
+        <item quantity="one">%1$d account has no exchange rate and is not in this total</item>
+        <item quantity="other">%1$d accounts have no exchange rate and are not in this total</item>
     </plurals>
     <plurals name="transactions_total_count">
         <item quantity="one">%1$d transaction</item>

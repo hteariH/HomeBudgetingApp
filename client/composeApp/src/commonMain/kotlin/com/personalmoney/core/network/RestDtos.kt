@@ -128,6 +128,10 @@ data class RestFxRate(
     val source: String,
 )
 
+/** The body of a hand-set rate. A string for the same reason [RestFxRate.rate] is one. */
+@Serializable
+data class RestFxOverride(val rate: String)
+
 @Serializable
 data class RestTransfer(
     val id: Long,

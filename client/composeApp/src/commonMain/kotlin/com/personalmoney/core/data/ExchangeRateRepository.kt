@@ -20,4 +20,24 @@ interface ExchangeRateRepository {
 
     /** Re-reads from the source. A no-op where reads are already live. */
     suspend fun refresh() {}
+
+    /**
+     * The rate the user set by hand for [code], read as "1 [code] is n USD", or null when
+     * they have not set one.
+     *
+     * Against USD and nothing else, because USD is what [com.personalmoney.core.currency.FxSnapshot]
+     * triangulates through: a rate stored against anything else would convert to that one
+     * currency and to nothing else, which is no use to somebody who holds bitcoin and
+     * thinks in hryvnia.
+     */
+    suspend fun handRate(code: String): Double?
+
+    /**
+     * Sets that rate, or clears it when [perUsd] is null.
+     *
+     * This is the only way a currency no feed carries can take part in a total at all -
+     * bitcoin, a voucher currency somebody invented on the currencies screen. Dollar
+     * stablecoins need no help; see [com.personalmoney.core.currency.FxPegs].
+     */
+    suspend fun setHandRate(code: String, perUsd: Double?)
 }

@@ -57,6 +57,7 @@ fun CurrencyEditScreen(
     val errMsg = when (state.errorMessage) {
         "CODE_TAKEN" -> stringResource(Res.string.currencies_code_taken)
         "INVALID_CODE" -> stringResource(Res.string.currencies_code_invalid)
+        "INVALID_RATE" -> stringResource(Res.string.currencies_rate_invalid)
         null -> null
         else -> state.errorMessage
     }
@@ -159,6 +160,24 @@ fun CurrencyEditScreen(
                 supportingText = { Text("$ € ¥ ₿ Ξ …") },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            if (state.handRateOffered) {
+                OutlinedTextField(
+                    value = state.handRate,
+                    onValueChange = viewModel::setHandRate,
+                    label = { Text(stringResource(Res.string.currencies_rate, state.code)) },
+                    singleLine = true,
+                    isError = !state.handRateValid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    supportingText = {
+                        Text(
+                            if (state.handRateValid) stringResource(Res.string.currencies_rate_hint)
+                            else stringResource(Res.string.currencies_rate_invalid)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Text(
                 text = stringResource(Res.string.currencies_decimals),
