@@ -8,6 +8,8 @@ import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -53,6 +55,24 @@ class AuthViewModel constructor(
     private val _state = MutableStateFlow(AuthUiState())
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
 
+    init {
+        // Empty the form whenever a session ends, because this view model outlives the
+        // session: signing out or deleting an account swaps the nav host back to this
+        // screen with the same instance, and it was still holding the departing user's
+        // name, email and password. On a shared phone the next person arrived at a
+        // registration form filled in with somebody else's address.
+        //
+        // Only transitions count. A StateFlow replays its current value to a new
+        // collector, and reacting to that would wipe whatever is being typed the moment
+        // the screen appears.
+        viewModelScope.launch {
+            authRepository.signedIn
+                .drop(1)
+                .filter { !it }
+                .collect { _state.value = AuthUiState() }
+        }
+    }
+
     fun onEmailChange(value: String) = _state.update { it.copy(email = value, error = null) }
     fun onPasswordChange(value: String) = _state.update { it.copy(password = value, error = null) }
     fun onFirstNameChange(value: String) = _state.update { it.copy(firstName = value, error = null) }
@@ -84,7 +104,10 @@ class AuthViewModel constructor(
                     // Pull the account's existing data straight away, so a user signing
                     // in on a second device sees their accounts rather than an empty app.
                     syncTrigger.requestSync()
-                    _state.update { it.copy(busy = false, signedIn = true) }
+                    // A fresh state rather than a copy: the credentials have done their
+                    // job, and there is no reason for a plaintext password to sit in
+                    // memory for as long as the app runs.
+                    _state.value = AuthUiState(signedIn = true)
                 }
                 is AuthResult.Failure ->
                     _state.update { it.copy(busy = false, error = result.message) }
