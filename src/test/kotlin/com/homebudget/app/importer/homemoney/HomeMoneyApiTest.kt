@@ -106,9 +106,36 @@ class HomeMoneyApiTest {
     }
 
     @Test
-    fun `a transaction list is read including the three-r currency field`() {
-        // CurrrencyId is spelled that way by HomeMoney. Getting it wrong costs nothing
-        // loud: the field simply arrives empty and every operation lands on no account.
+    fun `a transaction list is read with CurrencyId and isDelete`() {
+        val body = """
+            {
+              "Error": {"code": 0, "message": ""},
+              "ListTransaction": [
+                {
+                  "TransactionId": "76806885", "Date": "31.12.2024 0:00:00", "DateUnix": 1735603200,
+                  "CategoryId": "6160942", "CategoryFullName": "Food",
+                  "Description": "BAG&amp;GAB SHOP", "isPlan": false, "type": 1,
+                  "Total": 800.0, "AccountId": "1194378", "CurrencyId": "917078",
+                  "TransTotal": 0.48, "TransAccountId": "0", "TransCurrencyId": "917078",
+                  "GUID": "6874a1b8-e9cc-4c7f-83cf-32a9d4af0b46", "CreateDate": "31.12.2024 16:28:29",
+                  "isDelete": false
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val parsed = api.parse("TransactionListByPeriod", body, HomeMoneyTransactionList::class.java)
+
+        val operation = parsed.transactions.single()
+        assertEquals("917078", operation.currencyId)
+        assertEquals("1194378", operation.accountId)
+        assertEquals(BigDecimal("800.0"), operation.total)
+        assertEquals("6874a1b8-e9cc-4c7f-83cf-32a9d4af0b46", operation.guid)
+        assertEquals(false, operation.deleted)
+    }
+
+    @Test
+    fun `a transaction list is read including the three-r currency alias and isDeleted alias`() {
         val body = """
             {
               "Error": {"code": 0, "message": ""},
@@ -119,7 +146,8 @@ class HomeMoneyApiTest {
                   "Description": "Silpo", "isPlan": false, "type": 1,
                   "Total": "-249.90", "AccountId": "11", "CurrrencyId": "980",
                   "TransTotal": "0", "TransAccountId": null, "TransCurrencyId": null,
-                  "GUID": "9d1f-aaa", "CreateDate": "2026-03-04T10:16:00"
+                  "GUID": "9d1f-aaa", "CreateDate": "2026-03-04T10:16:00",
+                  "isDeleted": true
                 }
               ]
             }
@@ -133,6 +161,7 @@ class HomeMoneyApiTest {
         assertEquals(BigDecimal("-249.90"), operation.total)
         assertEquals("9d1f-aaa", operation.guid)
         assertEquals(HomeMoneyKind.EXPENSE, operation.type)
+        assertEquals(true, operation.deleted)
     }
 
     @Test

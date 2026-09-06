@@ -217,11 +217,26 @@ class HomeMoneyMapperTest {
         // One leg without its counterpart is not a partial import, it is a wrong balance
         // on the account that did get written.
         assertNull(HomeMoneyMapper.toRow(operation(type = HomeMoneyKind.TRANSFER, transAccountId = null)))
+        assertNull(HomeMoneyMapper.toRow(operation(type = HomeMoneyKind.TRANSFER, transAccountId = "0")))
         assertNull(
             HomeMoneyMapper.toRow(
                 operation(type = HomeMoneyKind.TRANSFER, transAccountId = "2", transCurrencyId = null)
             )
         )
+        assertNull(
+            HomeMoneyMapper.toRow(
+                operation(type = HomeMoneyKind.TRANSFER, transAccountId = "2", transCurrencyId = "0")
+            )
+        )
+    }
+
+    @Test
+    fun `description has HTML entities unescaped`() {
+        val row = HomeMoneyMapper.toRow(
+            operation().copy(description = "BAG&amp;GAB SHOP &#171;McDonald&#39;s&#187;")
+        )
+        val single = assertIsSingle(row)
+        assertEquals("BAG&GAB SHOP «McDonald's»", single.description)
     }
 
     @Test
@@ -250,6 +265,12 @@ class HomeMoneyMapperTest {
     fun `the dot-net date format is understood`() {
         val at = operation().copy(dateUnix = 0, date = "/Date(1700000000000)/").occurredAt()
         assertEquals(Instant.ofEpochMilli(1_700_000_000_000), at)
+    }
+
+    @Test
+    fun `the dot-separated date format from HomeMoney is understood`() {
+        val at = operation().copy(dateUnix = 0, date = "31.12.2024 0:00:00").occurredAt()
+        assertEquals(Instant.parse("2024-12-31T00:00:00Z"), at)
     }
 
     @Test

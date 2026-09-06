@@ -1,5 +1,6 @@
 package com.homebudget.app.importer.homemoney
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -297,18 +298,19 @@ data class HomeMoneyTransaction(
     @JsonProperty("type") val type: Int = 0,
     @JsonProperty("Total") val total: BigDecimal = BigDecimal.ZERO,
     @JsonProperty("AccountId") val accountId: String = "",
-    /** Theirs, three r's. */
-    @JsonProperty("CurrrencyId") val currencyId: String = "",
+    /** HomeMoney sends CurrencyId (two r's); alias CurrrencyId kept for compatibility. */
+    @JsonAlias("CurrrencyId", "currencyId") @JsonProperty("CurrencyId") val currencyId: String = "",
     @JsonProperty("TransTotal") val transTotal: BigDecimal = BigDecimal.ZERO,
     @JsonProperty("TransAccountId") val transAccountId: String? = null,
-    @JsonProperty("TransCurrencyId") val transCurrencyId: String? = null,
+    @JsonAlias("TransCurrrencyId", "transCurrencyId") @JsonProperty("TransCurrencyId") val transCurrencyId: String? = null,
     /** Stable across devices; this is what dedup keys on. */
     @JsonProperty("GUID") val guid: String = "",
     /**
      * HomeMoney tombstones rather than deletes, so a removed operation keeps coming back
      * from the API. Importing one would resurrect it in a ledger it was deleted from.
+     * The field in their JSON is isDelete; alias isDeleted kept for compatibility.
      */
-    @JsonProperty("isDeleted") val deleted: Boolean = false
+    @JsonAlias("isDeleted", "deleted") @JsonProperty("isDelete") val deleted: Boolean = false
 ) {
     /**
      * When the operation happened.
@@ -334,12 +336,14 @@ data class HomeMoneyTransaction(
         DOT_NET_DATE.find(raw)?.let { return Instant.ofEpochMilli(it.groupValues[1].toLong()) }
         return runCatching { LocalDateTime.parse(raw).toInstant(ZoneOffset.UTC) }
             .recoverCatching { LocalDate.parse(raw).atStartOfDay().toInstant(ZoneOffset.UTC) }
+            .recoverCatching { LocalDateTime.parse(raw, DOT_DATE_TIME).toInstant(ZoneOffset.UTC) }
             .getOrElse { throw HomeMoneyRequestException("Cannot read the date '$raw' on operation $guid") }
     }
 
     private companion object {
         const val MILLIS_THRESHOLD = 100_000_000_000L
         val DOT_NET_DATE = Regex("""/Date\((-?\d+)""")
+        val DOT_DATE_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.yyyy H:mm:ss")
     }
 }
 

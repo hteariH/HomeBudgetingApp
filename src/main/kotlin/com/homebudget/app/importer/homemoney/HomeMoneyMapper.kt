@@ -182,25 +182,33 @@ object HomeMoneyMapper {
         if (tx.guid.isBlank()) return null
 
         val occurredAt = tx.occurredAt()
-        val description = tx.description?.trim()?.takeIf { it.isNotEmpty() }
+        val description = tx.description?.trim()?.takeIf { it.isNotEmpty() }?.let {
+            org.springframework.web.util.HtmlUtils.htmlUnescape(it)
+        }
         val externalId = transactionExternalId(tx.guid)
 
         return when (tx.type) {
-            HomeMoneyKind.EXPENSE, HomeMoneyKind.INCOME -> PlannedRow.Single(
-                externalId = externalId,
-                occurredAt = occurredAt,
-                description = description,
-                accountExternalId = accountExternalId(tx.accountId, tx.currencyId),
-                categoryExternalId = tx.categoryId
-                    ?.takeIf { it.isNotBlank() && it != "0" }
-                    ?.let { categoryExternalId(it) },
-                income = tx.type == HomeMoneyKind.INCOME,
-                amount = tx.total.abs()
-            )
+            HomeMoneyKind.EXPENSE, HomeMoneyKind.INCOME -> {
+                if (tx.accountId.isBlank() || tx.accountId == "0") return null
+                if (tx.currencyId.isBlank() || tx.currencyId == "0") return null
+                PlannedRow.Single(
+                    externalId = externalId,
+                    occurredAt = occurredAt,
+                    description = description,
+                    accountExternalId = accountExternalId(tx.accountId, tx.currencyId),
+                    categoryExternalId = tx.categoryId
+                        ?.takeIf { it.isNotBlank() && it != "0" }
+                        ?.let { categoryExternalId(it) },
+                    income = tx.type == HomeMoneyKind.INCOME,
+                    amount = tx.total.abs()
+                )
+            }
 
             HomeMoneyKind.TRANSFER -> {
-                val toAccount = tx.transAccountId?.takeIf { it.isNotBlank() } ?: return null
-                val toCurrency = tx.transCurrencyId?.takeIf { it.isNotBlank() } ?: return null
+                val toAccount = tx.transAccountId?.takeIf { it.isNotBlank() && it != "0" } ?: return null
+                val toCurrency = tx.transCurrencyId?.takeIf { it.isNotBlank() && it != "0" } ?: return null
+                if (tx.accountId.isBlank() || tx.accountId == "0") return null
+                if (tx.currencyId.isBlank() || tx.currencyId == "0") return null
                 PlannedRow.Transfer(
                     externalId = externalId,
                     occurredAt = occurredAt,
