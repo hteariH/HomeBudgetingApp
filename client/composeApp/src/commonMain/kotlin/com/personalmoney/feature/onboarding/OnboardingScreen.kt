@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.personalmoney.core.ui.verticalScrollbar
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -216,10 +218,12 @@ private fun CurrencyStep(
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
         )
 
+        val listState = rememberLazyListState()
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             contentPadding = PaddingValues(vertical = 4.dp),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).verticalScrollbar(listState),
+            state = listState
         ) {
             items(sortedCurrencies, key = { it.code }) { currency ->
                 CurrencyChip(currency, currency.code == selectedCode, onSelect)
@@ -292,9 +296,11 @@ private fun AllCurrenciesDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
+                val dialogListState = rememberLazyListState()
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().verticalScrollbar(dialogListState),
+                    state = dialogListState
                 ) {
                     items(currencies, key = { it.code }) { currency ->
                         CurrencyChip(currency, false, onSelect)

@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.personalmoney.core.ui.verticalScrollbar
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -94,10 +96,13 @@ fun DashboardScreen(
             WideDashboard(state, { id -> viewModel.openAccount(id); onOpenAccount() }, Modifier.padding(padding))
             return@Scaffold
         }
+        val listState = rememberLazyListState()
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .verticalScrollbar(listState),
+            state = listState,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -630,6 +635,8 @@ private fun WideDashboard(
     onOpenAccount: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val leftScrollState = rememberScrollState()
+    val rightScrollState = rememberScrollState()
     Row(
         modifier.fillMaxSize().padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -637,7 +644,11 @@ private fun WideDashboard(
         // Narrower, and fixed: an account list is names and numbers, and giving it half the
         // window would only stretch the gap between the two.
         Column(
-            Modifier.weight(0.36f).fillMaxHeight().verticalScroll(rememberScrollState()),
+            Modifier
+                .weight(0.36f)
+                .fillMaxHeight()
+                .verticalScrollbar(leftScrollState)
+                .verticalScroll(leftScrollState),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             BalanceHeader(state)
@@ -645,7 +656,11 @@ private fun WideDashboard(
         }
 
         Column(
-            Modifier.weight(0.64f).fillMaxHeight().verticalScroll(rememberScrollState()),
+            Modifier
+                .weight(0.64f)
+                .fillMaxHeight()
+                .verticalScrollbar(rightScrollState)
+                .verticalScroll(rightScrollState),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             StatCardRow(state)

@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.personalmoney.core.ui.verticalScrollbar
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -151,10 +154,13 @@ fun TransactionEditScreen(
             return@Scaffold
         }
 
+        val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(padding)
+                .verticalScrollbar(scrollState)
+                .verticalScroll(scrollState)
                 .imePadding(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
