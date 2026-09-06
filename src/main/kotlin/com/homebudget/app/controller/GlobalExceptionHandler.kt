@@ -121,6 +121,32 @@ class GlobalExceptionHandler {
         )
 
     /**
+     * A failed sign-in is a 401, not a 500.
+     *
+     * `AuthenticationManager.authenticate` throws `BadCredentialsException` for a wrong
+     * password or an email that does not exist, and nothing here caught it - so the
+     * commonest error in the whole application fell into the catch-all below, answered
+     * 500, and logged a stack trace every time somebody mistyped. The client reads the
+     * status: it has a "Wrong email or password" for 401 that could never fire, and
+     * showed "The server is having trouble. Try again later." instead.
+     *
+     * Caught at the `AuthenticationException` base so a disabled or locked account cannot
+     * reintroduce the same 500 later. The message is fixed and deliberately vague for the
+     * same reason [handleAccessDenied]'s is: distinguishing "no such user" from "wrong
+     * password" tells an attacker which addresses are registered.
+     *
+     * Rate limiting is not involved - `AuthRateLimitFilter` writes its own 429 straight to
+     * the response and never reaches this class.
+     */
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException::class)
+    fun handleAuthenticationFailure(
+        ex: org.springframework.security.core.AuthenticationException
+    ): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            ErrorResponse(status = 401, error = "Unauthorized", message = "Wrong email or password")
+        )
+
+    /**
      * The catch-all, and the only handler here that logs.
      *
      * Everything above is a request the server understood and refused, which the client
