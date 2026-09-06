@@ -53,7 +53,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CurrenciesScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     onAdd: () -> Unit,
     onEdit: (String) -> Unit,
     viewModel: CurrenciesViewModel = koinViewModel()
@@ -74,7 +74,7 @@ fun CurrenciesScreen(
                 colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.currencies_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    if (onBack != null) IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back)

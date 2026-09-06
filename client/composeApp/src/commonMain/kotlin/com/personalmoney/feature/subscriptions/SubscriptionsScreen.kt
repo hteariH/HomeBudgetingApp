@@ -52,7 +52,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun SubscriptionsScreen(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: SubscriptionsViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -63,7 +63,7 @@ fun SubscriptionsScreen(
                 colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.subscriptions_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    if (onBack != null) IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 }

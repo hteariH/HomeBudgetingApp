@@ -45,4 +45,31 @@ object Routes {
 
     fun accountPicker(selectedId: Long? = null) =
         "account/picker" + (selectedId?.let { "?selectedId=$it" } ?: "")
+
+    /**
+     * Whether [route] is one [patterns] would accept - the question the browser's address
+     * bar raises and the nav controller does not answer.
+     *
+     * `navigate()` with an unregistered route throws, and the two-way URL binding swallows
+     * that: a typed or stale fragment left the screen alone and the address bar wrong. The
+     * platform that has an address bar asks this before handing anything to the controller;
+     * see `BrowserUrl.wasmJs.kt`.
+     *
+     * Matching is by shape, not by value. A pattern segment in braces is the argument
+     * placeholder and stands for any one segment, and the query string is dropped on both
+     * sides, because arguments there are optional and defaulted - `account/edit` and
+     * `account/edit?accountId=3` are the same destination.
+     */
+    fun isKnown(route: String, patterns: List<String>): Boolean {
+        val path = route.substringBefore('?').trim('/')
+        if (path.isEmpty()) return false
+        val segments = path.split('/')
+        return patterns.any { pattern ->
+            val expected = pattern.substringBefore('?').trim('/').split('/')
+            expected.size == segments.size &&
+                expected.indices.all { i ->
+                    expected[i].startsWith('{') || expected[i] == segments[i]
+                }
+        }
+    }
 }

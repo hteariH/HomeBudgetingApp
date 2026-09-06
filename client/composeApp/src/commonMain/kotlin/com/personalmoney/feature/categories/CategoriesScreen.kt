@@ -44,7 +44,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun CategoriesScreen(
     onAdd: (CategoryType) -> Unit,
     onEdit: (Long) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: CategoriesViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,7 +56,7 @@ fun CategoriesScreen(
                 colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.categories_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    if (onBack != null) IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 }

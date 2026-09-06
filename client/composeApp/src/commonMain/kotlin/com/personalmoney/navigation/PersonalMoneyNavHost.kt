@@ -126,6 +126,46 @@ private val bottomNavItems =
         NavDestination(Routes.MORE, Icons.Filled.MoreHoriz, Res.string.nav_more, primary = true)
 
 /**
+ * The phone's overflow tab. Absent in a browser, where every one of the screens it lists
+ * is a section in the header and the drawer, and the screen itself was reachable only by
+ * typing its address - an Android tab bar, with a bar of its own, and no way back out of
+ * it except the header.
+ */
+private val moreTabAvailable = !webChrome
+
+/**
+ * Every route the graph below registers on this platform.
+ *
+ * Kept beside the graph because it is the same list read twice: once to build the
+ * destinations and once to answer "is this address one of ours", which is the question the
+ * browser's address bar raises and the nav controller will not answer - see
+ * `BrowserUrl.wasmJs.kt`. A route added below and forgotten here stops resolving from a
+ * link, so the two belong within sight of each other.
+ */
+internal val registeredRoutes: List<String> = listOfNotNull(
+    Routes.ONBOARDING,
+    Routes.DASHBOARD,
+    Routes.QUICK_ADD,
+    Routes.TRANSACTIONS,
+    Routes.TRANSACTION_EDIT,
+    Routes.ACCOUNTS,
+    Routes.ACCOUNT_EDIT,
+    Routes.ACCOUNT_PICKER,
+    Routes.CATEGORIES,
+    Routes.CATEGORY_EDIT,
+    Routes.SUBSCRIPTIONS,
+    Routes.SUBSCRIPTION_EDIT,
+    Routes.CURRENCIES,
+    Routes.CURRENCY_EDIT,
+    Routes.SETTINGS,
+    Routes.PREMIUM,
+    Routes.ANALYTICS,
+    Routes.MORE.takeIf { moreTabAvailable },
+    Routes.BANKS.takeIf { bankConnectionsAvailable },
+    Routes.IMPORT_HOMEMONEY.takeIf { homeMoneyImportAvailable },
+)
+
+/**
  * Material's own breakpoint for an expanded window. The React sidebar switches at 900px,
  * close enough that the two agree in practice; this one is the documented value and does
  * not need a new adaptive artifact to read.
@@ -146,14 +186,6 @@ private val HEADER_NAV_BREAKPOINT = 1240.dp
 private val WORDMARK_BREAKPOINT = 480.dp
 
 /**
- * The site's sign-in page, which is where a signed-out browser is sent.
- *
- * A route of the React app rather than of this one - see the signed-out branch of
- * [PersonalMoneyNavHost] for why the app cannot host its own sign-in form on the web.
- */
-private const val WEB_SIGN_IN_PATH = "/login"
-
-/**
  * The sections the header lists. Settings is not one of them: it lives in the account menu,
  * where a site keeps it, and leaving it in the row would have made it the ninth label
  * competing for width. The drawer still lists it, because there the column is free.
@@ -166,6 +198,19 @@ private fun NavController.switchTab(route: String) {
         launchSingleTop = true
         restoreState = true
     }
+}
+
+/**
+ * Opens a screen that is not a section - an editor, the entry form, the premium page.
+ *
+ * `launchSingleTop` because several of these are reached from a control that stays on
+ * screen while they are open: the header's "+" is still there over the entry form, and the
+ * account menu is still there over the premium page. Without it a second press stacked a
+ * second identical copy, and in a browser each copy is also a history entry, so backing out
+ * of a double-click meant pressing Back twice to cross one screen.
+ */
+private fun NavController.open(route: String) {
+    navigate(route) { launchSingleTop = true }
 }
 
 @Composable
@@ -205,9 +250,9 @@ fun PersonalMoneyNavHost(
         //
         // This is also the way out of a dead session: a refresh token the server has
         // stopped honouring clears the store, which lands here, which sends the visitor
-        // somewhere they can actually sign in again.
-        val leaveForSignIn = rememberPageNavigator()
-        LaunchedEffect(Unit) { leaveForSignIn(WEB_SIGN_IN_PATH) }
+        // somewhere they can actually sign in again - and back to the screen they were
+        // reading when it died, which is what [LeaveForSignIn] carries across.
+        LeaveForSignIn()
         // The browser is on its way out; anything drawn here would flash for one frame.
         Box(Modifier.fillMaxSize())
         return
@@ -222,6 +267,20 @@ fun PersonalMoneyNavHost(
     // would otherwise drop the user on the dashboard with no idea whether it worked.
     // Keyed on the link so it fires once rather than on every recomposition.
     LaunchedEffect(deepLink) { deepLink?.let { navController.navigate(it) } }
+
+    /**
+     * The back arrow a section's own bar draws - and null where a section is not somewhere
+     * you arrived from.
+     *
+     * On a phone these screens live behind More, so each of them genuinely has a screen
+     * above it and the arrow is the way back to it. In a browser all nine are equals in the
+     * header, and an arrow on one of them offered to leave for whichever section happened
+     * to be visited before - which is not what a back arrow on a site means, and not
+     * something the header can be reconciled with. Transactions and Analytics already drew
+     * nothing here; this is the rest of the row agreeing with them.
+     */
+    val sectionBack: (() -> Unit)? =
+        if (webChrome) null else ({ navController.popBackStack(); Unit })
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -249,7 +308,7 @@ fun PersonalMoneyNavHost(
     // form the floating button used to. Above it, the panel is already on the page.
     val headerAdd: (() -> Unit)? =
         if (webChrome && !onboarding && maxWidth < PageWidth.InlineEntry) {
-            { navController.navigate(Routes.quickAdd("EXPENSE")) }
+            { navController.open(Routes.quickAdd("EXPENSE")) }
         } else null
 
     // Widening the window puts the sections back in the header; a drawer left open over
@@ -268,7 +327,7 @@ fun PersonalMoneyNavHost(
             onOpenMenu = { scope.launch { drawerState.open() } },
             email = shell.email,
             onOpenSettings = { navController.switchTab(Routes.SETTINGS) },
-            onOpenPremium = { navController.navigate(Routes.PREMIUM) },
+            onOpenPremium = { navController.open(Routes.PREMIUM) },
             onSignOut = { shell.signOut() },
             dark = dark,
             onToggleTheme = { shell.setDark(!dark) },
@@ -314,7 +373,7 @@ fun PersonalMoneyNavHost(
         floatingActionButton = {
             // Phones only: a wide window has the entry panel on the page instead.
             if (showFab && !wide && !webChrome) {
-                FloatingActionButton(onClick = { navController.navigate(Routes.quickAdd("EXPENSE")) }) {
+                FloatingActionButton(onClick = { navController.open(Routes.quickAdd("EXPENSE")) }) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.action_add_expense_fab))
                 }
             }
@@ -350,15 +409,17 @@ fun PersonalMoneyNavHost(
                 )
             }
 
-            composable(Routes.MORE) {
-                MoreScreen(
-                    onOpenTransfer = { navController.navigate(Routes.quickAdd("TRANSFER")) },
-                    onOpenAccounts = { navController.navigate(Routes.ACCOUNTS) },
-                    onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
-                    onOpenSubscriptions = { navController.navigate(Routes.SUBSCRIPTIONS) },
-                    onOpenPremium = { navController.navigate(Routes.PREMIUM) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) }
-                )
+            if (moreTabAvailable) {
+                composable(Routes.MORE) {
+                    MoreScreen(
+                        onOpenTransfer = { navController.open(Routes.quickAdd("TRANSFER")) },
+                        onOpenAccounts = { navController.open(Routes.ACCOUNTS) },
+                        onOpenCategories = { navController.open(Routes.CATEGORIES) },
+                        onOpenSubscriptions = { navController.open(Routes.SUBSCRIPTIONS) },
+                        onOpenPremium = { navController.open(Routes.PREMIUM) },
+                        onOpenSettings = { navController.open(Routes.SETTINGS) }
+                    )
+                }
             }
 
             composable(
@@ -404,7 +465,7 @@ fun PersonalMoneyNavHost(
                     onClose = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
                     onPickAccount = { currentId ->
-                        navController.navigate(Routes.accountPicker(currentId))
+                        navController.open(Routes.accountPicker(currentId))
                     },
                     viewModel = quickAddViewModel
                 )
@@ -412,9 +473,9 @@ fun PersonalMoneyNavHost(
 
             composable(Routes.ACCOUNTS) {
                 AccountsScreen(
-                    onAdd = { navController.navigate(Routes.accountEdit()) },
-                    onEdit = { id -> navController.navigate(Routes.accountEdit(id)) },
-                    onBack = { navController.popBackStack() }
+                    onAdd = { navController.open(Routes.accountEdit()) },
+                    onEdit = { id -> navController.open(Routes.accountEdit(id)) },
+                    onBack = sectionBack
                 )
             }
 
@@ -431,15 +492,15 @@ fun PersonalMoneyNavHost(
                 AccountEditScreen(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
-                    onOpenPremium = { navController.navigate(Routes.PREMIUM) }
+                    onOpenPremium = { navController.open(Routes.PREMIUM) }
                 )
             }
 
             composable(Routes.CATEGORIES) {
                 CategoriesScreen(
-                    onAdd = { type -> navController.navigate(Routes.categoryEdit(type = type.name)) },
-                    onEdit = { id -> navController.navigate(Routes.categoryEdit(id = id)) },
-                    onBack = { navController.popBackStack() }
+                    onAdd = { type -> navController.open(Routes.categoryEdit(type = type.name)) },
+                    onEdit = { id -> navController.open(Routes.categoryEdit(id = id)) },
+                    onBack = sectionBack
                 )
             }
             composable(
@@ -466,7 +527,7 @@ fun PersonalMoneyNavHost(
             composable(Routes.TRANSACTIONS) {
                 TransactionsScreen(
                     onBack = null,
-                    onEdit = { id -> navController.navigate(Routes.transactionEdit(id)) }
+                    onEdit = { id -> navController.open(Routes.transactionEdit(id)) }
                 )
             }
 
@@ -487,21 +548,21 @@ fun PersonalMoneyNavHost(
 
             if (bankConnectionsAvailable) {
                 composable(Routes.BANKS) {
-                    BanksScreen(onBack = { navController.popBackStack() })
+                    BanksScreen(onBack = sectionBack)
                 }
             }
 
             if (homeMoneyImportAvailable) {
                 composable(Routes.IMPORT_HOMEMONEY) {
-                    HomeMoneyImportScreen(onBack = { navController.popBackStack() })
+                    HomeMoneyImportScreen(onBack = sectionBack)
                 }
             }
 
             composable(Routes.SUBSCRIPTIONS) {
                 SubscriptionsScreen(
-                    onAdd = { navController.navigate(Routes.subscriptionEdit()) },
-                    onEdit = { id -> navController.navigate(Routes.subscriptionEdit(id)) },
-                    onBack = { navController.popBackStack() }
+                    onAdd = { navController.open(Routes.subscriptionEdit()) },
+                    onEdit = { id -> navController.open(Routes.subscriptionEdit(id)) },
+                    onBack = sectionBack
                 )
             }
             composable(
@@ -524,15 +585,15 @@ fun PersonalMoneyNavHost(
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
-                    onBack = { navController.popBackStack() },
-                    onOpenCurrencies = { navController.navigate(Routes.CURRENCIES) }
+                    onBack = sectionBack,
+                    onOpenCurrencies = { navController.open(Routes.CURRENCIES) }
                 )
             }
             composable(Routes.CURRENCIES) {
                 CurrenciesScreen(
-                    onBack = { navController.popBackStack() },
-                    onAdd = { navController.navigate(Routes.currencyEdit()) },
-                    onEdit = { code -> navController.navigate(Routes.currencyEdit(code)) }
+                    onBack = sectionBack,
+                    onAdd = { navController.open(Routes.currencyEdit()) },
+                    onEdit = { code -> navController.open(Routes.currencyEdit(code)) }
                 )
             }
             composable(

@@ -42,7 +42,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AccountsScreen(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: AccountsViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -52,7 +52,7 @@ fun AccountsScreen(
                 colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.accounts_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    if (onBack != null) IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.action_back))
                     }
                 }

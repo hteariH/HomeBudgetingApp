@@ -95,7 +95,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BanksScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: BanksViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -106,7 +106,7 @@ fun BanksScreen(
                 colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.banks_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    if (onBack != null) IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),

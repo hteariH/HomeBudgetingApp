@@ -74,7 +74,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeMoneyImportScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: HomeMoneyImportViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -95,7 +95,7 @@ fun HomeMoneyImportScreen(
                 colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.homemoney_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    if (onBack != null) IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),
