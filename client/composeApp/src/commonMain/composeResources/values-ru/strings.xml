@@ -214,6 +214,11 @@
     <string name="analytics_expense_down">Расходы снизились на %1$d%% к прошлому месяцу</string>
     <string name="analytics_expense_flat">Расходы не изменились к прошлому месяцу</string>
     <string name="analytics_savings_rate">Норма сбережений за месяц: %1$d%%</string>
+    <string name="analytics_period_3m">3 мес.</string>
+    <string name="analytics_period_6m">6 мес.</string>
+    <string name="analytics_period_12m">1 год</string>
+    <string name="analytics_month_categories">Категории за %1$s</string>
+    <string name="analytics_no_category_data">Нет данных по категориям за этот месяц</string>
     <string name="period_all">Все</string>
     <string name="period_today">Сегодня</string>
     <string name="period_week">Неделя</string>

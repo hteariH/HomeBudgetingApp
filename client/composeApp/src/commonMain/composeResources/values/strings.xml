@@ -230,6 +230,11 @@
     <string name="analytics_expense_down">Spending down %1$d%% vs last month</string>
     <string name="analytics_expense_flat">Spending unchanged vs last month</string>
     <string name="analytics_savings_rate">Savings rate this month: %1$d%%</string>
+    <string name="analytics_period_3m">3M</string>
+    <string name="analytics_period_6m">6M</string>
+    <string name="analytics_period_12m">1Y</string>
+    <string name="analytics_month_categories">Categories for %1$s</string>
+    <string name="analytics_no_category_data">No category data for this month</string>
 
     <!-- Period filter -->
     <string name="period_all">All</string>

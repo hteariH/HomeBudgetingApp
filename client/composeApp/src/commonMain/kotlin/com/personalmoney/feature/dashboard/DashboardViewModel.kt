@@ -112,24 +112,22 @@ class DashboardViewModel constructor(
     ) { base, _ -> base }.flatMapLatest { base ->
         val zone = TimeZone.currentSystemDefault()
         val today = Clock.System.now().toLocalDateTime(zone).date
-        val monthStart = LocalDate(today.year, today.month, 1).atStartOfDayIn(zone)
-        val nextMonth = run {
-            val m = today.monthNumber
-            val y = today.year
-            val nm = if (m == 12) LocalDate(y + 1, 1, 1) else LocalDate(y, m + 1, 1)
-            nm.atStartOfDayIn(zone)
-        }
+        val currentMonthStart = LocalDate(today.year, today.month, 1)
+        val monthStart = currentMonthStart.atStartOfDayIn(zone)
+        val nextMonth = currentMonthStart.plus(1, DateTimeUnit.MONTH).atStartOfDayIn(zone)
+        val flowStart = currentMonthStart.minus(5, DateTimeUnit.MONTH).atStartOfDayIn(zone)
+
         // No separate balance query: the shared Account already carries its summed balance.
         combine(
             accountRepository.observeActive(),
             transactionRepository.observeRecent(10),
             categoryRepository.observeAll(),
             combine(
-                transactionRepository.observeFiltered(from = monthStart, to = nextMonth),
+                transactionRepository.observeFiltered(from = flowStart, to = nextMonth),
                 fxSnapshotFlow
             ) { tx, fx -> tx to fx }
         ) { accounts, recent, categories, monthData ->
-            val (monthTx, fx) = monthData
+            val (windowTx, fx) = monthData
             val categoriesById = categories.associateBy { it.id }
             val accountsById = accounts.associateBy { it.id }
 
@@ -144,10 +142,11 @@ class DashboardViewModel constructor(
                     convertibleCount++
                 }
             }
+            val thisMonthTx = windowTx.filter { it.occurredAt >= monthStart && it.occurredAt < nextMonth }
             var monthExp = 0L
             var monthInc = 0L
             val expenseByCategoryAcc = HashMap<Long?, Long>()
-            for (tx in monthTx) {
+            for (tx in thisMonthTx) {
                 val account = accountsById[tx.accountId] ?: continue
                 val money = Money(tx.accountAmountMinor, CurrencyCode(account.currencyCode))
                 val converted = fx.convert(money, CurrencyCode(base))?.minor ?: continue
@@ -213,12 +212,11 @@ class DashboardViewModel constructor(
                 val toExclusive = mStart.plus(1, DateTimeUnit.MONTH).atStartOfDayIn(zone)
                 var income = 0L
                 var expense = 0L
-                for (tx in recent + monthTx) {
+                for (tx in windowTx) {
                     if (tx.occurredAt < from || tx.occurredAt >= toExclusive) continue
-                    val converted = fx.convert(
-                        Money(tx.amountMinor, CurrencyCode(tx.currencyCode)),
-                        CurrencyCode(base),
-                    )?.minor ?: continue
+                    val account = accountsById[tx.accountId] ?: continue
+                    val money = Money(tx.accountAmountMinor, CurrencyCode(account.currencyCode))
+                    val converted = fx.convert(money, CurrencyCode(base))?.minor ?: continue
                     when (tx.type) {
                         TransactionType.INCOME -> income += converted
                         TransactionType.EXPENSE -> expense += converted

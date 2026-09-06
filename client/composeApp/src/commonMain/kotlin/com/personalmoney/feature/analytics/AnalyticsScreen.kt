@@ -42,8 +42,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.core.ui.components.BreakdownSlice
+import com.personalmoney.core.ui.components.CategoryBreakdownChart
 import com.personalmoney.core.ui.components.MoneyText
-import com.personalmoney.core.ui.theme.LocalFinanceColors
 import com.personalmoney.core.ui.theme.LocalFinanceColors
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -79,6 +87,24 @@ fun AnalyticsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Period selector
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                val periods = AnalyticsPeriod.entries
+                periods.forEachIndexed { index, period ->
+                    val label = when (period) {
+                        AnalyticsPeriod.THREE_MONTHS -> stringResource(Res.string.analytics_period_3m)
+                        AnalyticsPeriod.SIX_MONTHS -> stringResource(Res.string.analytics_period_6m)
+                        AnalyticsPeriod.TWELVE_MONTHS -> stringResource(Res.string.analytics_period_12m)
+                    }
+                    SegmentedButton(
+                        selected = state.period == period,
+                        onClick = { viewModel.setPeriod(period) },
+                        shape = SegmentedButtonDefaults.itemShape(index, periods.size),
+                        label = { Text(label) }
+                    )
+                }
+            }
+
             // Summary cards
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -175,7 +201,9 @@ fun AnalyticsScreen(
                         Spacer(Modifier.height(16.dp))
                         MonthlyBarChart(
                             bars = state.months,
-                            maxValue = state.maxValue
+                            maxValue = state.maxValue,
+                            selectedMonthIndex = state.selectedMonth?.monthIndex,
+                            onSelectMonth = { viewModel.selectMonth(it) }
                         )
                         Spacer(Modifier.height(8.dp))
                         // Legend
@@ -196,6 +224,73 @@ fun AnalyticsScreen(
                 }
             }
 
+            // Category breakdown for selected month
+            val selectedMonth = state.selectedMonth
+            if (selectedMonth != null && (selectedMonth.expenses.minor > 0 || selectedMonth.income.minor > 0)) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(Res.string.analytics_month_categories, selectedMonth.fullLabel),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(12.dp))
+
+                        // Expense / Income toggle
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            SegmentedButton(
+                                selected = state.selectedCategoryType == TransactionType.EXPENSE,
+                                onClick = { viewModel.setCategoryType(TransactionType.EXPENSE) },
+                                shape = SegmentedButtonDefaults.itemShape(0, 2),
+                                label = {
+                                    Text("${stringResource(Res.string.dashboard_add_expense)} (${selectedMonth.expenseCategories.size})")
+                                }
+                            )
+                            SegmentedButton(
+                                selected = state.selectedCategoryType == TransactionType.INCOME,
+                                onClick = { viewModel.setCategoryType(TransactionType.INCOME) },
+                                shape = SegmentedButtonDefaults.itemShape(1, 2),
+                                label = {
+                                    Text("${stringResource(Res.string.dashboard_add_income)} (${selectedMonth.incomeCategories.size})")
+                                }
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+
+                        val activeSlices = if (state.selectedCategoryType == TransactionType.EXPENSE) {
+                            selectedMonth.expenseCategories
+                        } else {
+                            selectedMonth.incomeCategories
+                        }
+
+                        if (activeSlices.isNotEmpty()) {
+                            val breakdownSlices = remember(activeSlices, state.baseCurrency) {
+                                activeSlices.map { s ->
+                                    BreakdownSlice(
+                                        key = "cat-${s.categoryId}",
+                                        label = "${s.name} (${s.percentage}%)",
+                                        iconKey = s.icon,
+                                        color = Color(s.color),
+                                        amount = s.amount
+                                    )
+                                }
+                            }
+                            CategoryBreakdownChart(slices = breakdownSlices)
+                        } else {
+                            Text(
+                                text = stringResource(Res.string.analytics_no_category_data),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Per-month detail list
             if (hasData) {
                 Card(
@@ -203,9 +298,19 @@ fun AnalyticsScreen(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(Res.string.analytics_by_month),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(4.dp))
                         state.months.reversed().forEach { bar ->
-                            MonthDetailRow(bar = bar, finance = finance)
+                            MonthDetailRow(
+                                bar = bar,
+                                isSelected = bar.monthIndex == state.selectedMonth?.monthIndex,
+                                onSelect = { viewModel.selectMonth(bar.monthIndex) },
+                                finance = finance
+                            )
                         }
                     }
                 }
@@ -247,6 +352,8 @@ private fun SummaryCard(
 private fun MonthlyBarChart(
     bars: List<MonthlyBar>,
     maxValue: Long,
+    selectedMonthIndex: Int?,
+    onSelectMonth: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val finance = LocalFinanceColors.current
@@ -258,8 +365,17 @@ private fun MonthlyBarChart(
         verticalAlignment = Alignment.Bottom
     ) {
         bars.forEach { bar ->
+            val isSelected = bar.monthIndex == selectedMonthIndex
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onSelectMonth(bar.monthIndex) }
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                        else Color.Transparent
+                    )
+                    .padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Bottom
             ) {
@@ -272,7 +388,8 @@ private fun MonthlyBarChart(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(chartHeight - 20.dp),
+                        .height(chartHeight - 28.dp)
+                        .padding(horizontal = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.Bottom
                 ) {
@@ -296,7 +413,11 @@ private fun MonthlyBarChart(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = bar.label,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    ),
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -324,16 +445,29 @@ private fun LegendItem(color: androidx.compose.ui.graphics.Color, label: String)
 @Composable
 private fun MonthDetailRow(
     bar: MonthlyBar,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
     finance: com.personalmoney.core.ui.theme.FinanceSemanticColors
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onSelect)
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                else Color.Transparent
+            )
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = bar.label,
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.width(40.dp)
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+            ),
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.width(48.dp)
         )
         Column(modifier = Modifier.weight(1f)) {
             if (bar.expenses.minor > 0) {
@@ -367,12 +501,12 @@ private fun MonthDetailRow(
             )
             Text(
                 text = if (net > 0) "+" else "−",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 color = if (net > 0) finance.income else finance.expense
             )
             MoneyText(
                 money = netMoney,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 color = if (net > 0) finance.income else finance.expense
             )
         }

@@ -56,18 +56,26 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
             // [to] is an exclusive upper bound. The server interprets dateTo as an inclusive
             // day (until = dateTo + 1 day at midnight), so pass the day before [to] when at a day boundary.
             val dateTo = to?.let { (it - 1.milliseconds).toIsoDate() }
-            api.transactions(
-                accountId = accountId,
-                categoryId = categoryId,
-                type = type,
-                dateFrom = from?.toIsoDate(),
-                dateTo = dateTo,
-                size = PAGE_SIZE,
-            ).content.map { it.toTransaction() }
-                .filter { tx ->
-                    (from == null || tx.occurredAt >= from) &&
-                    (to == null || tx.occurredAt < to)
-                }
+            val all = mutableListOf<Transaction>()
+            var page = 0
+            do {
+                val res = api.transactions(
+                    accountId = accountId,
+                    categoryId = categoryId,
+                    type = type,
+                    dateFrom = from?.toIsoDate(),
+                    dateTo = dateTo,
+                    page = page,
+                    size = PAGE_SIZE,
+                )
+                all.addAll(res.content.map { it.toTransaction() })
+                page++
+            } while (page < res.totalPages && all.size < MAX_FETCH_LIMIT)
+
+            all.filter { tx ->
+                (from == null || tx.occurredAt >= from) &&
+                (to == null || tx.occurredAt < to)
+            }
         } catch (e: Exception) {
             AppLog.w("RestTransactionRepository", "Failed to fetch filtered transactions: ${e.message}")
             emptyList()
@@ -149,7 +157,10 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
         revision.update { it + 1 }
     }
 
-    private companion object { const val PAGE_SIZE = 500 }
+    private companion object {
+        const val PAGE_SIZE = 500
+        const val MAX_FETCH_LIMIT = 5000
+    }
 }
 
 private fun Instant.toIsoDate(): String =

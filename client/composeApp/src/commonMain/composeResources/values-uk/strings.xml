@@ -214,6 +214,11 @@
     <string name="analytics_expense_down">Витрати знизилися на %1$d%% до минулого місяця</string>
     <string name="analytics_expense_flat">Витрати не змінилися до минулого місяця</string>
     <string name="analytics_savings_rate">Норма заощаджень за місяць: %1$d%%</string>
+    <string name="analytics_period_3m">3 міс.</string>
+    <string name="analytics_period_6m">6 міс.</string>
+    <string name="analytics_period_12m">1 рік</string>
+    <string name="analytics_month_categories">Категорії за %1$s</string>
+    <string name="analytics_no_category_data">Немає даних за категоріями за цей місяць</string>
     <string name="period_all">Всі</string>
     <string name="period_today">Сьогодні</string>
     <string name="period_week">Тиждень</string>

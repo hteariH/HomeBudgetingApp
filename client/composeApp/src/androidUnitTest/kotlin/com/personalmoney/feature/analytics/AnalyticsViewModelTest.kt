@@ -1,6 +1,9 @@
 package com.personalmoney.feature.analytics
 
 import app.cash.turbine.test
+import com.personalmoney.core.data.CategoryRepository
+import com.personalmoney.core.domain.CategoryType
+import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.ExchangeRateRepository
 import com.personalmoney.core.data.TransactionRepository
@@ -16,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -27,17 +31,25 @@ class AnalyticsViewModelTest {
     private val now = Clock.System.now()
 
     private val transactionRepository = mockk<TransactionRepository>(relaxed = true)
+    private val categoryRepository = mockk<CategoryRepository>(relaxed = true)
     private val exchangeRateRepository = mockk<ExchangeRateRepository>(relaxed = true)
     private val userPreferences = mockk<UserPreferences>(relaxed = true)
+
+    @Before
+    fun setUp() {
+        setupEmptyMocks()
+    }
 
     private fun setupEmptyMocks(baseCurrency: String = "USD") {
         every { userPreferences.baseCurrency } returns flowOf(baseCurrency)
         every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())
+        every { categoryRepository.observeAll() } returns flowOf(emptyList())
         every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(emptyList())
     }
 
     private fun createViewModel(): AnalyticsViewModel = AnalyticsViewModel(
         transactionRepository = transactionRepository,
+        categoryRepository = categoryRepository,
         exchangeRateRepository = exchangeRateRepository,
         userPreferences = userPreferences
     )
@@ -291,6 +303,72 @@ class AnalyticsViewModelTest {
                 assertEquals(4_000L, bar.expenses.minor)
                 assertEquals(6_000L, bar.income.minor)
             }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `changing period updates months count`() = runTest {
+        setupEmptyMocks()
+        val vm = createViewModel()
+        vm.uiState.test {
+            val s6 = awaitItem()
+            assertEquals(6, s6.months.size)
+            assertEquals(AnalyticsPeriod.SIX_MONTHS, s6.period)
+
+            vm.setPeriod(AnalyticsPeriod.THREE_MONTHS)
+            val s3 = awaitItem()
+            assertEquals(3, s3.months.size)
+            assertEquals(AnalyticsPeriod.THREE_MONTHS, s3.period)
+
+            vm.setPeriod(AnalyticsPeriod.TWELVE_MONTHS)
+            val s12 = awaitItem()
+            assertEquals(12, s12.months.size)
+            assertEquals(AnalyticsPeriod.TWELVE_MONTHS, s12.period)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `category slices are populated and toggleable`() = runTest {
+        val catFood = Category(id = 10L, name = "Food", type = CategoryType.EXPENSE, icon = "restaurant", color = 0xFF123456L)
+        val catSalary = Category(id = 20L, name = "Salary", type = CategoryType.INCOME, icon = "payments", color = 0xFF654321L)
+
+        val expense = Transaction(
+            id = 1L, type = TransactionType.EXPENSE,
+            accountId = 1L, categoryId = 10L,
+            amountMinor = 4_000L, currencyCode = "USD", accountAmountMinor = 4_000L,
+            occurredAt = now
+        )
+        val income = Transaction(
+            id = 2L, type = TransactionType.INCOME,
+            accountId = 1L, categoryId = 20L,
+            amountMinor = 10_000L, currencyCode = "USD", accountAmountMinor = 10_000L,
+            occurredAt = now
+        )
+
+        every { userPreferences.baseCurrency } returns flowOf("USD")
+        every { exchangeRateRepository.observeAll() } returns flowOf(emptyList())
+        every { categoryRepository.observeAll() } returns flowOf(listOf(catFood, catSalary))
+        every { transactionRepository.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(expense, income))
+
+        val vm = createViewModel()
+        vm.uiState.test {
+            val state = awaitItem()
+            val latestMonth = state.selectedMonth ?: state.months.last()
+            assertEquals(1, latestMonth.expenseCategories.size)
+            assertEquals("Food", latestMonth.expenseCategories[0].name)
+            assertEquals(4_000L, latestMonth.expenseCategories[0].amount.minor)
+
+            assertEquals(1, latestMonth.incomeCategories.size)
+            assertEquals("Salary", latestMonth.incomeCategories[0].name)
+            assertEquals(10_000L, latestMonth.incomeCategories[0].amount.minor)
+
+            vm.setCategoryType(TransactionType.INCOME)
+            val stateInc = awaitItem()
+            assertEquals(TransactionType.INCOME, stateInc.selectedCategoryType)
+
             cancelAndIgnoreRemainingEvents()
         }
     }
