@@ -37,7 +37,34 @@ export function hasSession(): boolean {
     return !!localStorage.getItem(ACCESS_TOKEN);
 }
 
-/** Hands the tab to the application. */
+/**
+ * Where a visitor was heading before they were asked to sign in.
+ *
+ * The app puts the screen it was showing into `?next=` when it sends a signed-out browser
+ * here (see `navigation/SignIn.wasmJs.kt`), because the fragment does not survive the trip
+ * on its own - and without it a bookmark on `/app/#accounts` whose session had expired came
+ * back to the overview, every time.
+ *
+ * Only a fragment of our own page is ever accepted. Nothing here can leave the origin -
+ * whatever the value, it ends up after a `#` on `/app/` - but a value carrying its own `#`
+ * or a control character would produce an address that means something other than it looks
+ * like, so anything outside the shape a route has is dropped rather than repaired.
+ */
+const ROUTE = /^[A-Za-z0-9/?&=_.,:-]{1,200}$/;
+
+function nextFragment(search: string): string {
+    const next = new URLSearchParams(search).get('next');
+    return next && ROUTE.test(next) ? next : '';
+}
+
+/**
+ * Hands the tab to the application, on the screen the visitor was trying to reach.
+ *
+ * `replace`, not `assign`: this runs on a sign-in that has just succeeded, so the form
+ * behind it is done with. Leaving it on the stack made Back from the app land on a sign-in
+ * page belonging to a session that already exists.
+ */
 export function enterApp(): void {
-    window.location.assign(APP_PATH);
+    const fragment = nextFragment(window.location.search);
+    window.location.replace(fragment ? `${APP_PATH}#${fragment}` : APP_PATH);
 }

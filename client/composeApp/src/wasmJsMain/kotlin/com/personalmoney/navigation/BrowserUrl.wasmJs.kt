@@ -21,7 +21,6 @@ import androidx.navigation.bindToBrowserNavigation
 @Composable
 internal actual fun BindBrowserUrl(navController: NavController) {
     LaunchedEffect(navController) {
-        dropUnknownFragment()
         navController.bindToBrowserNavigation()
     }
 }
@@ -35,25 +34,31 @@ private external fun currentFragment(): String
 private external fun dropFragment()
 
 /**
- * Clears a fragment no screen answers to, before the binding is asked to honour it.
+ * Clears a fragment no screen answers to.
  *
  * An unregistered route is not an error the library reports: `navigate()` throws, the
  * binding swallows it, and what the visitor gets is the screen that happened to be there
- * under an address bar naming a different one. A stale bookmark is the way this actually
- * happens - `#more` is a phone-only screen the browser build no longer registers, and
- * links from before a rename are the same shape of problem.
+ * under an address bar naming a different one. A stale bookmark is how this actually
+ * happens - `#more` is a phone-only screen the browser build no longer registers, and a
+ * link from before a rename is the same shape of problem.
  *
  * Dropping the fragment means the app starts where a bare `/app/` starts, which is the
- * overview, and the address bar says so. Not a 404 page: there is no page here to serve
- * one from, and the honest reading of "this address names nothing" for a single-page app
- * is the app's front door.
+ * overview, and the address bar says so. Not a 404 page: there is no page here to serve one
+ * from, and the honest reading of "this address names nothing" for a single-page app is the
+ * app's front door.
  *
- * Cold start only. A fragment typed into the address bar of a running app is left to the
- * binding, which ignores it and repairs the URL on the next real navigation - fixing that
- * too would mean a second route matcher living in JavaScript, which is a worse trade than
- * the stale address bar it would buy.
+ * **Called from `main()`, before Compose starts.** It was a `LaunchedEffect` beside the
+ * binding first, and there it did nothing at all: effects run after the first composition,
+ * by which time the nav host is built and the binding has already read the address it was
+ * given, so clearing it afterwards changed neither the screen nor the URL. Before the
+ * viewport exists there is nothing to be too late for.
+ *
+ * Cold start only, which is the case that happens: a fragment typed into the address bar of
+ * a running app is left to the binding, which ignores it and repairs the URL on the next
+ * real navigation. Catching that one too would mean a second route matcher living in
+ * JavaScript, which is a worse trade than the stale address bar it would buy.
  */
-private fun dropUnknownFragment() {
+internal fun dropUnknownFragment() {
     val fragment = currentFragment()
     if (fragment.isNotBlank() && !Routes.isKnown(fragment, registeredRoutes)) dropFragment()
 }

@@ -14,6 +14,7 @@ import com.personalmoney.feature.homemoney.HomeMoneyRedirect
 import com.personalmoney.feature.homemoney.PendingHomeMoneyRedirect
 import com.personalmoney.navigation.PersonalMoneyNavHost
 import com.personalmoney.navigation.Routes
+import com.personalmoney.navigation.dropUnknownFragment
 import kotlinx.browser.document
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
@@ -84,6 +85,9 @@ fun main() {
     val redirect = redirectFrom(locationSearch())
     PendingHomeMoneyRedirect.set(redirect)
     if (redirect != null) dropQueryString()
+    // A stale link naming a screen that no longer exists here - before the router is built
+    // and reads it, which is the only moment early enough to matter.
+    dropUnknownFragment()
     ComposeViewport(document.body!!) {
         // The stored choice, not just the system's. Until the header had a theme switch
         // nothing in the browser could set this, so the preference existed and was ignored

@@ -34,7 +34,7 @@ interface TransactionDao {
         SELECT * FROM transactions
         WHERE deleted = 0
           AND (:fromMs IS NULL OR occurred_at >= :fromMs)
-          AND (:toMs IS NULL OR occurred_at <= :toMs)
+          AND (:toMs IS NULL OR occurred_at < :toMs)
           AND (:accountId IS NULL OR account_id = :accountId)
           AND (:categoryId IS NULL OR category_id = :categoryId)
           AND (:typeName IS NULL OR type = :typeName)

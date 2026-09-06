@@ -1,5 +1,6 @@
 package com.homebudget.app.importer.homemoney
 
+import com.homebudget.app.service.FxService
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -70,7 +71,8 @@ class HomeMoneyImportStatuses {
 class HomeMoneyImportRunner(
     private val service: HomeMoneyImportService,
     private val connections: HomeMoneyConnectionService,
-    private val statuses: HomeMoneyImportStatuses
+    private val statuses: HomeMoneyImportStatuses,
+    private val fxService: FxService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -148,6 +150,11 @@ class HomeMoneyImportRunner(
             }
 
             service.reconcileOpeningBalances(userId, targets)
+            try {
+                fxService.refreshRates()
+            } catch (e: Exception) {
+                log.warn("FX rate refresh after import failed: {}", e.message)
+            }
             statuses.update(userId) {
                 it.copy(state = HomeMoneyImportStatus.State.DONE, totalChunks = processed)
             }

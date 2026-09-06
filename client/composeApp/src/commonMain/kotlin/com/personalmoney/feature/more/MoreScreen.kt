@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.personalmoney.core.ui.pageBarColors
 import com.personalmoney.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
@@ -43,7 +44,12 @@ fun MoreScreen(
     onOpenSettings: () -> Unit
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(Res.string.more_title)) }) }
+        topBar = {
+            TopAppBar(
+                colors = pageBarColors(),
+                title = { Text(stringResource(Res.string.more_title)) },
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier

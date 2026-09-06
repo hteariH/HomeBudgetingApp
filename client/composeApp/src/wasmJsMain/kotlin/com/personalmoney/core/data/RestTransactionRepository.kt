@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -52,14 +53,21 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
         to: Instant?,
     ): Flow<List<Transaction>> = revision.map {
         try {
+            // [to] is an exclusive upper bound. The server interprets dateTo as an inclusive
+            // day (until = dateTo + 1 day at midnight), so pass the day before [to] when at a day boundary.
+            val dateTo = to?.let { (it - 1.milliseconds).toIsoDate() }
             api.transactions(
                 accountId = accountId,
                 categoryId = categoryId,
                 type = type,
                 dateFrom = from?.toIsoDate(),
-                dateTo = to?.toIsoDate(),
+                dateTo = dateTo,
                 size = PAGE_SIZE,
             ).content.map { it.toTransaction() }
+                .filter { tx ->
+                    (from == null || tx.occurredAt >= from) &&
+                    (to == null || tx.occurredAt < to)
+                }
         } catch (e: Exception) {
             AppLog.w("RestTransactionRepository", "Failed to fetch filtered transactions: ${e.message}")
             emptyList()

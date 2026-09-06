@@ -4,6 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PersonalMoney</title>
+
+    <!-- Sends a signed-out visitor to the sign-in page, and does it here.
+
+         The app makes this decision too, and has to: a session can die while it is
+         running. But it can only make it once seven megabytes of WebAssembly have
+         downloaded and compiled, which was some twenty-five seconds of blank page - paid
+         by somebody who was never going to be let in, to arrive at a form that could have
+         been shown at once.
+
+         Above the preload and the bundle script on purpose. The browser starts fetching
+         the moment it parses them, so a check placed after would still send eight
+         megabytes down a connection belonging to a page it is leaving.
+
+         Only the presence of the token is checked, never its contents. A stale one still
+         boots the app, which refreshes it or fails and redirects the long way round; this
+         is a fast path for the common case, not an authorisation decision.
+         `pm_access_token` is the same key `session.ts` writes and `BrowserTokenStore.kt`
+         reads - the three of them are one contract.
+
+         `replace`, so the address the visitor typed does not sit behind the sign-in page
+         as a Back button that only comes back here. `next` carries the screen they asked
+         for, so signing in finishes the journey instead of landing on the overview. -->
+    <script type="application/javascript">
+        (function () {
+            var token;
+            // Private mode, or site data blocked outright: nothing to find and no way to
+            // look. Let the app boot and say what is wrong in its own words.
+            try { token = window.localStorage.getItem('pm_access_token'); } catch (e) { return; }
+            if (token) return;
+            var route = window.location.hash.slice(1);
+            window.location.replace(route ? '/login?next=' + encodeURIComponent(route) : '/login');
+        })();
+    </script>
+
     <link rel="icon" href="/favicon.ico" sizes="any">
     <!-- Inter is 876 KB and Compose only asks for it once it is composing, which is
          after seven megabytes of wasm have compiled - so the first frames drew boxes

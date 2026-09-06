@@ -59,7 +59,6 @@ import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.ui.PageContainer
 import com.personalmoney.core.ui.webChrome
 import com.personalmoney.core.ui.PageWidth
-import com.personalmoney.core.ui.rememberPageNavigator
 import com.personalmoney.core.ui.theme.isDark
 import com.personalmoney.feature.accounts.AccountEditScreen
 import com.personalmoney.feature.accounts.AccountPickerScreen
