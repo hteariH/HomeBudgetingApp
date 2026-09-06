@@ -74,6 +74,9 @@ class RestApi(private val client: HttpClient) {
         parameter("size", size)
     }.body()
 
+    suspend fun transaction(id: Long): RestTransaction =
+        client.get("api/transactions/$id").body()
+
     suspend fun createTransaction(body: CreateTransactionRequest): RestTransaction =
         client.post("api/transactions") { jsonBody(body) }.body()
 

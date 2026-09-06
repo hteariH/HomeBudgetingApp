@@ -107,6 +107,16 @@ class LedgerBalanceTest {
 
         // 100.00 - 30.00 + 5.50
         assertEquals(7550L, accountService.balanceOf(account.id))
+
+        val filtered = transactionService.findFiltered(
+            accountId = null,
+            categoryId = null,
+            type = null,
+            dateFrom = null,
+            dateTo = null,
+            pageable = org.springframework.data.domain.PageRequest.of(0, 10)
+        )
+        assertEquals(2, filtered.totalElements)
     }
 
     @Test

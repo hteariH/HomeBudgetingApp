@@ -10,10 +10,12 @@ import com.personalmoney.core.network.CreateTransactionRequest
 import com.personalmoney.core.network.CreateTransferRequest
 import com.personalmoney.core.network.RestApi
 import com.personalmoney.core.network.RestTransaction
+import com.personalmoney.core.util.AppLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -27,6 +29,7 @@ import kotlinx.datetime.toLocalDateTime
  */
 class RestTransactionRepository(private val api: RestApi) : TransactionRepository {
 
+    private val revision = MutableStateFlow(0)
     private val recent = MutableStateFlow<List<Transaction>>(emptyList())
 
     /**
@@ -47,11 +50,8 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
         type: TransactionType?,
         from: Instant?,
         to: Instant?,
-    ): Flow<List<Transaction>> = flow {
-        // One emission per collection. There is nothing to observe over REST, so the query
-        // runs when a collector arrives and callers re-collect for a newer answer - rather
-        // than this owning a coroutine scope it has no business creating.
-        emit(
+    ): Flow<List<Transaction>> = revision.map {
+        try {
             api.transactions(
                 accountId = accountId,
                 categoryId = categoryId,
@@ -60,11 +60,20 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
                 dateTo = to?.toIsoDate(),
                 size = PAGE_SIZE,
             ).content.map { it.toTransaction() }
-        )
+        } catch (e: Exception) {
+            AppLog.w("RestTransactionRepository", "Failed to fetch filtered transactions: ${e.message}")
+            emptyList()
+        }
     }
 
     override fun observeById(id: Long): Flow<Transaction?> =
-        loaded.map { rows -> rows.firstOrNull { it.id == id } }
+        loaded.map { rows ->
+            rows.firstOrNull { it.id == id } ?: try {
+                api.transaction(id).toTransaction()
+            } catch (_: Exception) {
+                null
+            }
+        }
 
     override suspend fun findTransferPair(groupId: String): List<Transaction> =
         recent.value.filter { it.transferGroupId == groupId }
@@ -80,7 +89,11 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
     }
 
     override suspend fun findById(id: Long): Transaction? =
-        recent.value.firstOrNull { it.id == id }
+        recent.value.firstOrNull { it.id == id } ?: try {
+            api.transaction(id).toTransaction()
+        } catch (_: Exception) {
+            null
+        }
 
     override suspend fun insert(transaction: Transaction): Long {
         val created = api.createTransaction(transaction.toRequest())
@@ -125,9 +138,10 @@ class RestTransactionRepository(private val api: RestApi) : TransactionRepositor
 
     override suspend fun refresh() {
         recent.value = api.transactions(size = PAGE_SIZE).content.map { it.toTransaction() }
+        revision.update { it + 1 }
     }
 
-    private companion object { const val PAGE_SIZE = 100 }
+    private companion object { const val PAGE_SIZE = 500 }
 }
 
 private fun Instant.toIsoDate(): String =

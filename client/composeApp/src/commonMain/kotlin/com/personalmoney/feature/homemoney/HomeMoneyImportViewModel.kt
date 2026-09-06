@@ -6,6 +6,7 @@ import com.personalmoney.core.data.AccountRepository
 import com.personalmoney.core.data.CategoryRepository
 import com.personalmoney.core.data.CurrencyRepository
 import com.personalmoney.core.data.HomeMoneyImportRepository
+import com.personalmoney.core.data.TransactionRepository
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.model.Category
@@ -63,6 +64,7 @@ class HomeMoneyImportViewModel(
     private val repository: HomeMoneyImportRepository,
     private val accountRepository: AccountRepository,
     private val categoryRepository: CategoryRepository,
+    private val transactionRepository: TransactionRepository,
     private val currencyRepository: CurrencyRepository,
     private val preferences: UserPreferences,
 ) : ViewModel() {
@@ -129,7 +131,13 @@ class HomeMoneyImportViewModel(
             }
             // An import left running by an earlier visit is still running on the
             // server; pick the watch back up rather than showing a stale figure.
-            if (progress.running) pollProgress()
+            if (progress.running) {
+                pollProgress()
+            } else if (progress.state == HomeMoneyImportProgress.State.DONE) {
+                accountRepository.refresh()
+                categoryRepository.refresh()
+                transactionRepository.refresh()
+            }
         } catch (e: Exception) {
             _state.update { it.copy(loading = false, error = message ?: messageFor(e)) }
         }
@@ -282,6 +290,7 @@ class HomeMoneyImportViewModel(
             // local caches are a step behind until they are told.
             accountRepository.refresh()
             categoryRepository.refresh()
+            transactionRepository.refresh()
         }
     }
 
