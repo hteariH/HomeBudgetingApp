@@ -22,7 +22,10 @@ import kotlinx.coroutines.flow.map
  * own change. That is a weaker guarantee than the Room implementation gives, which is why
  * the interface documents the weaker one.
  */
-class RestAccountRepository(private val api: RestApi) : AccountRepository {
+class RestAccountRepository(
+    private val api: RestApi,
+    private val preferences: UserPreferences,
+) : AccountRepository {
 
     private val cache = MutableStateFlow<List<Account>>(emptyList())
 
@@ -156,6 +159,9 @@ class RestAccountRepository(private val api: RestApi) : AccountRepository {
 
     override suspend fun refresh() {
         val remote = api.accounts()
+        if (remote.isNotEmpty()) {
+            preferences.setOnboarded(true)
+        }
         remote.forEach { currencyIds[it.currency.code] = it.currency.id }
         // Keep the registry fed so money formatting uses the currencies the user actually
         // has, exactly as the Android app does on startup.

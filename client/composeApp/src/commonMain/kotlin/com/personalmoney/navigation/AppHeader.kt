@@ -118,7 +118,10 @@ internal fun AppHeader(
                 }
             }
 
-            BrandMark(showWordmark)
+            BrandMark(
+                showWordmark = showWordmark,
+                onClick = if (currentRoute != Routes.DASHBOARD) { { onNavigate(Routes.DASHBOARD) } } else null,
+            )
 
             if (navInline) {
                 Spacer(Modifier.width(12.dp))
@@ -192,7 +195,10 @@ internal fun AppDrawerSheet(
             modifier = Modifier.fillMaxWidth().height(60.dp).padding(start = 20.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            BrandMark(showWordmark = true)
+            BrandMark(
+                showWordmark = true,
+                onClick = if (currentRoute != Routes.DASHBOARD) { { onNavigate(Routes.DASHBOARD); onClose() } } else null,
+            )
             Spacer(Modifier.weight(1f))
             IconButton(onClick = onClose) {
                 Icon(Icons.Filled.Close, stringResource(Res.string.nav_close_menu))
@@ -228,10 +234,18 @@ internal fun AppDrawerSheet(
  * themes, so the text on it does not follow the surface it sits over.
  */
 @Composable
-private fun BrandMark(showWordmark: Boolean) {
+private fun BrandMark(
+    showWordmark: Boolean,
+    onClick: (() -> Unit)? = null,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = if (onClick != null) {
+            Modifier.clip(MaterialTheme.shapes.small).clickable(onClick = onClick)
+        } else {
+            Modifier
+        },
     ) {
         Box(
             modifier = Modifier

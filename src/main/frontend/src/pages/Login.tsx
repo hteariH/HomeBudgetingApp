@@ -22,6 +22,7 @@ const Login: React.FC = () => {
             // Not `navigate` - the application is a separate document at /app/, and the
             // tokens are written under the names it reads. See session.ts.
             saveSession(res);
+            localStorage.setItem('onboarded', 'true');
             enterApp();
         } catch (err: any) {
             setError(err.message || t('login.failed'));

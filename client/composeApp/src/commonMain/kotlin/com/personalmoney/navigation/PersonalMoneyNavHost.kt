@@ -192,10 +192,15 @@ private val WORDMARK_BREAKPOINT = 480.dp
 private val headerDestinations = navDestinations.filter { it.route != Routes.SETTINGS }
 
 private fun NavController.switchTab(route: String) {
+    val startDest = graph.findStartDestination()
+    val isDashboard = route == Routes.DASHBOARD
+    val isStartDest = isDashboard || route == startDest.route
     navigate(route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
+        popUpTo(startDest.id) {
+            saveState = !isStartDest
+        }
         launchSingleTop = true
-        restoreState = true
+        restoreState = !isStartDest
     }
 }
 
