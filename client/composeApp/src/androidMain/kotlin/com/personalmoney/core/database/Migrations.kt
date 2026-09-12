@@ -87,4 +87,34 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+/**
+ * v4 → v5: add transaction_splits table for itemised transaction splits.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS transaction_splits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                transaction_id INTEGER NOT NULL,
+                category_id INTEGER,
+                amount_minor INTEGER NOT NULL,
+                note TEXT,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                uuid TEXT NOT NULL DEFAULT '',
+                updated_at INTEGER NOT NULL DEFAULT 0,
+                deleted INTEGER NOT NULL DEFAULT 0,
+                pending_sync INTEGER NOT NULL DEFAULT 1,
+                FOREIGN KEY(transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+                FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE SET NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_transaction_splits_transaction_id ON transaction_splits (transaction_id)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_transaction_splits_category_id ON transaction_splits (category_id)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_transaction_splits_uuid ON transaction_splits (uuid)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_transaction_splits_pending_sync ON transaction_splits (pending_sync)")
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)

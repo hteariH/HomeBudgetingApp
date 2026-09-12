@@ -58,7 +58,9 @@ class CategoryService(
                 description = req.description,
                 parent = parent,
                 sortOrder = req.sortOrder,
-                budgetLimitMinor = req.budgetLimit?.let { MinorUnits.toMinor(it, baseDecimals()) }
+                budgetLimitMinor = req.budgetLimit?.let { MinorUnits.toMinor(it, baseDecimals()) },
+                rolloverEnabled = req.rolloverEnabled,
+                rolloverNegative = req.rolloverNegative
             )
         )
     }
@@ -71,6 +73,8 @@ class CategoryService(
         req.description?.let { category.description = it }
         req.archived?.let { category.archived = it }
         req.sortOrder?.let { category.sortOrder = it }
+        req.rolloverEnabled?.let { category.rolloverEnabled = it }
+        req.rolloverNegative?.let { category.rolloverNegative = it }
         req.parentId?.let { parentId ->
             require(parentId != id) { "A category cannot be its own parent" }
             val parent = findById(parentId)

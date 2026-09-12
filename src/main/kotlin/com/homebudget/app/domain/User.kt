@@ -106,6 +106,9 @@ data class User(
     @JoinColumn(name = "base_currency_id")
     var baseCurrency: Currency? = null,
 
+    @Column(name = "budget_cycle_start_day", nullable = false)
+    var budgetCycleStartDay: Int = 1,
+
     @Column(nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 

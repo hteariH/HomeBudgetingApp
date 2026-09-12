@@ -61,6 +61,12 @@ data class Category(
     @Column(name = "budget_limit_minor")
     var budgetLimitMinor: Long? = null,
 
+    @Column(name = "rollover_enabled", nullable = false)
+    var rolloverEnabled: Boolean = false,
+
+    @Column(name = "rollover_negative", nullable = false)
+    var rolloverNegative: Boolean = false,
+
     /**
      * The id this category had in whatever it was imported from, namespaced by source
      * (`homemoney:42`). It is what makes a second import adopt the rows the first one

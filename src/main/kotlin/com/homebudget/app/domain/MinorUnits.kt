@@ -31,4 +31,16 @@ object MinorUnits {
         require(decimals in 0..18) { "unsupported currency scale: $decimals" }
         return BigDecimal.valueOf(minor).movePointLeft(decimals).setScale(decimals)
     }
+
+    fun rescale(amountInHundredths: Long, decimals: Int): Long = when {
+        decimals == 2 -> amountInHundredths
+        decimals > 2 -> amountInHundredths * pow10(decimals - 2)
+        else -> Math.round(amountInHundredths.toDouble() / pow10(2 - decimals))
+    }
+
+    private fun pow10(n: Int): Long {
+        var result = 1L
+        repeat(n) { result *= 10 }
+        return result
+    }
 }
