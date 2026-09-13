@@ -98,7 +98,8 @@ class RestDtoContractTest {
     @Test
     fun `decodes a real bank provider payload`() {
         val payload = """
-            [{"id":"MONOBANK","displayName":"Monobank","helpUrl":"https://api.monobank.ua",
+            [{"id":"MONOBANK","displayName":"Monobank (personal token)","helpUrl":"https://api.monobank.ua",
+              "authMode":"CREDENTIALS",
               "credentialFields":[{"name":"token","label":"Personal API token","type":"SECRET",
                 "placeholder":"u1cx...","helpText":"Open api.monobank.ua, confirm in the Monobank app, and copy the token.",
                 "required":true}]}]
@@ -107,6 +108,7 @@ class RestDtoContractTest {
         val providers = json.decodeFromString<List<RestBankProvider>>(payload)
 
         assertEquals(1, providers.size)
+        assertEquals("CREDENTIALS", providers[0].authMode)
         // The credential form is built from this list rather than hardcoded per provider,
         // so a new field on the server reaches the UI without a client change.
         val field = providers[0].credentialFields.single()
@@ -114,6 +116,41 @@ class RestDtoContractTest {
         // SECRET, not "password" - the server's own vocabulary, and what decides masking.
         assertEquals("SECRET", field.type)
         assertTrue(field.required)
+    }
+
+    @Test
+    fun `decodes a consent provider and the challenge it starts`() {
+        // No credentialFields at all, which is the whole point: there is nothing to type.
+        val providerPayload = """
+            [{"id":"MONOBANK_CORPORATE","displayName":"Monobank","authMode":"CONSENT",
+              "credentialFields":[]}]
+        """.trimIndent()
+
+        val provider = json.decodeFromString<List<RestBankProvider>>(providerPayload).single()
+
+        assertEquals("CONSENT", provider.authMode)
+        assertTrue(provider.credentialFields.isEmpty())
+        // Omitted by the server, which drops nulls - so it has to have a default here.
+        assertNull(provider.helpUrl)
+
+        val challengePayload = """
+            {"provider":"MONOBANK_CORPORATE","reference":"uLkwh3NzFAfEkj7urj5C7AU_",
+             "approveUrl":"https://mbnk.app/auth/uLkwh3NzFAfEkj7urj5C7AU_",
+             "expiresAt":"2026-09-10T12:34:56Z","qrRows":["101","010","101"]}
+        """.trimIndent()
+
+        val challenge = json.decodeFromString<RestConsentChallenge>(challengePayload)
+
+        assertEquals("uLkwh3NzFAfEkj7urj5C7AU_", challenge.reference)
+        // Rows of '1' and '0', one per line of the code - the client draws it, so a
+        // different shape here is a QR nobody can scan rather than a decoding failure.
+        assertEquals(3, challenge.qrRows.size)
+
+        // The poll's ordinary answer: no connection yet, and not an error.
+        val pending = json.decodeFromString<RestConsentStatus>("""{"status":"PENDING"}""")
+
+        assertEquals("PENDING", pending.status)
+        assertNull(pending.connection)
     }
 
     @Test

@@ -126,6 +126,20 @@ class RestApi(private val client: HttpClient) {
     suspend fun connectBank(body: CreateConnectionRequest): RestBankConnection =
         client.post("api/bank/connections") { jsonBody(body) }.body()
 
+    /**
+     * Asks the bank for something the user can approve in its own app. Stores nothing:
+     * an unapproved request is not a connection.
+     */
+    suspend fun beginBankConsent(providerId: String): RestConsentChallenge =
+        client.post("api/bank/providers/$providerId/consent").body()
+
+    /**
+     * Whether that approval has happened yet. Polled, so `PENDING` is an ordinary 200
+     * rather than an error - the answer is usually no for the first few seconds.
+     */
+    suspend fun bankConsentStatus(providerId: String, reference: String): RestConsentStatus =
+        client.post("api/bank/providers/$providerId/consent/$reference").body()
+
     /** Re-checks stored credentials against the bank, and refreshes the connection status. */
     suspend fun verifyBank(id: Long): RestBankConnection =
         client.post("api/bank/connections/$id/verify").body()

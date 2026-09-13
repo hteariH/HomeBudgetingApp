@@ -48,6 +48,17 @@ data class BankConnection(
     @Column
     var label: String? = null,
 
+    /**
+     * The bank's own id for this customer.
+     *
+     * What makes a reconnect find the row it should replace rather than adding a second
+     * one - see `V6__monobank_corporate.sql`. Null on connections made before it existed
+     * and on banks that do not report one; a null never matches, so those simply keep the
+     * old behaviour of adding a row.
+     */
+    @Column(name = "external_client_id", length = 100)
+    var externalClientId: String? = null,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: BankConnectionStatus = BankConnectionStatus.ACTIVE,

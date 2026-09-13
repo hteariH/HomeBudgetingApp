@@ -1,8 +1,10 @@
 package com.personalmoney.core.data
 
+import com.personalmoney.core.domain.model.BankAuthMode
 import com.personalmoney.core.domain.model.BankConnection
 import com.personalmoney.core.domain.model.BankConnectionStatus
 import com.personalmoney.core.domain.model.BankProvider
+import com.personalmoney.core.domain.model.ConsentChallenge
 import com.personalmoney.core.domain.model.CredentialField
 import com.personalmoney.core.domain.model.ImportResult
 import com.personalmoney.core.domain.model.PendingImport
@@ -50,6 +52,24 @@ class RestBankRepository(private val api: RestApi) : BankRepository {
     override suspend fun connect(providerId: String, credentials: Map<String, String>) {
         api.connectBank(CreateConnectionRequest(provider = providerId, credentials = credentials))
         refresh()
+    }
+
+    override suspend fun beginConsent(providerId: String): ConsentChallenge {
+        val challenge = api.beginBankConsent(providerId)
+        return ConsentChallenge(
+            reference = challenge.reference,
+            approveUrl = challenge.approveUrl,
+            qrRows = challenge.qrRows,
+        )
+    }
+
+    override suspend fun pollConsent(providerId: String, reference: String): Boolean {
+        val connected = api.bankConsentStatus(providerId, reference).status
+            .equals("CONNECTED", ignoreCase = true)
+        // The approval is what creates the connection, so the list the screen draws from is
+        // stale the moment it lands - and it is the only sign the user gets that it worked.
+        if (connected) refresh()
+        return connected
     }
 
     override suspend fun verify(connectionId: Long) {
@@ -112,6 +132,13 @@ private fun RestBankProvider.toProvider() = BankProvider(
     id = id,
     displayName = displayName,
     helpUrl = helpUrl,
+    // Decided here rather than in the screen, and anything unrecognised reads as a form:
+    // the screen should be asking "form or QR", not comparing an enum name it does not own.
+    authMode = if (authMode.equals("CONSENT", ignoreCase = true)) {
+        BankAuthMode.CONSENT
+    } else {
+        BankAuthMode.CREDENTIALS
+    },
     credentialFields = credentialFields.map { it.toField() },
 )
 

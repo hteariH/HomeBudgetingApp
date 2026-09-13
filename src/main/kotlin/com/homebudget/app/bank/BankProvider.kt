@@ -32,6 +32,15 @@ interface BankProvider {
     val credentialFields: List<CredentialField>
 
     /**
+     * How the user proves the account is theirs.
+     *
+     * The client renders one of two things off this, and nothing bank-specific either
+     * way: a form built from [credentialFields], or the approve-on-your-phone dialog a
+     * [ConsentProvider] drives.
+     */
+    val authMode: AuthMode get() = AuthMode.CREDENTIALS
+
+    /**
      * Checks the credentials and reports who they belong to.
      *
      * Called before anything is stored, so a mistyped token fails in front of the user
@@ -51,6 +60,56 @@ interface BankProvider {
         to: LocalDate
     ): List<RemoteTransaction>
 }
+
+enum class AuthMode {
+    /** The user types what the bank gave them - see [BankProvider.credentialFields]. */
+    CREDENTIALS,
+
+    /** The user approves the request inside the bank's own app - see [ConsentProvider]. */
+    CONSENT
+}
+
+/**
+ * A bank that hands out access itself, rather than expecting the user to arrive with a
+ * credential already in hand.
+ *
+ * The distinction is worth an interface because the two are not the same shape. A form is
+ * one round trip: the user types, the bank answers. Consent is three parties and an
+ * unknown wait - the app asks the bank for a request, the *user* approves it somewhere
+ * else entirely, and only then is there anything to store. Nothing about that fits in
+ * [BankProvider.verify], which is handed credentials that already exist.
+ *
+ * What comes back from [completeConsent] is an ordinary credential map, so everything past
+ * this point - encryption, [BankProvider.verify], statements - is the same code the form
+ * providers use.
+ */
+interface ConsentProvider : BankProvider {
+
+    override val authMode: AuthMode get() = AuthMode.CONSENT
+
+    /** Asks the bank for something the user can approve. */
+    fun beginConsent(): ConsentChallenge
+
+    /**
+     * The credentials [reference] earned, or null while the user has not approved it yet.
+     *
+     * Null is the expected answer for as long as the user is still looking at their phone,
+     * which is why it is a return value rather than an exception: the caller polls this.
+     */
+    fun completeConsent(reference: String): Map<String, String>?
+}
+
+/**
+ * Something for the user to approve, and the handle to ask about it afterwards.
+ *
+ * [approveUrl] is the bank's, not ours: on a phone it opens the bank's app, and anywhere
+ * else it has to become a QR code for one.
+ */
+data class ConsentChallenge(
+    val reference: String,
+    val approveUrl: String,
+    val expiresAt: Instant
+)
 
 /** One input in the connect form. */
 data class CredentialField(

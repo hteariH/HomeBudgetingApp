@@ -29,12 +29,40 @@ data class CredentialField(
     val required: Boolean = true,
 )
 
+/**
+ * How a bank lets the user prove the account is theirs.
+ *
+ * Anything the server grows later reads as [CREDENTIALS] here, which degrades to showing a
+ * form with no fields rather than to a crash.
+ */
+enum class BankAuthMode {
+    /** The user types what the bank gave them - see [CredentialField]. */
+    CREDENTIALS,
+
+    /** The user approves the request in the bank's own app - see [ConsentChallenge]. */
+    CONSENT,
+}
+
 data class BankProvider(
     val id: String,
     val displayName: String,
     /** Where the user gets the credentials. Linked from the form when the provider gives one. */
     val helpUrl: String? = null,
+    val authMode: BankAuthMode = BankAuthMode.CREDENTIALS,
     val credentialFields: List<CredentialField> = emptyList(),
+)
+
+/**
+ * Something the user has to approve elsewhere, and how to put it in front of them.
+ *
+ * [approveUrl] is the bank's own: tapped on a phone it opens the bank's app, and on a
+ * desktop the only way to reach that phone is [qrRows] - the same URL as a QR code, one
+ * string per row with '1' where a module is dark.
+ */
+data class ConsentChallenge(
+    val reference: String,
+    val approveUrl: String,
+    val qrRows: List<String> = emptyList(),
 )
 
 /**

@@ -35,7 +35,36 @@ data class RestBankProvider(
     val id: String,
     val displayName: String,
     val helpUrl: String? = null,
+    /**
+     * `CREDENTIALS` or `CONSENT`. Defaulted rather than required, so a client built against
+     * this contract still reads a response from a server that predates it.
+     */
+    val authMode: String = "CREDENTIALS",
     val credentialFields: List<RestCredentialField> = emptyList(),
+)
+
+/**
+ * What the user has to approve in the bank's own app, for a provider that issues access
+ * itself instead of asking for a token.
+ *
+ * [qrRows] is the QR of [approveUrl] as one string per row, '1' for a dark module. The
+ * server encodes it because the page cannot: an `<img>` here has no bearer token to send,
+ * and a bitmap would have had to guess a size and a theme only the screen knows.
+ */
+@Serializable
+data class RestConsentChallenge(
+    val provider: String,
+    val reference: String,
+    val approveUrl: String,
+    val expiresAt: String,
+    val qrRows: List<String> = emptyList(),
+)
+
+/** `PENDING` until the user approves, then `CONNECTED` with the connection it created. */
+@Serializable
+data class RestConsentStatus(
+    val status: String,
+    val connection: RestBankConnection? = null,
 )
 
 @Serializable

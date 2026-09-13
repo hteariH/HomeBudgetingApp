@@ -41,6 +41,22 @@ app:
     # Off here on purpose: the redirect flow exists so this server never sees somebody's
     # HomeMoney password, and a flag that quietly stays on undoes that.
     allow-password-grant: ${HOMEMONEY_ALLOW_PASSWORD_GRANT:false}
+  monobank:
+    corporate:
+      # Monobank's corporate API, which is what lets somebody connect their account by
+      # approving it in the Monobank app instead of pasting a personal token nobody wants
+      # to hand over. Both values come from registering this deployment as a company with
+      # the bank - see docs/monobank-corporate.md.
+      #
+      # Empty, as on every machine that has not registered, means the bank list offers the
+      # personal-token provider alone rather than an option that could only ever fail.
+      key-id: ${MONOBANK_KEY_ID:}
+      # The secp256k1 signing key: either the PEM itself or a path to the PEM file. Never
+      # commit it - it is the credential the whole company registration rests on.
+      private-key: ${MONOBANK_PRIVATE_KEY:}
+      # How long to keep waiting for the customer to approve a request. The bank keeps it
+      # open for 24 hours; a dialog nobody is looking at any more should not.
+      consent-timeout: ${MONOBANK_CONSENT_TIMEOUT:10m}
   billing:
     play:
       # A Google Play service-account key: either the JSON itself or a path to the file.

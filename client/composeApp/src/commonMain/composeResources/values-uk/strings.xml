@@ -410,6 +410,10 @@
     <string name="banks_checking">Перевірка…</string>
     <string name="banks_check_and_connect">Перевірити та підключити</string>
     <string name="banks_where_from">Де це взяти?</string>
+    <string name="banks_consent_scan">Відскануйте це в застосунку %1$s і надайте доступ.</string>
+    <string name="banks_consent_open">Відкрити в застосунку банку</string>
+    <string name="banks_consent_waiting">Очікуємо на ваше підтвердження…</string>
+    <string name="banks_consent_retry">Спробувати ще раз</string>
     <string name="banks_loading_accounts">Завантаження рахунків…</string>
     <string name="banks_at_the_bank">У банку</string>
     <string name="banks_balance">Залишок</string>

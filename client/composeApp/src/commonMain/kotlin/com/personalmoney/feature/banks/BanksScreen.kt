@@ -1,5 +1,6 @@
 package com.personalmoney.feature.banks
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,6 +54,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -172,6 +176,14 @@ fun BanksScreen(
             onValueChange = viewModel::setCredential,
             onSubmit = viewModel::submitConnect,
             onDismiss = viewModel::closeConnect,
+        )
+    }
+
+    state.consent?.let { draft ->
+        ConsentDialog(
+            draft = draft,
+            onRetry = viewModel::retryConsent,
+            onDismiss = viewModel::closeConsent,
         )
     }
 }
@@ -700,4 +712,123 @@ private fun ConnectDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
         },
     )
+}
+
+/**
+ * The other way to connect: the bank issues the access, and the user approves it in the
+ * bank's own app rather than fetching a token to paste here.
+ *
+ * There is nothing to submit, so there is no confirm button. The dialog is a waiting room
+ * - it shows the QR, polls behind the user's back, and closes itself the moment the
+ * approval lands, which is the only signal they get that it worked.
+ */
+@Composable
+private fun ConsentDialog(
+    draft: ConsentDraft,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(stringResource(Res.string.banks_connect_title, draft.provider.displayName))
+        },
+        text = {
+            Column(
+                Modifier.widthIn(max = PageWidth.Form),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                when {
+                    draft.error != null -> Text(
+                        draft.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+
+                    draft.challenge == null -> CircularProgressIndicator()
+
+                    else -> {
+                        val challenge = draft.challenge
+                        Text(
+                            stringResource(
+                                Res.string.banks_consent_scan,
+                                draft.provider.displayName,
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        QrCode(challenge.qrRows)
+                        // For the case the QR cannot serve: the user is already on the
+                        // phone that has the bank's app, and scanning your own screen is
+                        // not a thing.
+                        val open = rememberUrlOpener()
+                        OutlinedButton(onClick = { open(challenge.approveUrl) }) {
+                            Text(stringResource(Res.string.banks_consent_open))
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Text(
+                                stringResource(Res.string.banks_consent_waiting),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            // Only after a failure: while it is working there is nothing to confirm, and a
+            // button that did nothing would invite pressing it.
+            if (draft.error != null) {
+                TextButton(onClick = onRetry) { Text(stringResource(Res.string.banks_consent_retry)) }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
+        },
+    )
+}
+
+/**
+ * The QR the server encoded, drawn a rectangle at a time.
+ *
+ * Black on white whatever the app's theme is doing. A QR inverted for a dark theme is
+ * still a valid code and most phones read it, but "most" is not the bar for the one screen
+ * whose entire job is to be scanned.
+ */
+@Composable
+private fun QrCode(rows: List<String>) {
+    if (rows.isEmpty()) return
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(8.dp),
+    ) {
+        Canvas(
+            Modifier
+                // The quiet zone the encoder left out: a code butted against the edge of
+                // its own background is one a scanner can miss.
+                .padding(12.dp)
+                .size(200.dp)
+        ) {
+            val module = size.minDimension / rows.size
+            rows.forEachIndexed { y, row ->
+                row.forEachIndexed { x, cell ->
+                    if (cell == '1') {
+                        drawRect(
+                            color = Color.Black,
+                            topLeft = Offset(x * module, y * module),
+                            // Overdrawn by a hair: exact module edges leave hairline gaps
+                            // where rounding lands between pixels, and a scanner reads
+                            // those as breaks in the pattern.
+                            size = Size(module + 0.5f, module + 0.5f),
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

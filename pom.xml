@@ -146,6 +146,22 @@
             <version>0.12.6</version>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- Monobank's corporate API signs every request with ECDSA over secp256k1, a
+             curve the JDK dropped from SunEC in 16. BouncyCastle is what puts it back. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.85.2</version>
+        </dependency>
+
+        <!-- The consent step gives the customer a URL their phone has to open. On a
+             desktop that only works as a QR code, and this encodes it. -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.4</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -2,6 +2,7 @@ package com.personalmoney.core.data
 
 import com.personalmoney.core.domain.model.BankConnection
 import com.personalmoney.core.domain.model.BankProvider
+import com.personalmoney.core.domain.model.ConsentChallenge
 import com.personalmoney.core.domain.model.ImportResult
 import com.personalmoney.core.domain.model.PendingImport
 import com.personalmoney.core.domain.model.RemoteAccount
@@ -40,6 +41,21 @@ interface BankRepository {
      * mistyped token fails in front of the user instead of becoming a dead connection.
      */
     suspend fun connect(providerId: String, credentials: Map<String, String>)
+
+    /**
+     * Asks a consent bank for something the user can approve in its app.
+     *
+     * Nothing is connected yet when this returns - see [pollConsent].
+     */
+    suspend fun beginConsent(providerId: String): ConsentChallenge
+
+    /**
+     * True once the user has approved [reference], at which point the connection exists.
+     *
+     * Meant to be called on a timer: false is the ordinary answer while they are still
+     * looking at their phone, not a failure.
+     */
+    suspend fun pollConsent(providerId: String, reference: String): Boolean
 
     /** Re-checks stored credentials, which is how a rejected connection gets its status back. */
     suspend fun verify(connectionId: Long)

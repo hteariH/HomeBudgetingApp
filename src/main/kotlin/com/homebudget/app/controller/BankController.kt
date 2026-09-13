@@ -2,6 +2,7 @@ package com.homebudget.app.controller
 
 import com.homebudget.app.bank.BankConnectionService
 import com.homebudget.app.bank.BankProvider
+import com.homebudget.app.bank.QrCode
 import com.homebudget.app.domain.BankConnection
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.service.AccountService
@@ -26,6 +27,11 @@ data class BankProviderResponse(
     val id: String,
     val displayName: String,
     val helpUrl: String?,
+    /**
+     * `CREDENTIALS` or `CONSENT` - whether the client shows the form below or the
+     * approve-on-your-phone dialog. See [com.homebudget.app.bank.AuthMode].
+     */
+    val authMode: String,
     val credentialFields: List<CredentialFieldResponse>
 )
 
@@ -57,6 +63,31 @@ data class CreateConnectionRequest(
 
 data class UpdateCredentialsRequest(
     val credentials: Map<String, String> = emptyMap()
+)
+
+/**
+ * Something for the user to approve in the bank's own app, and how to show it.
+ *
+ * [qrRows] is the QR of [approveUrl], one string per row with '1' for a dark module - see
+ * [com.homebudget.app.bank.QrCode]. It is here rather than at a URL of its own because the
+ * page holds a bearer token an `<img>` cannot carry, and because a QR that arrived
+ * separately from the reference it encodes could be a QR of the previous attempt.
+ */
+data class ConsentChallengeResponse(
+    val provider: String,
+    val reference: String,
+    val approveUrl: String,
+    val expiresAt: Instant,
+    val qrRows: List<String>
+)
+
+/**
+ * Where a consent has got to. `PENDING` until the user approves it in the bank's app, at
+ * which point [connection] is the connection that approval created.
+ */
+data class ConsentStatusResponse(
+    val status: String,
+    val connection: BankConnectionResponse? = null
 )
 
 data class RemoteAccountResponse(
@@ -132,6 +163,42 @@ class BankController(
     fun connect(@Valid @RequestBody req: CreateConnectionRequest): BankConnectionResponse =
         service.create(req.provider, req.credentials).toResponse()
 
+    /**
+     * Starts a consent for a bank that issues access itself.
+     *
+     * Nothing is stored yet: an unapproved request is not a connection. The client shows
+     * the URL - as a QR on a desktop, as a link on a phone - and then polls
+     * [consentStatus] until the user has approved it.
+     */
+    @PostMapping("/providers/{providerId}/consent")
+    fun beginConsent(@PathVariable providerId: String): ConsentChallengeResponse {
+        val challenge = service.beginConsent(providerId)
+        return ConsentChallengeResponse(
+            provider = providerId,
+            reference = challenge.reference,
+            approveUrl = challenge.approveUrl,
+            expiresAt = challenge.expiresAt,
+            qrRows = QrCode.rows(challenge.approveUrl)
+        )
+    }
+
+    /**
+     * Whether the user has approved [reference] yet, and the connection once they have.
+     *
+     * A poll, so "not yet" is 200 with `PENDING` rather than an error status: the client
+     * is asking a question whose answer is usually no, and an error would say something
+     * went wrong when nothing has.
+     */
+    @PostMapping("/providers/{providerId}/consent/{reference}")
+    fun consentStatus(
+        @PathVariable providerId: String,
+        @PathVariable reference: String
+    ): ConsentStatusResponse {
+        val connection = service.completeConsent(providerId, reference)
+            ?: return ConsentStatusResponse(status = "PENDING")
+        return ConsentStatusResponse(status = "CONNECTED", connection = connection.toResponse())
+    }
+
     @PostMapping("/connections/{id}/verify")
     fun verify(@PathVariable id: Long): BankConnectionResponse = service.reverify(id).toResponse()
 
@@ -202,6 +269,7 @@ class BankController(
         id = id,
         displayName = displayName,
         helpUrl = helpUrl,
+        authMode = authMode.name,
         credentialFields = credentialFields.map {
             CredentialFieldResponse(it.name, it.label, it.type.name, it.placeholder, it.helpText, it.required)
         }

@@ -9,21 +9,27 @@ import com.personalmoney.core.data.TransactionRepository
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.domain.model.Account
+import com.personalmoney.core.domain.model.BankAuthMode
 import com.personalmoney.core.domain.model.BankConnection
 import com.personalmoney.core.domain.model.BankProvider
 import com.personalmoney.core.domain.model.Category
+import com.personalmoney.core.domain.model.ConsentChallenge
 import com.personalmoney.core.domain.model.ImportResult
 import com.personalmoney.core.domain.model.PendingImport
 import com.personalmoney.core.domain.model.RemoteAccount
 import com.personalmoney.core.network.serverMessage
 import com.personalmoney.resources.Res
 import com.personalmoney.resources.common_request_failed
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
@@ -47,6 +53,20 @@ data class ConnectDraft(
             .filter { it.required }
             .all { values[it.name]?.isNotBlank() == true }
 }
+
+/**
+ * A connection waiting on the user to approve it in the bank's app.
+ *
+ * Separate from [ConnectDraft] because nothing about it is a form: there is nothing to
+ * type, nothing to validate, and no submit. What the user does happens on another device
+ * entirely, and all this holds is what to show them while it does.
+ */
+data class ConsentDraft(
+    val provider: BankProvider,
+    /** Null until the bank has issued one - the first moment there is a QR to show. */
+    val challenge: ConsentChallenge? = null,
+    val error: String? = null,
+)
 
 /** The statement range, and what a preview of it turned up. */
 data class ImportDraft(
@@ -81,6 +101,8 @@ data class BanksUiState(
     val categories: List<Category> = emptyList(),
     val error: String? = null,
     val connect: ConnectDraft? = null,
+    /** The consent dialog, while one is open. Never open at the same time as [connect]. */
+    val consent: ConsentDraft? = null,
     /** The connection whose bank-side accounts are expanded, if any. */
     val openConnectionId: Long? = null,
     val remoteAccounts: List<RemoteAccount> = emptyList(),
@@ -131,6 +153,7 @@ class BanksViewModel(
     private val loadingFlow = MutableStateFlow(true)
     private val errorFlow = MutableStateFlow<String?>(null)
     private val connectFlow = MutableStateFlow<ConnectDraft?>(null)
+    private val consentFlow = MutableStateFlow<ConsentDraft?>(null)
     private val openConnectionFlow = MutableStateFlow<Long?>(null)
     private val remoteFlow = MutableStateFlow<List<RemoteAccount>>(emptyList())
     private val remoteBusyFlow = MutableStateFlow(false)
@@ -171,7 +194,8 @@ class BanksViewModel(
     )
 
     val uiState: StateFlow<BanksUiState> =
-        combine(lists, screen, remoteBusyFlow, importFlow) { data, ui, remoteBusy, import ->
+        combine(lists, screen, remoteBusyFlow, importFlow, consentFlow) {
+                data, ui, remoteBusy, import, consent ->
             BanksUiState(
                 import = import,
                 loading = ui.loading,
@@ -181,6 +205,7 @@ class BanksViewModel(
                 categories = data.categories,
                 error = ui.error,
                 connect = ui.connect,
+                consent = consent,
                 openConnectionId = ui.openConnectionId,
                 remoteAccounts = ui.remoteAccounts,
                 remoteBusy = remoteBusy,
@@ -202,7 +227,14 @@ class BanksViewModel(
 
     // ── connecting ───────────────────────────────────────────────────────────
 
-    fun openConnect(provider: BankProvider) { connectFlow.value = ConnectDraft(provider) }
+    /**
+     * Both ways of connecting start here, because the screen has one button per bank and
+     * should not know which kind it is pressing.
+     */
+    fun openConnect(provider: BankProvider) = when (provider.authMode) {
+        BankAuthMode.CONSENT -> startConsent(provider)
+        BankAuthMode.CREDENTIALS -> connectFlow.value = ConnectDraft(provider)
+    }
 
     fun closeConnect() { connectFlow.value = null }
 
@@ -225,6 +257,74 @@ class BanksViewModel(
                 connectFlow.update { it?.copy(busy = false, error = message) }
             }
         }
+    }
+
+    // ── consent ────────────────────────────────────────────────────────────
+
+    /**
+     * The poll, and the thing that stops it.
+     *
+     * Held rather than fired and forgotten because it outlives nothing else on this screen:
+     * closing the dialog has to end it, and a second attempt must not leave the first one
+     * running and able to connect an account the user walked away from.
+     */
+    private var consentJob: Job? = null
+
+    /**
+     * Asks the bank for a request the user can approve, then waits for them to.
+     *
+     * The wait is a poll because there is nothing to subscribe to: the approval happens on
+     * the user's phone, in the bank's app, and reaches this app only when it next asks.
+     * Every tick is a real request to the bank via the server, which is why it is seconds
+     * apart rather than continuous.
+     */
+    private fun startConsent(provider: BankProvider) {
+        consentJob?.cancel()
+        consentFlow.value = ConsentDraft(provider)
+        consentJob = viewModelScope.launch {
+            val challenge = try {
+                banks.beginConsent(provider.id)
+            } catch (e: CancellationException) {
+                // Not a failure, and by now the draft this was writing into may be a *newer*
+                // attempt's - retrying cancels the old job and replaces the draft in the
+                // same breath. Reporting here would put "cancelled" on the live dialog.
+                throw e
+            } catch (e: Exception) {
+                consentFlow.update { it?.copy(error = messageFor(e)) }
+                return@launch
+            }
+            consentFlow.update { it?.copy(challenge = challenge) }
+
+            while (isActive) {
+                delay(CONSENT_POLL_MILLIS)
+                val connected = try {
+                    banks.pollConsent(provider.id, challenge.reference)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // Terminal: the request expired, or the bank refused it. The dialog
+                    // stays open holding the reason, because closing it would leave the
+                    // user with a QR that stopped working and no idea why.
+                    consentFlow.update { it?.copy(error = messageFor(e)) }
+                    return@launch
+                }
+                if (connected) {
+                    consentFlow.value = null
+                    return@launch
+                }
+            }
+        }
+    }
+
+    /** Retries from the top: the reference is what expired, so a fresh one is the fix. */
+    fun retryConsent() {
+        consentFlow.value?.provider?.let { startConsent(it) }
+    }
+
+    fun closeConsent() {
+        consentJob?.cancel()
+        consentJob = null
+        consentFlow.value = null
     }
 
     // ── connections ──────────────────────────────────────────────────────────
@@ -413,6 +513,14 @@ class BanksViewModel(
     /** The bank's own explanation when there is one - see `serverMessage`. */
     private suspend fun messageFor(e: Exception): String =
         e.serverMessage() ?: getString(Res.string.common_request_failed)
+
+    private companion object {
+        /**
+         * Every tick is a real request to the bank. Slow enough not to hammer it, fast
+         * enough that the dialog closes while the user is still holding their phone.
+         */
+        const val CONSENT_POLL_MILLIS = 2_500L
+    }
 }
 
 /** A month back to today: the range a statement is most often wanted for. */

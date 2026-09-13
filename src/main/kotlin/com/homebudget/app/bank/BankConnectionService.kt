@@ -18,6 +18,7 @@ import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Bank connections and the import that runs off them.
@@ -71,19 +72,16 @@ class BankConnectionService(
      */
     fun create(providerId: String, credentials: Map<String, String>): BankConnection {
         val provider = provider(providerId)
+        // A consent provider's credential is something the bank issued to this app, not
+        // something the user holds. Accepting one here would let a caller present a
+        // reference they were never granted.
+        require(provider.authMode == AuthMode.CREDENTIALS) {
+            "${provider.displayName} is connected by approving it in the bank's app"
+        }
         requireRequiredFields(provider, credentials)
 
         val identity = provider.verify(credentials)
-        return connectionRepo.save(
-            BankConnection(
-                user = securityUtils.getCurrentUser(),
-                provider = provider.id,
-                credentials = objectMapper.writeValueAsString(credentials),
-                label = identity.displayName,
-                status = BankConnectionStatus.ACTIVE,
-                lastVerifiedAt = LocalDateTime.now(clock)
-            )
-        )
+        return store(provider, credentials, identity)
     }
 
     /** Re-checks a stored connection, e.g. after the bank starts rejecting it. */
@@ -106,15 +104,13 @@ class BankConnectionService(
     fun replaceCredentials(id: Long, credentials: Map<String, String>): BankConnection {
         val connection = findById(id)
         val provider = provider(connection.provider)
+        require(provider.authMode == AuthMode.CREDENTIALS) {
+            "${provider.displayName} is reconnected by approving it again in the bank's app"
+        }
         requireRequiredFields(provider, credentials)
 
         val identity = provider.verify(credentials)
-        connection.credentials = objectMapper.writeValueAsString(credentials)
-        connection.label = identity.displayName
-        connection.status = BankConnectionStatus.ACTIVE
-        connection.lastVerifiedAt = LocalDateTime.now(clock)
-        connection.updatedAt = LocalDateTime.now(clock)
-        return connectionRepo.save(connection)
+        return adopt(connection, credentials, identity)
     }
 
     fun delete(id: Long) {
@@ -148,6 +144,85 @@ class BankConnectionService(
         account.updatedAt = Instant.now(clock)
         return accountRepo.save(account)
     }
+
+    // ── Consent ─────────────────────────────────────────────────────────────
+
+    /**
+     * A consent this user started, until they approve it or it goes stale.
+     *
+     * In memory rather than in a table because it is worth nothing after the few minutes
+     * the user spends looking at their phone: losing one to a restart costs a retry, and
+     * storing it would mean a table whose rows are all garbage by the next day.
+     *
+     * It exists at all so that a reference can only be completed by the user who asked for
+     * it. The bank will answer about any reference the *company* created, and without this
+     * an approval could land on the wrong account.
+     */
+    private data class PendingConsent(
+        val userId: Long,
+        val providerId: String,
+        val expiresAt: Instant
+    )
+
+    private val pendingConsents = ConcurrentHashMap<String, PendingConsent>()
+
+    /**
+     * Asks the bank for something the user can approve, and remembers that they asked.
+     *
+     * Nothing is stored against the user's account yet - there is no access to store until
+     * they approve it, and an unapproved request is not a connection.
+     */
+    fun beginConsent(providerId: String): ConsentChallenge {
+        val provider = consentProvider(providerId)
+        val user = securityUtils.getCurrentUser()
+        val challenge = provider.beginConsent()
+
+        pendingConsents.entries.removeIf { it.value.expiresAt.isBefore(Instant.now(clock)) }
+        pendingConsents[challenge.reference] =
+            PendingConsent(user.id, provider.id, challenge.expiresAt)
+        return challenge
+    }
+
+    /**
+     * The connection [reference] earned, or null while the user has not approved it.
+     *
+     * Polled, so null is the ordinary answer rather than a problem. On success the
+     * credentials are verified before anything is stored, exactly as typed ones would be,
+     * which is also where the bank's own id for the customer comes from.
+     */
+    fun completeConsent(providerId: String, reference: String): BankConnection? {
+        val provider = consentProvider(providerId)
+        val user = securityUtils.getCurrentUser()
+        val pending = pendingConsents[reference]
+        require(pending != null && pending.userId == user.id && pending.providerId == provider.id) {
+            "That request was not started here"
+        }
+        if (pending.expiresAt.isBefore(Instant.now(clock))) {
+            pendingConsents.remove(reference)
+            throw BankAuthException("The request was not approved in time - try connecting again")
+        }
+
+        val credentials = try {
+            provider.completeConsent(reference) ?: return null
+        } catch (e: BankAuthException) {
+            pendingConsents.remove(reference)
+            throw e
+        }
+        pendingConsents.remove(reference)
+
+        val identity = provider.verify(credentials)
+        // Reconnecting the same bank account replaces the access on the row that is
+        // already there. A second row would strand every account linked to the first.
+        val existing = identity.externalClientId.takeIf { it.isNotBlank() }?.let { clientId ->
+            connectionRepo.findAllByUser(user)
+                .firstOrNull { it.provider == provider.id && it.externalClientId == clientId }
+        }
+        return existing?.let { adopt(it, credentials, identity) } ?: store(provider, credentials, identity)
+    }
+
+    private fun consentProvider(providerId: String): ConsentProvider =
+        provider(providerId) as? ConsentProvider
+            ?: throw IllegalArgumentException("$providerId is connected with credentials, not consent")
 
     // ── Import ──────────────────────────────────────────────────────────────
 
@@ -396,6 +471,38 @@ class BankConnectionService(
 
         // Both legs in one save: a half-written transfer is a corrupted balance.
         transactionRepo.saveAll(listOf(near, far))
+    }
+
+    /** A new connection, credentials already verified. */
+    private fun store(
+        provider: BankProvider,
+        credentials: Map<String, String>,
+        identity: ProviderIdentity
+    ): BankConnection = connectionRepo.save(
+        BankConnection(
+            user = securityUtils.getCurrentUser(),
+            provider = provider.id,
+            credentials = objectMapper.writeValueAsString(credentials),
+            label = identity.displayName,
+            externalClientId = identity.externalClientId.takeIf { it.isNotBlank() },
+            status = BankConnectionStatus.ACTIVE,
+            lastVerifiedAt = LocalDateTime.now(clock)
+        )
+    )
+
+    /** Points an existing connection at new credentials, keeping its account links. */
+    private fun adopt(
+        connection: BankConnection,
+        credentials: Map<String, String>,
+        identity: ProviderIdentity
+    ): BankConnection {
+        connection.credentials = objectMapper.writeValueAsString(credentials)
+        connection.label = identity.displayName
+        connection.externalClientId = identity.externalClientId.takeIf { it.isNotBlank() }
+        connection.status = BankConnectionStatus.ACTIVE
+        connection.lastVerifiedAt = LocalDateTime.now(clock)
+        connection.updatedAt = LocalDateTime.now(clock)
+        return connectionRepo.save(connection)
     }
 
     private fun linkedAccount(accountId: Long): Account {
