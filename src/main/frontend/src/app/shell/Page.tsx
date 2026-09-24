@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 /**
  * A screen's frame: a title row and a column that stops growing.
@@ -27,6 +29,25 @@ export const Page: React.FC<{
         {children}
     </div>
 );
+
+/**
+ * The arrow on an editor. Goes back when there is somewhere in this app to go back to,
+ * otherwise to the list the editor belongs to - a bookmarked editor has no history.
+ */
+export const BackButton: React.FC<{ fallback: string; label: string }> = ({ fallback, label }) => {
+    const navigate = useNavigate();
+    return (
+        <button
+            type="button"
+            className="btn btn-ghost btn-icon -ml-2 border-0"
+            aria-label={label}
+            title={label}
+            onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate(fallback, { replace: true }))}
+        >
+            <ArrowLeft size={20} />
+        </button>
+    );
+};
 
 /** The spinner the landing page already uses, centred in the space a screen would take. */
 export const PageLoading: React.FC = () => (
