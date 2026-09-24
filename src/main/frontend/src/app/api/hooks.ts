@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { prefs } from '../prefs';
 import { CurrencyRegistry } from '../lib/currencyRegistry';
 import { FxSnapshot, type FxRateInput } from '../lib/fx';
@@ -10,14 +10,20 @@ import type { CategoryType } from './types';
 /**
  * The currency list. Loading it also feeds CurrencyRegistry, because money formatting
  * reads decimals and symbols from there synchronously and would otherwise fall back to
- * two decimals for a currency the user holds.
+ * two decimals, and to Intl's own symbol, for a currency the user holds. The registry is
+ * filled inside the fetch rather than in an effect: an effect runs after the screens have
+ * already rendered their amounts, and a registry change re-renders nothing.
  */
 export function useCurrencies() {
-    const query = useQuery({ queryKey: qk.currencies, queryFn: endpoints.currencies, staleTime: 5 * 60_000 });
-    useEffect(() => {
-        if (query.data) CurrencyRegistry.update(query.data.map(c => ({ code: c.code, symbol: c.symbol, decimals: c.decimals })));
-    }, [query.data]);
-    return query;
+    return useQuery({
+        queryKey: qk.currencies,
+        queryFn: async () => {
+            const list = await endpoints.currencies();
+            CurrencyRegistry.update(list.map(c => ({ code: c.code, symbol: c.symbol, decimals: c.decimals })));
+            return list;
+        },
+        staleTime: 5 * 60_000,
+    });
 }
 
 /**

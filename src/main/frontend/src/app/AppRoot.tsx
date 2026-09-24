@@ -71,9 +71,10 @@ const Shell: React.FC = () => {
     const current = useSession();
     const signOut = useSignOut();
     const { pathname } = useLocation();
-    // Loaded once for the whole app so money formatting knows the user's symbols and
-    // decimals before any screen renders an amount.
-    useCurrencies();
+    // Loaded before any screen, so money formatting knows the user's symbols and decimals
+    // by the time the first amount is drawn. A failure does not hold the app up - amounts
+    // then fall back to Intl's formatting, and the screens show their own errors.
+    const currencies = useCurrencies();
     // Setup is a three-step flow the user is not in the app yet for; offering navigation
     // out of it would be offering a way to skip it.
     const onboarding = pathname.startsWith('/app/onboarding');
@@ -82,29 +83,33 @@ const Shell: React.FC = () => {
         <div className="min-h-screen bg-base">
             {!onboarding && <AppHeader email={current?.email ?? null} onSignOut={signOut} />}
             <main>
-                <Suspense fallback={<PageLoading />}>
-                    <Routes>
-                        <Route index element={<Home />} />
-                        <Route path="quickadd" element={<QuickAddPage />} />
-                        <Route path="transactions" element={<TransactionsPage />} />
-                        <Route path="transactions/:id" element={<TransactionEditPage />} />
-                        <Route path="accounts" element={<AccountsPage />} />
-                        <Route path="accounts/edit" element={<AccountEditPage />} />
-                        <Route path="categories" element={<CategoriesPage />} />
-                        <Route path="categories/edit" element={<CategoryEditPage />} />
-                        <Route path="subscriptions" element={<SubscriptionsPage />} />
-                        <Route path="subscriptions/edit" element={<SubscriptionEditPage />} />
-                        <Route path="currencies" element={<CurrenciesPage />} />
-                        <Route path="currencies/edit" element={<CurrencyEditPage />} />
-                        <Route path="analytics" element={<AnalyticsPage />} />
-                        <Route path="banks" element={<BanksPage />} />
-                        <Route path="import/homemoney" element={<HomeMoneyPage />} />
-                        <Route path="premium" element={<PremiumPage />} />
-                        <Route path="settings" element={<SettingsPage />} />
-                        <Route path="onboarding" element={<OnboardingPage />} />
-                        <Route path="*" element={<Navigate to="/app" replace />} />
-                    </Routes>
-                </Suspense>
+                {currencies.isLoading ? (
+                    <PageLoading />
+                ) : (
+                    <Suspense fallback={<PageLoading />}>
+                        <Routes>
+                            <Route index element={<Home />} />
+                            <Route path="quickadd" element={<QuickAddPage />} />
+                            <Route path="transactions" element={<TransactionsPage />} />
+                            <Route path="transactions/:id" element={<TransactionEditPage />} />
+                            <Route path="accounts" element={<AccountsPage />} />
+                            <Route path="accounts/edit" element={<AccountEditPage />} />
+                            <Route path="categories" element={<CategoriesPage />} />
+                            <Route path="categories/edit" element={<CategoryEditPage />} />
+                            <Route path="subscriptions" element={<SubscriptionsPage />} />
+                            <Route path="subscriptions/edit" element={<SubscriptionEditPage />} />
+                            <Route path="currencies" element={<CurrenciesPage />} />
+                            <Route path="currencies/edit" element={<CurrencyEditPage />} />
+                            <Route path="analytics" element={<AnalyticsPage />} />
+                            <Route path="banks" element={<BanksPage />} />
+                            <Route path="import/homemoney" element={<HomeMoneyPage />} />
+                            <Route path="premium" element={<PremiumPage />} />
+                            <Route path="settings" element={<SettingsPage />} />
+                            <Route path="onboarding" element={<OnboardingPage />} />
+                            <Route path="*" element={<Navigate to="/app" replace />} />
+                        </Routes>
+                    </Suspense>
+                )}
             </main>
         </div>
     );
