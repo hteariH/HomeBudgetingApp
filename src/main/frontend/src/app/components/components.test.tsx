@@ -80,6 +80,11 @@ describe('icons', () => {
     it('every icon the Compose client offers has a glyph', () => {
         for (const key of PICKER_ICONS) expect(KNOWN_ICON_KEYS, key).toContain(key);
     });
+    it("the server's default categories get the icons they name", () => {
+        for (const key of ['briefcase', 'laptop', 'home', 'shopping-cart', 'truck', 'film', 'zap', 'tag']) {
+            expect(iconFor(key), key).not.toBe(iconFor('more_horiz'));
+        }
+    });
     it('an unknown key falls back rather than breaking the row', () => {
         expect(iconFor('no_such_icon')).toBe(iconFor('more_horiz'));
         expect(iconFor(null)).toBe(iconFor('more_horiz'));

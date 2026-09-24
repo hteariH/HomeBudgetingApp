@@ -1,5 +1,12 @@
 import {
     ArrowRightLeft,
+    Book,
+    CirclePlus,
+    Laptop,
+    Map as MapIcon,
+    ShoppingCart,
+    Tag,
+    Truck,
     Banknote,
     Briefcase,
     Car,
@@ -63,6 +70,27 @@ const ICONS: Record<string, LucideIcon> = {
     stars: Sparkles,
     trending_up: TrendingUp,
     undo: Undo2,
+
+    // The server's default categories, and anything saved by the React client that came
+    // before the Compose one, carry lucide names instead. The Compose client drew all of
+    // them as "…"; they may as well be the icons they name.
+    tag: Tag,
+    briefcase: Briefcase,
+    laptop: Laptop,
+    'trending-up': TrendingUp,
+    'shopping-cart': ShoppingCart,
+    truck: Truck,
+    car: Car,
+    heart: Heart,
+    film: Film,
+    'shopping-bag': ShoppingBag,
+    zap: Zap,
+    book: Book,
+    coffee: Coffee,
+    map: MapIcon,
+    'more-horizontal': Ellipsis,
+    'plus-circle': CirclePlus,
+    'dollar-sign': DollarSign,
 };
 
 /** The keys offered when picking an icon, in IconLibrary.pickerSet's order. */

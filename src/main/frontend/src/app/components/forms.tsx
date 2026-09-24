@@ -29,7 +29,7 @@ export function Segmented<T extends string>({
     className?: string;
 }) {
     return (
-        <div role="tablist" className={`inline-flex rounded-full border border-line bg-surface p-1 ${className}`}>
+        <div role="tablist" className={`inline-flex self-start rounded-full border border-line bg-surface p-1 ${className}`}>
             {options.map(o => (
                 <button
                     key={o.value}
