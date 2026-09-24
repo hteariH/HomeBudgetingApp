@@ -57,11 +57,7 @@ Thumbs.db
 *.mv.db
 *.trace.db
 
-# The web bundle is downloaded per build, never committed. The directory itself stays,
-# because the Dockerfile copies it unconditionally.
-/web-dist/*
-!/web-dist/.gitkeep
-
-# Where the Dockerfile unpacks the web bundle so it lands on the jar's classpath.
-# Build output, never source.
+# The frontend build lands on the jar's classpath via target/, never here. Kept ignored
+# because older builds unpacked bundles into this directory, and a stale copy left in a
+# working tree must not be committed.
 /src/main/resources/static/

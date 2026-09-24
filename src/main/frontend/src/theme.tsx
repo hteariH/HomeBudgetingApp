@@ -1,19 +1,37 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+/** What is on screen. */
 export type Theme = 'dark' | 'light';
+
+/** What the user chose. `system` follows the OS, and is what an unset preference means. */
+export type ThemeMode = 'system' | 'light' | 'dark';
 
 const STORAGE_KEY = 'theme';
 
 /**
- * Reads whatever the inline script in index.html already put on <html>, so the
- * provider agrees with what is on screen instead of re-deciding and causing a flash.
+ * The stored choice. The Compose web client wrote the same key in uppercase
+ * (SYSTEM / LIGHT / DARK), so both spellings are read - a user who picked light there
+ * keeps light here.
  */
-function initialTheme(): Theme {
-    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+export function readThemeMode(): ThemeMode {
+    try {
+        const stored = (localStorage.getItem(STORAGE_KEY) ?? '').toLowerCase();
+        if (stored === 'light' || stored === 'dark') return stored;
+    } catch {
+        /* Storage unavailable: follow the OS. */
+    }
+    return 'system';
 }
 
+const systemTheme = (): Theme =>
+    window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
 interface ThemeValue {
+    /** What is on screen. */
     theme: Theme;
+    mode: ThemeMode;
+    setMode: (mode: ThemeMode) => void;
+    /** The header's one-tap switch: commits to the side opposite what is showing. */
     toggleTheme: () => void;
 }
 
@@ -26,25 +44,35 @@ const ThemeContext = createContext<ThemeValue | null>(null);
  * until something else re-rendered them.
  */
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [theme, setTheme] = useState<Theme>(initialTheme);
+    const [mode, setModeState] = useState<ThemeMode>(readThemeMode);
+    const [system, setSystem] = useState<Theme>(systemTheme);
+    const theme: Theme = mode === 'system' ? system : mode;
+
+    // Only matters while following the OS, but cheap enough to keep listening always.
+    useEffect(() => {
+        const query = window.matchMedia?.('(prefers-color-scheme: light)');
+        if (!query) return;
+        const onChange = () => setSystem(query.matches ? 'light' : 'dark');
+        query.addEventListener('change', onChange);
+        return () => query.removeEventListener('change', onChange);
+    }, []);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
 
-    const toggleTheme = useCallback(() => {
-        setTheme(prev => {
-            const next: Theme = prev === 'dark' ? 'light' : 'dark';
-            try {
-                localStorage.setItem(STORAGE_KEY, next);
-            } catch {
-                /* Preference simply does not persist. */
-            }
-            return next;
-        });
+    const setMode = useCallback((next: ThemeMode) => {
+        setModeState(next);
+        try {
+            localStorage.setItem(STORAGE_KEY, next);
+        } catch {
+            /* Preference simply does not persist. */
+        }
     }, []);
 
-    const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
+    const toggleTheme = useCallback(() => setMode(theme === 'dark' ? 'light' : 'dark'), [setMode, theme]);
+
+    const value = useMemo(() => ({ theme, mode, setMode, toggleTheme }), [theme, mode, setMode, toggleTheme]);
 
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

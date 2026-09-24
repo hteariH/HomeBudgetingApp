@@ -27,7 +27,7 @@ test('shows the landing page to a visitor with no token', () => {
 test('resolves the interface language from the browser', () => {
     // Detection reads navigator.languages first, so a Ukrainian browser should land
     // on Ukrainian without any stored preference.
-    jest.spyOn(navigator, 'languages', 'get').mockReturnValue(['uk-UA', 'en']);
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['uk-UA', 'en']);
 
     render(<App />);
 

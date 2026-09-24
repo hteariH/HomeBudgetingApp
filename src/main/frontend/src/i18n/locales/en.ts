@@ -1,3 +1,5 @@
+import { appEn } from './app.en';
+
 /**
  * English is the reference locale: `ru` and `uk` are typed against this object's
  * keys, so removing a key here surfaces as a compile error in both of them.
@@ -6,6 +8,10 @@
  * Russian and Ukrainian add `_few` / `_many` on top of these.
  */
 export const en = {
+    // The app's strings, brought across from the Compose client. Landing keys follow and
+    // cannot clash: they are dotted, the app's are snake_case.
+    ...appEn,
+
     // Kept in step with the <title> in index.html, which can only be static.
     'meta.title': 'PersonalMoney — personal finance, clearly',
 

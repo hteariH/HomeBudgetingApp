@@ -279,10 +279,6 @@
                         <phase>generate-resources</phase>
                         <configuration>
                             <arguments>run build</arguments>
-                            <environmentVariables>
-                                <CI>false</CI>
-                                <GENERATE_SOURCEMAP>false</GENERATE_SOURCEMAP>
-                            </environmentVariables>
                         </configuration>
                     </execution>
                 </executions>
