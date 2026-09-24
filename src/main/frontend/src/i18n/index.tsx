@@ -6,11 +6,9 @@ import { uk } from './locales/uk';
 /**
  * A small purpose-built translation layer instead of react-i18next.
  *
- * Everything from i18next v23 on declares a hard `typescript: ^5` peer, and CRA 5
- * pins TypeScript to 4.9 - installing the pair that still resolves means pinning
- * i18next 22 / react-i18next 12, both from 2023. This module covers what the app
- * actually needs (lookup, interpolation, plural forms, detection) in a fraction of
- * the size, and leans on the platform's own Intl for the hard part.
+ * It covers what the app actually needs (lookup, interpolation, plural forms,
+ * detection) in a fraction of the size, and leans on the platform's own Intl for the
+ * hard part.
  */
 
 export const LANGUAGES = [
@@ -110,7 +108,7 @@ export function translate(lang: Lang, key: string, vars?: TVars): string {
         if (hit !== undefined) return interpolate(hit, vars);
     }
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
         console.warn(`[i18n] missing translation for "${key}" (${lang})`);
     }
     return key;

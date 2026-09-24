@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { authApi } from '../api';
+import { authApi } from './authApi';
 import AuthShell from './AuthShell';
 import { AlertTriangle, CheckCircle2, Lock, LinkIcon } from 'lucide-react';
 import { useT } from '../i18n';

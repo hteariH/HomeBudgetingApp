@@ -1,8 +1,6 @@
 /**
- * react-scripts 5 turns Tailwind on purely by the presence of this file
- * (see `useTailwind` in react-scripts/config/webpack.config.js), which is why
- * Tailwind must stay on v3 - v4 moved to the separate @tailwindcss/postcss plugin
- * that CRA knows nothing about.
+ * Tailwind stays on v3 through PostCSS; see postcss.config.js. Moving to v4 is a
+ * separate change from moving off CRA, and this keeps the two apart.
  *
  * Colours are declared as bare RGB channels in index.css rather than hex so that
  * `<alpha-value>` works here. Without that, opacity modifiers such as
@@ -16,7 +14,7 @@ const token = (name) => `rgb(var(${name}) / <alpha-value>)`;
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    content: ['./src/**/*.{js,jsx,ts,tsx}'],
+    content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
 
     // The app toggles themes with a data-theme attribute on <html>, not a class.
     darkMode: ['selector', '[data-theme="dark"]'],

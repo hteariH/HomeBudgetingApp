@@ -3,13 +3,13 @@ import { BrowserRouter, Route, Routes, Navigate, useLocation } from 'react-route
 import './index.css';
 import { I18nProvider } from './i18n';
 import { ThemeProvider } from './theme';
-import Landing from './pages/Landing';
-import VerifyEmail from './pages/VerifyEmail';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import { APP_PATH } from './session';
+import Landing from './landing/Landing';
+import VerifyEmail from './landing/VerifyEmail';
+import ForgotPassword from './landing/ForgotPassword';
+import ResetPassword from './landing/ResetPassword';
+import Login from './landing/Login';
+import Register from './landing/Register';
+import { APP_PATH } from './landing/session';
 
 /**
  * Where the application's screens used to live in this shell.

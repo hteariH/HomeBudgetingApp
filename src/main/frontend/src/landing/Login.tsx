@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { authApi } from '../api';
+import { authApi } from './authApi';
 import { AlertTriangle, LogIn, Mail, Lock } from 'lucide-react';
 import { useT } from '../i18n';
 import AuthShell from './AuthShell';
-import { enterApp, saveSession } from '../session';
+import { enterApp, saveSession } from './session';
 
 const Login: React.FC = () => {
     const t = useT();

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { authApi } from '../api';
+import { authApi } from './authApi';
 import AuthShell from './AuthShell';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useT } from '../i18n';

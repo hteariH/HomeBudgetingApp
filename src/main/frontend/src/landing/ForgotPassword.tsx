@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { authApi } from '../api';
+import { authApi } from './authApi';
 import AuthShell from './AuthShell';
 import { AlertTriangle, Mail, MailCheck } from 'lucide-react';
 import { useT } from '../i18n';

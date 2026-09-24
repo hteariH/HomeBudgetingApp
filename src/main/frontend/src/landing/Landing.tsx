@@ -7,7 +7,7 @@ import {
 import { useT } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import ThemeToggle from '../components/ThemeToggle';
-import { APP_PATH, hasSession } from '../session';
+import { APP_PATH, hasSession } from './session';
 
 /**
  * The public front page - what a first-time visitor lands on at `/`.
