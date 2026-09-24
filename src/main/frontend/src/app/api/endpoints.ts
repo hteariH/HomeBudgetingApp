@@ -126,4 +126,6 @@ export const endpoints = {
     deleteMe: () => api<void>('/users/me', { method: 'DELETE' }),
     logout: () => api<void>('/auth/logout', { method: 'POST' }),
     billingStatus: () => api<T.BillingStatusDto>('/billing/status'),
+    /** Asks the server to look at the store again - "I have already paid". */
+    refreshPurchases: () => api<T.BillingStatusDto>('/billing/play/refresh', { method: 'POST' }),
 };
