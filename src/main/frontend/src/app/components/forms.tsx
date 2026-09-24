@@ -48,20 +48,22 @@ export function Segmented<T extends string>({
     );
 }
 
-export const Switch: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label: string; description?: string }> = ({
-    checked,
-    onChange,
-    label,
-    description,
-}) => (
+export const Switch: React.FC<{
+    checked: boolean;
+    onChange: (v: boolean) => void;
+    label: string;
+    description?: string;
+    /** Just the toggle, with the label kept for screen readers - for a switch at a row's end. */
+    compact?: boolean;
+}> = ({ checked, onChange, label, description, compact = false }) => (
     <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className="flex w-full items-center gap-4 py-2 text-left"
+        className={`flex items-center gap-4 py-2 text-left ${compact ? '' : 'w-full'}`}
     >
-        <span className="flex-1">
+        <span className={compact ? 'sr-only' : 'flex-1'}>
             <span className="block text-sm font-medium text-ink">{label}</span>
             {description && <span className="block text-xs text-ink-soft">{description}</span>}
         </span>
