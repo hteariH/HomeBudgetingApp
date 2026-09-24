@@ -45,9 +45,13 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # compileSdk is newer than the runner's preinstalled platforms.
+      # compileSdk is newer than the runner's preinstalled platforms. `packages` named
+      # explicitly: the action's default also asks for the legacy `tools` package, which
+      # current cmdline-tools no longer carry, and sdkmanager then fails the step.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4

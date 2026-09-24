@@ -106,7 +106,9 @@ class ImportAsTransferTest {
         assertEquals(750_00L, accountService.balanceOf(current.id))
         assertEquals(250_00L, accountService.balanceOf(savings.id))
 
-        val legs = transactionRepo.findAll().filter { it.type == TransactionType.TRANSFER }
+        // Scoped to this test's accounts: the database is shared with every other Spring test,
+        // and some of them commit transfers of their own before this one runs.
+        val legs = transferLegsOf(current.id, savings.id)
         assertEquals(2, legs.size)
         assertEquals(1, legs.map { it.transferGroupId }.distinct().size)
         // Nothing categorised: a transfer is not spending, and a category would make it read as some.
@@ -190,6 +192,9 @@ class ImportAsTransferTest {
         assertEquals(0, result.imported)
         assertEquals(1, result.skipped)
         assertEquals(1000_00L, accountService.balanceOf(current.id))
-        assertTrue(transactionRepo.findAll().none { it.type == TransactionType.TRANSFER })
+        assertTrue(transferLegsOf(current.id).isEmpty())
     }
+
+    private fun transferLegsOf(vararg accountIds: Long) =
+        transactionRepo.findAll().filter { it.type == TransactionType.TRANSFER && it.account.id in accountIds }
 }
