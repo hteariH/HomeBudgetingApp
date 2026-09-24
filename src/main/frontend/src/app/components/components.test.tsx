@@ -6,6 +6,7 @@ import { I18nProvider } from '../../i18n';
 import { ApiError } from '../api/http';
 import { AmountField } from './AmountField';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Dialog } from './Dialog';
 import { filterCurrencies } from './CurrencySelect';
 import { ErrorBanner } from './ErrorBanner';
 import { iconFor, KNOWN_ICON_KEYS, PICKER_ICONS } from './icons';
@@ -59,6 +60,26 @@ describe('ConfirmDialog', () => {
         expect(onCancel).toHaveBeenCalledTimes(1);
         fireEvent.click(screen.getByText('Delete'));
         expect(onConfirm).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('Dialog', () => {
+    it('keeps focus where the user is typing when the caller re-renders', () => {
+        const Harness = () => {
+            const [a, setA] = useState('');
+            const [b, setB] = useState('');
+            return (
+                <Dialog open onClose={() => undefined} title="x">
+                    <input aria-label="first" value={a} onChange={e => setA(e.target.value)} />
+                    <input aria-label="second" value={b} onChange={e => setB(e.target.value)} />
+                </Dialog>
+            );
+        };
+        wrap(<Harness />);
+        const second = screen.getByLabelText('second');
+        second.focus();
+        fireEvent.change(second, { target: { value: 'typed' } });
+        expect(document.activeElement).toBe(second);
     });
 });
 

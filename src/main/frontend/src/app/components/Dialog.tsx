@@ -16,6 +16,11 @@ export const Dialog: React.FC<{
     closeLabel?: string;
 }> = ({ open, onClose, title, children, footer, width = 480, closeLabel }) => {
     const panel = useRef<HTMLDivElement>(null);
+    // A ref, so the effect below runs on open and close only. With onClose among its deps,
+    // every re-render of the caller - a keystroke in the dialog's own form - moved focus
+    // back to the first field.
+    const closeRef = useRef(onClose);
+    closeRef.current = onClose;
 
     useEffect(() => {
         if (!open) return;
@@ -31,7 +36,7 @@ export const Dialog: React.FC<{
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 e.stopPropagation();
-                onClose();
+                closeRef.current();
             } else if (e.key === 'Tab') {
                 const items = focusable();
                 if (items.length === 0) return;
@@ -51,7 +56,7 @@ export const Dialog: React.FC<{
             document.removeEventListener('keydown', onKey);
             previous?.focus?.();
         };
-    }, [open, onClose]);
+    }, [open]);
 
     if (!open) return null;
 
