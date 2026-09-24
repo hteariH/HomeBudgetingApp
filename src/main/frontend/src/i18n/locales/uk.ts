@@ -1,3 +1,4 @@
+import { appUk } from './app.uk';
 import type { Locale } from '../index';
 
 /**
@@ -6,6 +7,10 @@ import type { Locale } from '../index';
  * (1 рахунок, 2 рахунки, 5 рахунків).
  */
 export const uk: Locale = {
+    // The app's strings, brought across from the Compose client. Landing keys follow and
+    // cannot clash: they are dotted, the app's are snake_case.
+    ...appUk,
+
     'meta.title': 'PersonalMoney — особисті фінанси, зрозуміло',
 
     // ─── Загальне ────────────────────────────────────────────────────────

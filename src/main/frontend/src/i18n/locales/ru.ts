@@ -1,3 +1,4 @@
+import { appRu } from './app.ru';
 import type { Locale } from '../index';
 
 /**
@@ -7,6 +8,10 @@ import type { Locale } from '../index';
  * in Russian: 1 счёт, 2 счёта, 5 счётов, 1,5 счёта.
  */
 export const ru: Locale = {
+    // The app's strings, brought across from the Compose client. Landing keys follow and
+    // cannot clash: they are dotted, the app's are snake_case.
+    ...appRu,
+
     'meta.title': 'PersonalMoney — личные финансы, понятно',
 
     // ─── Общее ───────────────────────────────────────────────────────────
