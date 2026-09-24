@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from './authApi';
 import { AlertTriangle, UserPlus, Mail, Lock, User } from 'lucide-react';
 import { useT } from '../i18n';
 import AuthShell from './AuthShell';
-import { enterApp, saveSession } from './session';
+import { nextPath, saveSession } from './session';
 
 const Register: React.FC = () => {
     const t = useT();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -29,7 +31,7 @@ const Register: React.FC = () => {
             // the web was the odd one out.
             const res = await authApi.login({ email: formData.email, password: formData.password });
             saveSession(res);
-            enterApp();
+            navigate(nextPath(location.search), { replace: true });
         } catch (err: any) {
             setError(err.message || t('register.failed'));
         } finally {

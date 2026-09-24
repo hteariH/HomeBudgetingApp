@@ -78,11 +78,10 @@ const Landing: React.FC = () => {
                         <ThemeToggle />
                         {signedIn ? (
                             // Already signed in: the useful button is the one that opens the
-                            // app, not one that offers an account they already have. A plain
-                            // anchor - /app/ is a separate document, not a route of this one.
-                            <a href={APP_PATH} className="btn btn-primary btn-sm">
+                            // app, not one that offers an account they already have.
+                            <Link to={APP_PATH} className="btn btn-primary btn-sm">
                                 {t('landing.nav.openApp')}
-                            </a>
+                            </Link>
                         ) : (
                             <>
                                 <Link to="/login" className="btn btn-ghost btn-sm hidden sm:inline-flex">
@@ -126,10 +125,10 @@ const Landing: React.FC = () => {
 
                         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                             {signedIn ? (
-                                <a href={APP_PATH} className="btn btn-primary btn-lg w-full shadow-glow sm:w-auto">
+                                <Link to={APP_PATH} className="btn btn-primary btn-lg w-full shadow-glow sm:w-auto">
                                     {t('landing.nav.openApp')}
                                     <ArrowRight size={17} />
-                                </a>
+                                </Link>
                             ) : (
                             <Link to="/register" className="btn btn-primary btn-lg w-full shadow-glow sm:w-auto">
                                 {t('landing.hero.ctaPrimary')}
@@ -347,10 +346,10 @@ const Landing: React.FC = () => {
                     <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t('landing.cta.title')}</h2>
                     <p className="mx-auto mt-4 max-w-xl text-base text-ink-soft">{t('landing.cta.body')}</p>
                     {signedIn ? (
-                        <a href={APP_PATH} className="btn btn-primary btn-lg mt-8 shadow-glow">
+                        <Link to={APP_PATH} className="btn btn-primary btn-lg mt-8 shadow-glow">
                             {t('landing.nav.openApp')}
                             <ArrowRight size={17} />
-                        </a>
+                        </Link>
                     ) : (
                     <Link to="/register" className="btn btn-primary btn-lg mt-8 shadow-glow">
                         {t('landing.cta.button')}

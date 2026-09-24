@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from './authApi';
 import { AlertTriangle, LogIn, Mail, Lock } from 'lucide-react';
 import { useT } from '../i18n';
 import AuthShell from './AuthShell';
-import { enterApp, saveSession } from './session';
+import { nextPath, saveSession } from './session';
 
 const Login: React.FC = () => {
     const t = useT();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -19,11 +21,9 @@ const Login: React.FC = () => {
         setLoading(true);
         try {
             const res = await authApi.login({ email, password });
-            // Not `navigate` - the application is a separate document at /app/, and the
-            // tokens are written under the names it reads. See session.ts.
             saveSession(res);
             localStorage.setItem('onboarded', 'true');
-            enterApp();
+            navigate(nextPath(location.search), { replace: true });
         } catch (err: any) {
             setError(err.message || t('login.failed'));
         } finally {
