@@ -51,7 +51,7 @@ src/main/frontend/src/
                   dates, subscription scheduling, API error mapping
     features/     dashboard, transactions, quickadd, accounts, categories, currencies,
                   subscriptions, analytics, banks, homemoney, premium, settings,
-                  onboarding, more
+                  onboarding
     components/   AmountField, CurrencySelect, ConfirmDialog, account picker, EmptyState,
                   MoneyText, SelectorChip, IconCircle, page shell and navigation
   i18n/           one dictionary for landing and app, en / ru / uk
@@ -70,7 +70,26 @@ query parameters:
 `/app/categories`, `/app/categories/edit?categoryId=&type=`, `/app/subscriptions`,
 `/app/subscriptions/edit?subscriptionId=`, `/app/currencies`, `/app/currencies/edit?code=`,
 `/app/analytics`, `/app/banks`, `/app/import/homemoney`, `/app/premium`, `/app/settings`,
-`/app/onboarding`, `/app/more`.
+`/app/onboarding`.
+
+There is no `/app/more`: the wasm client does not register the More tab in a browser. The
+header and its drawer do that job, as they do now. The header shows its sections inline
+at 1240px and wider, and in a drawer below that. The wordmark appears at 480px and wider.
+Below 900px the header has a "+" button that opens quick add. At 900px and wider, the
+dashboard and transactions pages carry the entry panel inline instead.
+
+**HomeMoney redirect.** The server's callback sends the browser to
+`/app/?homemoney=pending&code=…`, or `?homemoney=denied`. On load, the app reads those
+parameters once and removes them from the address bar with `replaceState`, so the code
+cannot be spent twice. It then opens `/app/import/homemoney`, which finishes the exchange.
+The server is not changed.
+
+**Stored preferences.** The landing page and the wasm client both use the localStorage key
+`theme`, in different formats: `dark`/`light` and `SYSTEM`/`LIGHT`/`DARK`. The merged app
+stores `system`, `light` or `dark`, and on read it also accepts the old uppercase values.
+The other keys stay as the wasm client wrote them, so nobody has to redo onboarding or pick
+their default account again: `onboarded`, `default_account`, `base_currency`, `lang` and
+`homemoney_auth_state`.
 
 The Compose account picker was its own destination only so it could return a result to
 the previous screen. In React it becomes a dialog.
@@ -113,9 +132,12 @@ has to pass the same cases:
 | `feature/subscriptions/SubscriptionScheduler.kt` | new tests: month ends, leap years |
 | transaction date-range filter (fix `6d9a525`) | new tests: day boundaries across time zones |
 
-Money is formatted with `Intl.NumberFormat`. Amounts are carried as integer minor units,
-as the API sends them. Floating-point numbers are used only inside the calculator, and the
-result is rounded to minor units the way `Calculator.kt` does.
+Money is formatted with `Intl.NumberFormat`. The API sends every amount as a decimal
+string. The client parses each one into a `Decimal` from decimal.js and does all arithmetic
+on it, the way the Kotlin code uses `BigDecimal`. An amount never passes through a JS
+`number` until the moment it is formatted for display. Rounding is half away from zero,
+to the currency's decimals. The `MoneyTest` cases about clamping to `Long` do not apply,
+because `Decimal` does not overflow, so only its rounding cases are ported.
 
 ## Strings
 
@@ -197,6 +219,6 @@ All on the same branch, before the merge:
 3. `app/lib` with the ported tests.
 4. String conversion script and the merged dictionaries.
 5. Screens: settings, currencies, categories, accounts, transactions and transfers,
-   quick add, dashboard, subscriptions, analytics, premium, onboarding, more.
+   quick add, dashboard, subscriptions, analytics, premium, onboarding.
 6. Imports: banks and CSV, HomeMoney.
 7. Server changes, wasm removal, CI, README.
