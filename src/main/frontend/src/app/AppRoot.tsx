@@ -1,8 +1,8 @@
-import React, { Suspense, lazy, useCallback } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { endpoints } from './api/endpoints';
-import { useCurrencies, usePref } from './api/hooks';
+import { useAccounts, useCurrencies, usePref } from './api/hooks';
 import { queryClient } from './api/queryClient';
 import { session } from './api/session';
 import { prefs } from './prefs';
@@ -50,10 +50,21 @@ export function useSignOut() {
     }, [navigate]);
 }
 
-/** A new account starts with setup; everyone else lands on the overview. */
+/**
+ * A new account starts with setup; everyone else lands on the overview. An account that
+ * already has accounts on the server is past setup whatever this browser remembers - the
+ * Compose client drew the same conclusion whenever it loaded them.
+ */
 const Home: React.FC = () => {
     const onboarded = usePref(() => prefs.onboarded);
-    return onboarded ? <DashboardPage /> : <Navigate to="/app/onboarding" replace />;
+    const { data: accounts, isLoading } = useAccounts();
+    const hasAccounts = (accounts?.length ?? 0) > 0;
+    useEffect(() => {
+        if (!onboarded && hasAccounts) prefs.setOnboarded(true);
+    }, [onboarded, hasAccounts]);
+    if (onboarded || hasAccounts) return <DashboardPage />;
+    if (isLoading) return <PageLoading />;
+    return <Navigate to="/app/onboarding" replace />;
 };
 
 const Shell: React.FC = () => {
