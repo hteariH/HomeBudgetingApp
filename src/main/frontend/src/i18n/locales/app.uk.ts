@@ -372,7 +372,7 @@ export const appUk = {
     settings_delete_account_confirm: "Видалити назавжди",
     settings_delete_account_subtitle: "Безповоротно видаляє акаунт і всі його дані",
     settings_delete_account_title: "Видалити акаунт?",
-    settings_delete_account_working: "Видаляємо\\u2026",
+    settings_delete_account_working: "Видаляємо…",
     settings_dynamic_color: "Динамічні кольори",
     settings_dynamic_color_subtitle: "Узгоджувати з шпалерами (Material You, Android 12+)",
     settings_export: "Експорт даних",

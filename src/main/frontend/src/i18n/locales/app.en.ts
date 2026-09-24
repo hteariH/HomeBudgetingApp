@@ -364,7 +364,7 @@ export const appEn = {
     settings_delete_account_confirm: "Delete for ever",
     settings_delete_account_subtitle: "Permanently removes your account and all of its data",
     settings_delete_account_title: "Delete your account?",
-    settings_delete_account_working: "Deleting\\u2026",
+    settings_delete_account_working: "Deleting…",
     settings_dynamic_color: "Dynamic color",
     settings_dynamic_color_subtitle: "Match Material You from wallpaper (Android 12+)",
     settings_export: "Export data",

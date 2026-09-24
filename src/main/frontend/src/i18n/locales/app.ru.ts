@@ -372,7 +372,7 @@ export const appRu = {
     settings_delete_account_confirm: "Удалить навсегда",
     settings_delete_account_subtitle: "Безвозвратно удаляет аккаунт и все его данные",
     settings_delete_account_title: "Удалить аккаунт?",
-    settings_delete_account_working: "Удаляем\\u2026",
+    settings_delete_account_working: "Удаляем…",
     settings_dynamic_color: "Динамические цвета",
     settings_dynamic_color_subtitle: "Подстраиваться под обои (Material You, Android 12+)",
     settings_export: "Экспорт данных",

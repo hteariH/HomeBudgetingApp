@@ -14,7 +14,8 @@
  *   web i18n module picks with Intl.PluralRules.
  * - `%1$s` / `%1$d` become `{{0}}`, `%2$…` becomes `{{1}}`, and so on. Inside a plural,
  *   `%1$d` becomes `{{count}}`, since that is the value the plural is chosen by.
- * - Android escapes (`\'`, `\"`, `\n`, `\@`, `\?`, `\\`), `%%` and XML entities are undone.
+ * - Android escapes (`\uXXXX`, `\'`, `\"`, `\n`, `\@`, `\?`, `\\`), `%%` and XML entities
+ *   are undone.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -32,6 +33,7 @@ const LOCALES = [
 
 function unescape(text) {
     return text
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
         .replace(/\\n/g, '\n')
         .replace(/\\(['"@?\\])/g, '$1')
         .replace(/&lt;/g, '<')

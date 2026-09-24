@@ -34,6 +34,6 @@ it('android escapes and %% are undone', () => {
     expect(en.analytics_savings_rate).toBe('Savings rate this month: {{0}}%');
     for (const k of appKeys) {
         const v = (en as Record<string, string>)[k];
-        expect(v, k).not.toMatch(/%\d\$|\\'/);
+        expect(v, k).not.toMatch(/%\d\$|\\['u]/);
     }
 });
