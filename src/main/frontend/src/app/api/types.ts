@@ -164,6 +164,20 @@ export interface CreateTransactionRequest {
     amount: string;
     type: TransactionType;
     date: string;
+    /** Preferred over [date] by the server when present: the time of day, not just the day. */
+    occurredAt?: string | null;
+    description?: string | null;
+}
+
+/**
+ * What the server lets an edit change. Account and type are fixed once a row exists, and
+ * a transfer leg cannot be edited at all - the server answers that with a 400.
+ */
+export interface UpdateTransactionRequest {
+    categoryId?: number | null;
+    amount?: string | null;
+    date?: string | null;
+    occurredAt?: string | null;
     description?: string | null;
 }
 
@@ -174,6 +188,7 @@ export interface CreateTransferRequest {
     toAmount: string;
     fee?: string | null;
     date: string;
+    occurredAt?: string | null;
     description?: string | null;
 }
 

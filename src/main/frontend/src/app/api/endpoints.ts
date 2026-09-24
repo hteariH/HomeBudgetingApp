@@ -35,7 +35,7 @@ export const endpoints = {
     transaction: (id: number) => api<T.RestTransaction>(`/transactions/${id}`),
     createTransaction: (body: T.CreateTransactionRequest) =>
         api<T.RestTransaction>('/transactions', { method: 'POST', json: body }),
-    updateTransaction: (id: number, body: T.CreateTransactionRequest) =>
+    updateTransaction: (id: number, body: T.UpdateTransactionRequest) =>
         api<T.RestTransaction>(`/transactions/${id}`, { method: 'PUT', json: body }),
     deleteTransaction: (id: number) => api<void>(`/transactions/${id}`, { method: 'DELETE' }),
 
