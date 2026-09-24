@@ -32,7 +32,7 @@ jobs:
         run: ./mvnw -B -Dfrontend.skip=true test
 
   client:
-    name: Client Tests & Bundle
+    name: Android Client Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -45,43 +45,50 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # The client has an Android target, so Gradle configures AGP even for a wasm-only
-      # task, and compileSdk is newer than the runner's preinstalled platforms.
+      # compileSdk is newer than the runner's preinstalled platforms.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # The web bundle is made of commonMain, and these are the tests that guard it.
       - name: Run client tests
         working-directory: client
         run: ./gradlew testDebugUnitTest
 
-      - name: Build the bundle
-        working-directory: client
-        run: ./gradlew wasmJsBrowserDistribution
+  frontend:
+    name: Web Frontend Tests
+    runs-on: ubuntu-latest
 
-      - name: Collect
-        run: |
-          set -euo pipefail
-          dist=client/composeApp/build/dist/wasmJs/productionExecutable
-          test -f "$dist/index.html" || { echo "::error::no index.html in $dist"; exit 1; }
-          mkdir -p web-dist
-          cp -r "$dist"/. web-dist/
-          echo "Bundle: $(du -sh web-dist | cut -f1)"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Upload the bundle
-        uses: actions/upload-artifact@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          name: web-dist
-          path: web-dist
-          retention-days: 7
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: src/main/frontend/package-lock.json
+
+      # The bundle itself is built inside the Docker image by Maven; this gate is the
+      # type check and the unit tests, which that build does not run.
+      - name: Install
+        working-directory: src/main/frontend
+        run: npm ci
+
+      - name: Type check
+        working-directory: src/main/frontend
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: src/main/frontend
+        run: npm test
 
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: [test, client]
+    needs: [test, client, frontend]
     permissions:
       contents: read
       packages: write
@@ -92,21 +99,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      # Into ./web-dist, which is what the Dockerfile copies into the jar's
-      # static/app. Built by the `client` job in this same run - no release, no token,
-      # and no way for the server and the client it serves to be different versions.
-      - name: Download the web bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: web-dist
-
-      - name: Check the bundle arrived
-        run: |
-          set -euo pipefail
-          test -f web-dist/index.html || { echo "::error::web-dist has no index.html" >&2; exit 1; }
-          echo "Bundle: $(du -sh web-dist | cut -f1)"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3

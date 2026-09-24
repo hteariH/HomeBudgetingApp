@@ -2,12 +2,13 @@
 
 PersonalMoney: a personal finance service, and every client that talks to it.
 
-- The repository root is the **server** — Spring Boot (Kotlin), plus the React landing page.
-- [`client/`](client) is the **Compose Multiplatform client** — one codebase serving the
-  Android app and the web app at `/app`.
+- The repository root is the **server** — Spring Boot (Kotlin) — and the **web app**: one
+  React single-page app in [`src/main/frontend`](src/main/frontend) serving the landing page,
+  the sign-in pages and the application at `/app`.
+- [`client/`](client) is the **Android app** (Kotlin, Compose).
 
 They live together because they share an API contract: a change to a DTO is one commit on
-both sides, and a deploy ships a server and the web client it serves as the same image.
+every side, and a deploy ships the server and the web app it serves as the same image.
 There is no version to pin between them and nothing to keep in step by hand.
 
 ## Overview
@@ -25,11 +26,11 @@ This application helps users track their personal finances, including accounts, 
   - Database Migrations: Flyway
   - Java Version: 25
 - **Frontend:**
-  - Language: TypeScript (React)
-  - Framework: React 19
-  - UI Library: Tailwind CSS (implied), Lucide React
-  - Package Manager: npm
-  - Version: Node.js v20.11.1, npm 10.2.4
+  - Language: TypeScript 5, React 19, built with Vite
+  - Routing: react-router 7; server state: TanStack Query; money: decimal.js
+  - UI: Tailwind CSS 3, lucide-react, Recharts
+  - Tests: Vitest + Testing Library
+  - Package Manager: npm (Node.js v20.11.1, npm 10.2.4 when Maven builds it)
 
 ---
 
@@ -55,16 +56,17 @@ The local profile uses an H2 in-memory database and is pre-configured for rapid 
     ```bash
     mvn spring-boot:run -Dspring-boot.run.profiles=local
     ```
-    The backend will be available at [http://localhost:8080](http://localhost:8080).
-    The H2 console is available at [http://localhost:8080/h2-console](http://localhost:8080/h2-console).
+    The backend will be available at [http://localhost:8085](http://localhost:8085).
+    The H2 console is available at [http://localhost:8085/h2-console](http://localhost:8085/h2-console).
 
 2.  **Run Frontend (Hot Reload):**
     ```bash
     cd src/main/frontend
     npm install
-    npm start
+    npm run dev
     ```
-    The frontend will be available at [http://localhost:3000](http://localhost:3000). Requests are proxied to the backend at `localhost:8080`.
+    The web app will be available at [http://localhost:3000](http://localhost:3000) (the
+    application itself at `/app`). `/api` is proxied to the backend at `localhost:8085`.
 
 ### Production Mode
 
@@ -92,10 +94,10 @@ In production mode, the frontend is built and bundled into the backend JAR.
 - `mvn test`: Runs backend tests.
 
 ### npm Scripts (`src/main/frontend`)
-- `npm start`: Starts the React development server.
-- `npm run build`: Builds the React production bundle.
-- `npm test`: Runs frontend tests using Jest.
-- `npm run eject`: Ejects from Create React App (not recommended).
+- `npm run dev`: Starts the Vite development server on port 3000.
+- `npm run build`: Type-checks and builds the production bundle into `build/`.
+- `npm test`: Runs the frontend tests once with Vitest (`npm run test:watch` to keep watching).
+- `npm run typecheck`: Runs the TypeScript compiler without emitting.
 
 ---
 
@@ -147,13 +149,16 @@ HomeBudgetingApp/
 │   │   │   ├── application-local.yml
 │   │   │   ├── application-prod.yml
 │   │   │   └── db/migration/   # Flyway migrations
-│   │   └── frontend/       # React frontend source code
+│   │   └── frontend/       # The web app (React + Vite)
+│   │       ├── index.html
 │   │       ├── public/
 │   │       ├── src/
-│   │       │   ├── App.tsx
-│   │       │   └── index.css
+│   │       │   ├── App.tsx       # Top-level routes: landing, sign-in pages, /app/*
+│   │       │   ├── landing/      # Landing page and the pages before there is an account
+│   │       │   ├── app/          # The application: api/, lib/, components/, shell/, features/
+│   │       │   └── i18n/         # One dictionary for everything, en / ru / uk
 │   │       ├── package.json
-│   │       └── tsconfig.json
+│   │       └── vite.config.ts
 │   └── test/
 │       └── kotlin/         # Backend tests
 └── target/                 # Build artifacts

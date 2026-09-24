@@ -6,7 +6,8 @@ Guidance for Claude Code when working in this repo. Keep this file current.
 
 **PersonalMoney** — an offline-first Android personal-finance app, and a client of the
 HomeBudgeting server, which lives in the parent directory of this one: `client/` holds
-every client (Android and web), the repository root holds the server. Data lives in Room on-device and converges on the
+the Android client, the repository root holds the server. The web client is not here: it
+is the React app in `../src/main/frontend`, served by the same server at `/app`. Data lives in Room on-device and converges on the
 server through two-way sync, so the app keeps working with no network at all. Monetised with
 AdMob. Trilingual UI (en / ru / uk). The core value is fast, frictionless expense entry
 (including a home-screen widget).
@@ -52,41 +53,16 @@ $adb="$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 
 Tests: JUnit + MockK + Turbine, with a `MainDispatcherRule` (UnconfinedTestDispatcher) + `runTest`.
 
-Web checks (headless — no visible window needed, unlike a real browser tab, which stops
-rendering the moment it goes to the background):
-
-```powershell
-# 1. build and stage the bundle where the local server serves /app from
-./gradlew.bat wasmJsBrowserDistribution --no-daemon
-Copy-Item "composeApp\build\dist\wasmJs\productionExecutable\*" `
-          "..\src\main\resources\static\app" -Recurse -Force
-# 2. run the server from classes (mvnw spring-boot:run, or `mvn package` then the jar)
-# 3. shoot it at any width
-& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new `
-  --enable-unsafe-swiftshader --hide-scrollbars --window-size=1440,900 `
-  --virtual-time-budget=40000 --screenshot="$env:TEMP\web.png" `
-  --user-data-dir="$env:TEMP\hlprofile" "http://localhost:8085/app/"
-```
-
-A live dev loop instead of the build-and-stage dance: `./gradlew.bat wasmJsBrowserDevelopmentRun`
-serves the bundle on :8080 and proxies `/api` to the Spring server on :8085
-(`composeApp/webpack.config.d/dev-server-proxy.js`), so no CORS configuration exists or is
-needed. Use the staged path above when you need to see production output.
-
-`--enable-unsafe-swiftshader` is the load-bearing flag: Compose draws through WebGL, and
-without software rasterisation the page renders its rectangles and none of its text.
-`--disable-gpu` is *not* a substitute - it produces exactly that half-drawn result.
-
-This is the only way to see the web build's actual pixels. Unit tests cannot: the two bugs
-that shipped anyway - a hryvnia rendering as a blank box, and a horizontal scrollbar caused
-by the vertical one - were both invisible to 177 green tests and to the Android emulator.
-
 
 ## Architecture & conventions
 
 - Unidirectional flow: `ViewModel(StateFlow)` → Compose. Hilt for DI. Room + Flow for reactive reads.
 - Layout: `core/{database,domain,data,ui,currency}` + `feature/<name>` + `widget/` + `ads/`.
   Nav in `navigation/Routes.kt` + `PersonalMoneyNavHost.kt`.
+- **Web leftovers.** There used to be a wasmJs target serving the web app; it was replaced
+  by React and removed. Code in commonMain written for the browser - the web chrome below,
+  `BrowserUrl`, the Banks/CSV/HomeMoney screens (gated off by `bankConnectionsAvailable` /
+  `homeMoneyImportAvailable`) - is now unused on Android and is kept only until a cleanup.
 - **Chrome differs by platform, not by window size** - `core/ui/webChrome` (expect/actual).
   Android: rail on a wide window, bottom bar + FAB on a phone. Web: `navigation/AppHeader.kt`
   across the top (brand, sections, theme switch, account menu with Settings and Sign out),
@@ -218,7 +194,9 @@ by the vertical one - were both invisible to 177 green tests and to the Android 
   meaningful state *is* the default needs `@EncodeDefault` - see `RestPlannedAccount` and
   the test that guards it. Give the server DTO the same default too.
 - **i18n:** strings live in **`composeApp/src/commonMain/composeResources/values{,-ru,-uk}/
-  strings.xml`**, not in `res/values*` - the Android resource table cannot be read from wasm.
+  strings.xml`**, not in `res/values*` (chosen when the wasm web target still existed). The web
+  app's copy of these strings is `../src/main/frontend/src/i18n/locales/app.*.ts`, converted once
+  by `../scripts/strings-to-ts.mjs` and edited directly since.
   Read them with `stringResource(Res.string.x)` (composable) or the **suspend**
   `getString(Res.string.x)` (anywhere else), both from `org.jetbrains.compose.resources`;
   `Res` and the accessors come from `com.personalmoney.resources.*`. Every key exists in all

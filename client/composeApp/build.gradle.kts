@@ -1,5 +1,4 @@
 import java.util.Properties
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -46,38 +45,28 @@ kotlin {
     // Windows host, so declaring them here would only add tasks that can never run. They
     // go in when the build moves to a Mac. Shared code is written to iOS constraints
     // regardless - no JVM types in commonMain - so adding them stays a one-liner.
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
-        outputModuleName.set("personalmoney")
-        browser {
-            commonWebpackConfig { outputFileName = "personalmoney.js" }
-        }
-        // No nodejs() runner: skiko is on the test classpath via Compose, and it needs a
-        // real browser. wasm tests therefore run under Karma and want CHROME_BIN pointing at
-        // a Chromium build (Edge works) - so they stay out of the routine build gate.
-        binaries.executable()
-    }
+    //
+    // There was a wasmJs target too, serving the web app; the web client is React now
+    // (src/main/frontend in the server repository root), so Android is the only target.
 
     sourceSets {
         commonMain.dependencies {
-            // Compose Multiplatform, not the androidx artifacts: the Compose compiler plugin
-            // runs for every target, so the runtime has to exist on the wasm classpath too.
-            // On Android these resolve to the same androidx artifacts underneath.
+            // Compose Multiplatform, not the androidx artifacts, so commonMain stays ready for
+            // another target. On Android these resolve to the same androidx artifacts.
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
-            // IconLibrary maps ~29 icons by name. The set is large, but only the icons
-            // actually referenced survive dead-code elimination in the wasm bundle.
+            // IconLibrary maps ~29 icons by name. The set is large, but R8 keeps only the
+            // icons actually referenced.
             implementation(compose.materialIconsExtended)
-            // Multiplatform strings. The Android resource table cannot be read from
-            // wasm, so every user-facing string lives in composeResources instead of
-            // res/values - see the note on the compose.resources block below.
+            // Multiplatform strings. Every user-facing string lives in composeResources
+            // rather than res/values - see the note on the compose.resources block below.
             implementation(compose.components.resources)
             // ViewModel, navigation and Koin's Compose bindings, in their multiplatform
             // form. These are what let a feature package live in commonMain: the same
-            // `viewModel()` / `NavHost` / `koinViewModel()` calls compile for Android and
-            // for wasm, rather than being an androidx dependency the browser cannot see.
+            // `viewModel()` / `NavHost` / `koinViewModel()` calls compile for any target,
+            // rather than being androidx dependencies only Android can see.
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.lifecycle.runtime.compose)
@@ -107,10 +96,6 @@ kotlin {
             // would only assert about itself.
             implementation(libs.ktor.client.mock)
             implementation(libs.kotlinx.coroutines.test)
-        }
-
-        wasmJsMain.dependencies {
-            implementation(libs.ktor.client.js)
         }
 
         androidMain.dependencies {
