@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { en } from './locales/en';
 import { ru } from './locales/ru';
 import { uk } from './locales/uk';
+import { setFormatLocale } from '../app/lib/format';
 
 /**
  * A small purpose-built translation layer instead of react-i18next.
@@ -126,6 +127,9 @@ const I18nContext = createContext<I18nValue | null>(null);
 
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [lang, setLangState] = useState<Lang>(detectLang);
+    // Numbers and dates follow the interface language, not whatever the browser says. Set
+    // during render rather than in an effect, so the very first paint already uses it.
+    setFormatLocale(lang);
 
     useEffect(() => {
         // Keeps assistive tech and the browser's own hyphenation in step with the UI.

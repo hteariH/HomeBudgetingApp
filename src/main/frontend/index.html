@@ -28,11 +28,16 @@
 
     <script>
       // Applied before first paint: without this the saved theme is only set once
-      // React mounts, which shows a flash of dark on a light-theme reload.
+      // React mounts, which shows a flash of dark on a light-theme reload. Mirrors
+      // readThemeMode() in src/theme.tsx, including the uppercase values the Compose
+      // client stored, and "system" (or nothing stored) following the OS.
       (function () {
         try {
-          var t = localStorage.getItem('theme');
-          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+          var t = (localStorage.getItem('theme') || '').toLowerCase();
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.setAttribute('data-theme', t);
           var l = localStorage.getItem('lang');
           if (l) document.documentElement.setAttribute('lang', l);
         } catch (e) {

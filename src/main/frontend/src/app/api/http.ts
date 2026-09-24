@@ -48,7 +48,7 @@ export interface RequestOptions {
     form?: FormData;
 }
 
-// One refresh at a time. Every 401 that lands while it runs awaits the same promise, so a
+// One refresh at a time. Every refusal that lands while it runs awaits the same promise, so a
 // burst of requests spends exactly one refresh token - what the Ktor Auth plugin did for
 // the Compose client. Spending it twice would have the server revoke the family.
 let refreshing: Promise<boolean> | null = null;
@@ -104,10 +104,19 @@ function send(path: string, opts: RequestOptions): Promise<Response> {
     });
 }
 
-/** Calls the backend. Throws [ApiError] on any non-2xx, after one refresh on a 401. */
+/**
+ * Whether a refusal may just mean the access token has expired. The server has no
+ * authentication entry point configured, so Spring answers an expired or garbled token with
+ * 403, not 401 - and a client that refreshed on 401 only (the Ktor plugin did) never renewed
+ * the session at all. A genuine 403 costs one refresh and still comes back as a 403.
+ */
+const mayBeExpired = (status: number, path: string) =>
+    (status === 401 || status === 403) && !TOKEN_ENDPOINTS.includes(path) && session.get() !== null;
+
+/** Calls the backend. Throws [ApiError] on any non-2xx, after one refresh if the token looked stale. */
 export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     let res = await send(path, opts);
-    if (res.status === 401 && !TOKEN_ENDPOINTS.includes(path) && (await refreshOnce())) {
+    if (mayBeExpired(res.status, path) && (await refreshOnce())) {
         res = await send(path, opts);
     }
     if (!res.ok) throw await apiErrorFrom(res);

@@ -63,3 +63,30 @@ it('an empty 200 or a 204 resolves to undefined', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
     await expect(api('/x', { method: 'DELETE' })).resolves.toBeUndefined();
 });
+
+it('renews on a 403 too, because that is what the server answers an expired token with', async () => {
+    let refreshes = 0;
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init: Init) => {
+            if (url.endsWith('/auth/refresh')) {
+                refreshes++;
+                return json(200, { token: 'new', refreshToken: 'r2', email: 'a@b.c' });
+            }
+            return init.headers.Authorization === 'Bearer new' ? json(200, [1]) : json(403, {});
+        }),
+    );
+    await expect(api('/accounts')).resolves.toEqual([1]);
+    expect(refreshes).toBe(1);
+});
+
+it('a genuine 403 still fails after one refresh', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) =>
+            url.endsWith('/auth/refresh') ? json(200, { token: 'new', refreshToken: 'r2', email: 'a@b.c' }) : json(403, {}),
+        ),
+    );
+    await expect(api('/currencies', { method: 'POST', json: {} })).rejects.toMatchObject({ status: 403 });
+    expect(session.get()?.access).toBe('new');
+});
