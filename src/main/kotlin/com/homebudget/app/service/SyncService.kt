@@ -40,6 +40,10 @@ class SyncService(
     private val settingRepo: UserCurrencySettingRepository,
     private val currencyRepo: CurrencyRepository,
     private val cursorRepo: SyncCursorRepository,
+    private val splitRepo: TransactionSplitRepository,
+    private val goalRepo: GoalRepository,
+    private val tagRepo: TagRepository,
+    private val transactionTagRepo: TransactionTagRepository,
     private val securityUtils: SecurityUtils,
     private val clock: Clock
 ) {
@@ -64,6 +68,10 @@ class SyncService(
         val categories = categoryRepo.findChangedSince(user.id, since, capped)
         val subscriptions = subscriptionRepo.findChangedSince(user.id, since, capped)
         val transactions = transactionRepo.findChangedSince(user.id, since, capped)
+        val splits = splitRepo.findChangedSince(user.id, since, capped)
+        val goals = goalRepo.findChangedSince(user.id, since, capped)
+        val tags = tagRepo.findChangedSince(user.id, since, capped)
+        val transactionTags = transactionTagRepo.findChangedSince(user.id, since, capped)
 
         val payload = SyncPayload(
             currencySettings = settings.map { it.toSync() },
@@ -73,11 +81,15 @@ class SyncService(
             // Transfer legs point at their counterpart by id in the database; the wire
             // format speaks uuids, so the whole account list is indexed once here
             // rather than looked up per row.
-            transactions = transactions.map { it.toSync(accountUuidsById(user)) }
+            transactions = transactions.map { it.toSync(accountUuidsById(user)) },
+            transactionSplits = splits.map { it.toSync() },
+            goals = goals.map { it.toSync() },
+            tags = tags.map { it.toSync() },
+            transactionTags = transactionTags.map { it.toSync() }
         )
 
-        val hasMore = listOf(settings, accounts, categories, subscriptions, transactions)
-            .any { it.size >= capped }
+        val returned = listOf(settings, accounts, categories, subscriptions, transactions, splits, goals, tags, transactionTags)
+        val hasMore = returned.any { it.size >= capped }
 
         // The cursor is a timestamp that actually appears in the data, never `now`.
         // Pushes stamp strictly-increasing times (see [nextStamp]), so any later write
@@ -86,7 +98,6 @@ class SyncService(
         //
         // When the page was capped, back off to the *earliest* of the per-entity page
         // ends so nothing between the lists is stepped over.
-        val returned = listOf(settings, accounts, categories, subscriptions, transactions)
         val cursor = if (hasMore) {
             returned.filter { it.size >= capped }
                 .mapNotNull { list -> list.lastOrNull()?.updatedAt }
@@ -119,6 +130,10 @@ class SyncService(
         applied += applyCategories(user, changes.categories, now, rejected)
         applied += applySubscriptions(user, changes.subscriptions, now, rejected)
         applied += applyTransactions(user, changes.transactions, now, rejected)
+        applied += applyTransactionSplits(user, changes.transactionSplits, now, rejected)
+        applied += applyGoals(user, changes.goals, now, rejected)
+        applied += applyTags(user, changes.tags, now, rejected)
+        applied += applyTransactionTags(user, changes.transactionTags, now, rejected)
 
         if (rejected.isNotEmpty()) {
             log.info("Sync push for user {}: {} applied, {} rejected", user.id, applied, rejected.size)
@@ -277,6 +292,8 @@ class SyncService(
             entity.sortOrder = record.sortOrder
             entity.isDefault = record.isDefault
             entity.budgetLimitMinor = record.budgetLimit?.let { MinorUnits.toMinor(it, baseDecimals) }
+            entity.rolloverEnabled = record.rolloverEnabled
+            entity.rolloverNegative = record.rolloverNegative
             entity.deleted = record.deleted
             entity.updatedAt = now
             categoryRepo.save(entity)
@@ -413,6 +430,212 @@ class SyncService(
         return applied
     }
 
+    private fun applyTransactionSplits(
+        user: User,
+        records: List<SyncTransactionSplit>,
+        now: Instant,
+        rejected: MutableList<SyncRejection>
+    ): Int {
+        var applied = 0
+        val byTx = records.groupBy { it.transactionUuid }
+        for ((txUuid, txRecords) in byTx) {
+            val transaction = transactionRepo.findByUuidIncludingDeleted(txUuid, user.id)
+            if (transaction == null) {
+                for (record in txRecords) {
+                    reject(rejected, record, "transactionSplit", SyncRejectionReason.UNKNOWN_REFERENCE,
+                        "unknown transaction $txUuid")
+                }
+                continue
+            }
+
+            val decimals = transaction.account.currency.decimals
+
+            // Existing splits for this transaction
+            val existingSplits = splitRepo.findAllByTransactionIdIncludingDeleted(transaction.id)
+                .associateBy { it.uuid }
+                .toMutableMap()
+
+            // Simulate the resulting state for non-deleted splits
+            val simulatedSplits = existingSplits.toMutableMap()
+            for (record in txRecords) {
+                if (record.deleted) {
+                    simulatedSplits.remove(record.uuid)
+                } else {
+                    val amountMinor = MinorUnits.toMinor(record.amount, decimals)
+                    simulatedSplits[record.uuid] = simulatedSplits[record.uuid]?.copy(amountMinor = amountMinor, deleted = false)
+                        ?: TransactionSplit(
+                            uuid = record.uuid,
+                            user = user,
+                            transaction = transaction,
+                            amountMinor = amountMinor
+                        )
+                }
+            }
+
+            val activeSplits = simulatedSplits.values.filter { !it.deleted }
+            if (activeSplits.isNotEmpty()) {
+                val sumSplits = activeSplits.sumOf { it.amountMinor }
+                if (sumSplits != transaction.amountMinor) {
+                    for (record in txRecords) {
+                        reject(rejected, record, "transactionSplit", SyncRejectionReason.INVALID,
+                            "Sum of split amounts ($sumSplits) does not equal transaction amount (${transaction.amountMinor})")
+                    }
+                    continue
+                }
+            }
+
+            for (record in txRecords) {
+                val existing = splitRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+                if (isStale(existing, record)) {
+                    reject(rejected, record, "transactionSplit", SyncRejectionReason.STALE, "server copy is newer")
+                    continue
+                }
+                val category = record.categoryUuid?.let { categoryRepo.findByUuidIncludingDeleted(it, user.id) }
+                if (record.categoryUuid != null && category == null) {
+                    reject(rejected, record, "transactionSplit", SyncRejectionReason.UNKNOWN_REFERENCE,
+                        "unknown category ${record.categoryUuid}")
+                    continue
+                }
+
+                val amountMinor = MinorUnits.toMinor(record.amount, decimals)
+                val entity = existing ?: TransactionSplit(
+                    uuid = record.uuid,
+                    user = user,
+                    transaction = transaction,
+                    amountMinor = amountMinor
+                )
+                entity.transaction = transaction
+                entity.category = category
+                entity.amountMinor = amountMinor
+                entity.note = record.note
+                entity.sortOrder = record.sortOrder
+                entity.deleted = record.deleted
+                entity.updatedAt = now
+                splitRepo.save(entity)
+                applied++
+            }
+        }
+        return applied
+    }
+
+    private fun applyGoals(
+        user: User,
+        records: List<SyncGoal>,
+        now: Instant,
+        rejected: MutableList<SyncRejection>
+    ): Int {
+        var applied = 0
+        for (record in records) {
+            val existing = goalRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+            if (isStale(existing, record)) {
+                reject(rejected, record, "goal", SyncRejectionReason.STALE, "server copy is newer")
+                continue
+            }
+            val linkedAccount = record.linkedAccountUuid?.let {
+                accountRepo.findByUuidIncludingDeleted(it, user.id)
+            }
+            if (record.linkedAccountUuid != null && linkedAccount == null) {
+                reject(rejected, record, "goal", SyncRejectionReason.UNKNOWN_REFERENCE,
+                    "unknown account ${record.linkedAccountUuid}")
+                continue
+            }
+            val decimals = currencyRepo.findByCode(record.currencyCode)?.decimals ?: 2
+            val targetMinor = MinorUnits.toMinor(record.targetAmount, decimals)
+            val currentMinor = MinorUnits.toMinor(record.currentAmount, decimals)
+
+            val entity = existing ?: SavingsGoal(
+                uuid = record.uuid,
+                user = user,
+                name = record.name,
+                targetAmountMinor = targetMinor,
+                currencyCode = record.currencyCode
+            )
+            entity.name = record.name
+            entity.targetAmountMinor = targetMinor
+            entity.currencyCode = record.currencyCode
+            entity.currentAmountMinor = currentMinor
+            entity.targetDate = record.targetDate
+            entity.linkedAccount = linkedAccount
+            entity.icon = record.icon
+            entity.color = record.color
+            entity.archived = record.archived
+            entity.deleted = record.deleted
+            entity.updatedAt = now
+            goalRepo.save(entity)
+            applied++
+        }
+        return applied
+    }
+
+    private fun applyTags(
+        user: User,
+        records: List<SyncTag>,
+        now: Instant,
+        rejected: MutableList<SyncRejection>
+    ): Int {
+        var applied = 0
+        for (record in records) {
+            val existing = tagRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+            if (isStale(existing, record)) {
+                reject(rejected, record, "tag", SyncRejectionReason.STALE, "server copy is newer")
+                continue
+            }
+            val entity = existing ?: Tag(
+                uuid = record.uuid,
+                user = user,
+                name = record.name
+            )
+            entity.name = record.name
+            entity.color = record.color
+            entity.deleted = record.deleted
+            entity.updatedAt = now
+            tagRepo.save(entity)
+            applied++
+        }
+        return applied
+    }
+
+    private fun applyTransactionTags(
+        user: User,
+        records: List<SyncTransactionTag>,
+        now: Instant,
+        rejected: MutableList<SyncRejection>
+    ): Int {
+        var applied = 0
+        for (record in records) {
+            val existing = transactionTagRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+            if (isStale(existing, record)) {
+                reject(rejected, record, "transactionTag", SyncRejectionReason.STALE, "server copy is newer")
+                continue
+            }
+            val transaction = transactionRepo.findByUuidIncludingDeleted(record.transactionUuid, user.id)
+            if (transaction == null) {
+                reject(rejected, record, "transactionTag", SyncRejectionReason.UNKNOWN_REFERENCE,
+                    "unknown transaction ${record.transactionUuid}")
+                continue
+            }
+            val tag = tagRepo.findByUuidIncludingDeleted(record.tagUuid, user.id)
+            if (tag == null) {
+                reject(rejected, record, "transactionTag", SyncRejectionReason.UNKNOWN_REFERENCE,
+                    "unknown tag ${record.tagUuid}")
+                continue
+            }
+            val entity = existing ?: TransactionTag(
+                uuid = record.uuid,
+                user = user,
+                transaction = transaction,
+                tag = tag
+            )
+            entity.transaction = transaction
+            entity.tag = tag
+            entity.deleted = record.deleted
+            entity.updatedAt = now
+            transactionTagRepo.save(entity)
+            applied++
+        }
+        return applied
+    }
+
     // ── Entity -> wire ──────────────────────────────────────────────────────
 
     private fun UserCurrencySetting.toSync() = SyncCurrencySetting(
@@ -456,7 +679,9 @@ class SyncService(
         archived = archived,
         sortOrder = sortOrder,
         isDefault = isDefault,
-        budgetLimit = budgetLimitMinor?.let { MinorUnits.toDecimal(it, baseDecimals) }
+        budgetLimit = budgetLimitMinor?.let { MinorUnits.toDecimal(it, baseDecimals) },
+        rolloverEnabled = rolloverEnabled,
+        rolloverNegative = rolloverNegative
     )
 
     private fun Subscription.toSync() = SyncSubscription(
@@ -497,5 +722,47 @@ class SyncService(
         transferGroupId = transferGroupId,
         transferCounterpartAccountUuid = transferCounterpartAccountId?.let { accountUuids[it] },
         transferFee = transferFeeMinor?.let { MinorUnits.toDecimal(it, account.currency.decimals) }
+    )
+
+    private fun TransactionSplit.toSync() = SyncTransactionSplit(
+        uuid = uuid,
+        updatedAt = updatedAt,
+        deleted = deleted,
+        transactionUuid = transaction.uuid,
+        categoryUuid = category?.uuid,
+        amount = MinorUnits.toDecimal(amountMinor, transaction.account.currency.decimals),
+        note = note,
+        sortOrder = sortOrder
+    )
+
+    private fun SavingsGoal.toSync() = SyncGoal(
+        uuid = uuid,
+        updatedAt = updatedAt,
+        deleted = deleted,
+        name = name,
+        targetAmount = MinorUnits.toDecimal(targetAmountMinor, currencyRepo.findByCode(currencyCode)?.decimals ?: 2),
+        currencyCode = currencyCode,
+        currentAmount = MinorUnits.toDecimal(currentAmountMinor, currencyRepo.findByCode(currencyCode)?.decimals ?: 2),
+        targetDate = targetDate,
+        linkedAccountUuid = linkedAccount?.uuid,
+        icon = icon,
+        color = color,
+        archived = archived
+    )
+
+    private fun Tag.toSync() = SyncTag(
+        uuid = uuid,
+        updatedAt = updatedAt,
+        deleted = deleted,
+        name = name,
+        color = color
+    )
+
+    private fun TransactionTag.toSync() = SyncTransactionTag(
+        uuid = uuid,
+        updatedAt = updatedAt,
+        deleted = deleted,
+        transactionUuid = transaction.uuid,
+        tagUuid = tag.uuid
     )
 }

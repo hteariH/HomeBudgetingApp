@@ -57,6 +57,8 @@ class SecurityConfig(
                     // signed state minted when the flow started, not by this filter -
                     // see HomeMoneyConnectionService.
                     .requestMatchers("/api/import/homemoney/callback").permitAll()
+                    // Monobank webhook pushes updates directly from bank servers without bearer auth.
+                    .requestMatchers("/api/bank/monobank/webhook/**").permitAll()
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
             }

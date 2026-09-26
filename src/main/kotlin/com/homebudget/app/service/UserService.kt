@@ -24,6 +24,13 @@ class UserService(
         return userRepository.save(user)
     }
 
+    fun updatePreferences(budgetCycleStartDay: Int): User {
+        require(budgetCycleStartDay in 1..28) { "budgetCycleStartDay must be between 1 and 28" }
+        val user = getCurrentUser()
+        user.budgetCycleStartDay = budgetCycleStartDay
+        return userRepository.save(user)
+    }
+
     /**
      * Erases the account outright.
      *

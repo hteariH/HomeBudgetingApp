@@ -104,6 +104,8 @@ data class CategoryResponse(
     val isDefault: Boolean,
     /** Monthly limit in the user's base currency, or null for no budget. */
     val budgetLimit: BigDecimal?,
+    val rolloverEnabled: Boolean = false,
+    val rolloverNegative: Boolean = false,
     val mccCodes: Set<Int>,
     val createdAt: LocalDateTime
 )
@@ -116,7 +118,9 @@ data class CreateCategoryRequest(
     val description: String? = null,
     val parentId: Long? = null,
     val sortOrder: Int = 0,
-    @field:PositiveOrZero val budgetLimit: BigDecimal? = null
+    @field:PositiveOrZero val budgetLimit: BigDecimal? = null,
+    val rolloverEnabled: Boolean = false,
+    val rolloverNegative: Boolean = false
 )
 
 data class UpdateCategoryRequest(
@@ -128,6 +132,8 @@ data class UpdateCategoryRequest(
     val archived: Boolean? = null,
     val sortOrder: Int? = null,
     @field:PositiveOrZero val budgetLimit: BigDecimal? = null,
+    val rolloverEnabled: Boolean? = null,
+    val rolloverNegative: Boolean? = null,
     /** Explicit flag, because a null budgetLimit means "unchanged" rather than "clear". */
     val clearBudgetLimit: Boolean = false,
     val mccCodes: Set<Int>? = null
@@ -329,5 +335,6 @@ data class UserResponse(
      */
     val entitlement: Entitlement,
     val entitlementExpiresAt: Instant?,
-    val baseCurrency: CurrencyResponse?
+    val baseCurrency: CurrencyResponse?,
+    val budgetCycleStartDay: Int = 1
 )

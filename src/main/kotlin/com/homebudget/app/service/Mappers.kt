@@ -64,6 +64,8 @@ fun Category.toResponse(baseDecimals: Int) = CategoryResponse(
     sortOrder = sortOrder,
     isDefault = isDefault,
     budgetLimit = budgetLimitMinor?.let { MinorUnits.toDecimal(it, baseDecimals) },
+    rolloverEnabled = rolloverEnabled,
+    rolloverNegative = rolloverNegative,
     mccCodes = mccCodes,
     createdAt = createdAt
 )
@@ -79,7 +81,8 @@ fun User.toResponse() = UserResponse(
     // Resolved, not copied: see the note on UserResponse.entitlement.
     entitlement = if (isPremium()) Entitlement.PREMIUM else Entitlement.FREE,
     entitlementExpiresAt = entitlementExpiresAt,
-    baseCurrency = baseCurrency?.toResponse()
+    baseCurrency = baseCurrency?.toResponse(),
+    budgetCycleStartDay = budgetCycleStartDay
 )
 
 // ───── Transaction Mappers ─────

@@ -73,7 +73,9 @@ data class SyncCategory(
     val archived: Boolean = false,
     val sortOrder: Int = 0,
     val isDefault: Boolean = false,
-    val budgetLimit: BigDecimal? = null
+    val budgetLimit: BigDecimal? = null,
+    val rolloverEnabled: Boolean = false,
+    val rolloverNegative: Boolean = false
 ) : SyncRecord
 
 data class SyncSubscription(
@@ -128,6 +130,52 @@ data class SyncCurrencySetting(
     val sortOrder: Int = 0
 ) : SyncRecord
 
+data class SyncTransactionSplit(
+    override val uuid: String,
+    override val updatedAt: Instant = Instant.EPOCH,
+    override val baseUpdatedAt: Instant? = null,
+    override val deleted: Boolean = false,
+    val transactionUuid: String,
+    val categoryUuid: String? = null,
+    val amount: BigDecimal,
+    val note: String? = null,
+    val sortOrder: Int = 0
+) : SyncRecord
+
+data class SyncGoal(
+    override val uuid: String,
+    override val updatedAt: Instant = Instant.EPOCH,
+    override val baseUpdatedAt: Instant? = null,
+    override val deleted: Boolean = false,
+    val name: String,
+    val targetAmount: BigDecimal,
+    val currencyCode: String,
+    val currentAmount: BigDecimal = BigDecimal.ZERO,
+    val targetDate: LocalDate? = null,
+    val linkedAccountUuid: String? = null,
+    val icon: String = "flag",
+    val color: String = "#10B981",
+    val archived: Boolean = false
+) : SyncRecord
+
+data class SyncTag(
+    override val uuid: String,
+    override val updatedAt: Instant = Instant.EPOCH,
+    override val baseUpdatedAt: Instant? = null,
+    override val deleted: Boolean = false,
+    val name: String,
+    val color: String = "#6366F1"
+) : SyncRecord
+
+data class SyncTransactionTag(
+    override val uuid: String,
+    override val updatedAt: Instant = Instant.EPOCH,
+    override val baseUpdatedAt: Instant? = null,
+    override val deleted: Boolean = false,
+    val transactionUuid: String,
+    val tagUuid: String
+) : SyncRecord
+
 /**
  * Entity order in both directions is parents before children, which is also the order
  * a push must apply them in - a transaction cannot resolve an account uuid that has
@@ -138,10 +186,15 @@ data class SyncPayload(
     val accounts: List<SyncAccount> = emptyList(),
     val categories: List<SyncCategory> = emptyList(),
     val subscriptions: List<SyncSubscription> = emptyList(),
-    val transactions: List<SyncTransaction> = emptyList()
+    val transactions: List<SyncTransaction> = emptyList(),
+    val transactionSplits: List<SyncTransactionSplit> = emptyList(),
+    val goals: List<SyncGoal> = emptyList(),
+    val tags: List<SyncTag> = emptyList(),
+    val transactionTags: List<SyncTransactionTag> = emptyList()
 ) {
     fun size(): Int =
-        currencySettings.size + accounts.size + categories.size + subscriptions.size + transactions.size
+        currencySettings.size + accounts.size + categories.size + subscriptions.size +
+        transactions.size + transactionSplits.size + goals.size + tags.size + transactionTags.size
 }
 
 data class SyncPullResponse(

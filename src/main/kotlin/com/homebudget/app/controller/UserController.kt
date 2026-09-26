@@ -24,6 +24,10 @@ class UserController(
     fun updateBaseCurrency(@RequestParam currencyId: Long) =
         userService.updateBaseCurrency(currencyId).toResponse()
 
+    @PutMapping("/me/preferences")
+    fun updatePreferences(@RequestParam budgetCycleStartDay: Int) =
+        userService.updatePreferences(budgetCycleStartDay).toResponse()
+
     /**
      * Everything this account holds, in the sync wire format.
      *
