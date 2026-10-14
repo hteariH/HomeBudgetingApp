@@ -35,6 +35,7 @@ class SyncCursorRepository(private val em: EntityManager) {
             null -> null
             is Timestamp -> raw.toInstant()
             is Instant -> raw
+            is java.time.OffsetDateTime -> raw.toInstant()
             else -> null
         }
     }

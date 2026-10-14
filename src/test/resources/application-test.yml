@@ -1,7 +1,7 @@
 spring:
   datasource:
     # Fresh in-memory DB per test run, built by Flyway from V1 onwards.
-    url: jdbc:h2:mem:homebudget-test;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    url: jdbc:h2:mem:homebudget-test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
     username: sa
     password:

@@ -37,8 +37,7 @@ class UserService(
             "DELETE FROM category_mcc_codes WHERE category_id IN (SELECT id FROM categories WHERE user_id = :uid)",
             "DELETE FROM transactions WHERE user_id = :uid",
             "DELETE FROM subscriptions WHERE user_id = :uid",
-            // categories.parent_id points at categories: MySQL enforces FKs row by row,
-            // so a single DELETE can hit a parent before its child. Break the links first.
+            // categories.parent_id points at categories; break the links before deleting.
             "UPDATE categories SET parent_id = NULL WHERE user_id = :uid",
             "DELETE FROM categories WHERE user_id = :uid",
             "DELETE FROM accounts WHERE user_id = :uid",
