@@ -80,7 +80,7 @@ data class Subscription(
     @Column(nullable = false)
     var color: String = "#008080",
 
-    @Column
+    @Column(length = 500)
     var note: String? = null,
 
     @Column(nullable = false, updatable = false)

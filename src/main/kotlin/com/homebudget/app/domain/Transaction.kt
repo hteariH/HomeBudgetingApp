@@ -69,7 +69,7 @@ data class Transaction(
     @Column(name = "occurred_at", nullable = false)
     var occurredAt: Instant,
 
-    @Column
+    @Column(length = 500)
     var description: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)

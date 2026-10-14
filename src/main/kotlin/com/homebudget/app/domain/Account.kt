@@ -46,7 +46,7 @@ data class Account(
     @JoinColumn(name = "currency_id", nullable = false)
     var currency: Currency,
 
-    @Column
+    @Column(length = 500)
     var description: String? = null,
 
     @Column(nullable = false)

@@ -37,7 +37,7 @@ data class Category(
     @Column(nullable = false)
     var color: String = "#6366F1",
 
-    @Column
+    @Column(length = 500)
     var description: String? = null,
 
     /** Sub-categories. Self-referencing, one level deep in practice. */
