@@ -209,17 +209,6 @@ class SyncService(
                     "unknown currency ${record.currencyCode}")
                 continue
             }
-            // The same cap the REST path applies, on the path a phone actually uses.
-            // Enforced here too because a limit only one door honours is not a limit -
-            // and only for a record the server has never seen, so an edit to an account
-            // that already exists always goes through.
-            if (existing == null && !user.isPremium() &&
-                accountRepo.countByUserAndArchivedFalse(user) >= PlanLimits.FREE_ACCOUNTS
-            ) {
-                reject(rejected, record, "account", SyncRejectionReason.INVALID,
-                    "the free plan covers ${PlanLimits.FREE_ACCOUNTS} accounts")
-                continue
-            }
             val entity = existing ?: Account(
                 uuid = record.uuid, name = record.name, user = user, currency = currency
             )

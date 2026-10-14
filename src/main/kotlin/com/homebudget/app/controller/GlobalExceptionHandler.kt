@@ -48,34 +48,6 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 400, error = "Bad Request", message = ex.message)
         )
 
-    /**
-     * A limit of the free plan, not a mistake in the request.
-     *
-     * 402 rather than 400 or 403 so a client can tell "this needs a subscription" from
-     * "this was malformed" and from "this is not yours" without matching on the message.
-     */
-    @ExceptionHandler(com.homebudget.app.service.PlanLimitException::class)
-    fun handlePlanLimit(ex: com.homebudget.app.service.PlanLimitException): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(
-            ErrorResponse(status = 402, error = "Plan Limit Reached", message = ex.message)
-        )
-
-    /**
-     * Google could not be asked, so nothing is known about the purchase.
-     *
-     * 503 rather than 500 or 400 because it says the right thing to all three readers:
-     * the client should offer "try again" instead of "your purchase is invalid", a
-     * monitor should see a dependency being down rather than this server being broken,
-     * and the user has not lost their money.
-     */
-    @ExceptionHandler(com.homebudget.app.billing.BillingUnavailableException::class)
-    fun handleBillingUnavailable(
-        ex: com.homebudget.app.billing.BillingUnavailableException
-    ): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
-            ErrorResponse(status = 503, error = "Billing Unavailable", message = ex.message)
-        )
-
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         val messages = ex.bindingResult.fieldErrors.joinToString("; ") {

@@ -67,25 +67,30 @@ clients only show what works.
 New tables:
 
 - `households` — `id`, `uuid`, `name`, `base_currency_id`, `created_at`, `updated_at`.
-- `household_members` — `household_id`, `user_id`, `role` (`OWNER` | `MEMBER`),
-  `joined_at`; primary key `(household_id, user_id)`. In this sub-project a user is a
+- `household_members` — `id`, `household_id`, `user_id`, `role` (`OWNER` | `MEMBER`),
+  `joined_at`; `UNIQUE (household_id, user_id)`. In this sub-project a user is a
   member of exactly one household.
+- `instance_settings` (`setting_key` primary key, `setting_value`), holding the
+  registration mode an administrator set at runtime. The columns are not named `key` and
+  `value` because H2, which the tests run on, reserves both.
 
 Moved from `user_id` to `household_id`:
 
 - `accounts`, `categories`, `subscriptions`, `transactions`
 - `user_currency_settings`, renamed `household_currency_settings`
 - manual rows of `exchange_rates` (global Frankfurter rows keep a null owner)
-- `bank_connections`, which also gains `connected_by_user_id`. Any member may import
-  from or remove a connection.
+- `bank_connections`, which also gains a nullable `connected_by_user_id`
+  (`ON DELETE SET NULL`). Any member may import from or remove a connection.
 
 Stays on `user_id`: `refresh_tokens`, `auth_tokens`.
 
 Also:
 
-- `transactions.created_by_user_id` (not null), filled from the authenticated user on
-  every write path (REST, sync push, bank and CSV import, HomeMoney). Shown in the UI from
-  sub-project 2.
+- `transactions.created_by_user_id`, nullable: null for rows the server writes itself
+  (subscription charges) and after the author's account is deleted (`ON DELETE SET NULL`).
+  Otherwise filled from the authenticated user on every write path (REST, sync push, bank
+  and CSV import, HomeMoney). Shown in the UI from sub-project 2.
+- `users.last_sign_in_at` (nullable), set on every successful sign-in.
 - `users` loses the entitlement columns and `base_currency_id` (now on the household).
   `role` stays: `ADMIN` means administrator of the instance.
 
@@ -224,7 +229,7 @@ to `deploy/` and is used only for the landing site.
 
 ## Android
 
-- The sign-in screen gains a "Server address" field, remembered in DataStore. On submit
+- The sign-in screen gains a "Server address" field, remembered next to the session tokens in `TokenStore` (read synchronously by every request). On submit
   the app calls `GET /api/instance`: an unreachable address, a response that is not ours,
   or an `apiVersion` outside the supported range each get their own message.
 - Plain `http://` is allowed, with a visible "traffic to this server is not encrypted"
@@ -266,7 +271,7 @@ Server:
   the scoping refactor and is written before it.
 - Concurrent pushes into one household produce distinct, increasing stamps, and a pull
   from the earlier cursor returns both.
-- `created_by_user_id` is set on every write path.
+- `created_by_user_id` is set on every user-driven write path.
 - First run: the first registration becomes `ADMIN`; registration closes afterwards
   unless `REGISTRATION=open`; `setupRequired` flips.
 - Secrets: generated when absent, reused on restart, environment wins.

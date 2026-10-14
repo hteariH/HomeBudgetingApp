@@ -9,9 +9,7 @@ import com.homebudget.app.repository.CategoryRepository
 import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.repository.UserRepository
-import com.homebudget.app.service.PlanLimitException
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -246,29 +244,6 @@ class HomeMoneyImportServiceTest {
 
         val thrown = assertThrows<IllegalArgumentException> { service.prepare(userId, unresolved) }
         assertEquals(true, thrown.message!!.contains("???"))
-    }
-
-    @Test
-    fun `the free plan's account cap is reported before anything is created`() {
-        // Six accounts against a cap of five. Finding out on account six - after the
-        // first five and half a decade of history are in - is the failure mode this
-        // check exists to avoid.
-        val many = (1..6).map {
-            PlannedAccount(
-                externalId = "homemoney:$it:980",
-                homeMoneyAccountId = "$it",
-                homeMoneyCurrencyId = "980",
-                name = "Account $it",
-                currencyLabel = "UAH",
-                currencyCode = "UAH",
-                balance = BigDecimal.ZERO
-            )
-        }
-
-        val reason = service.accountCapReason(user(), many.size)
-        assertNotNull(reason)
-        assertThrows<PlanLimitException> { service.prepare(userId, HomeMoneyPlan(accounts = many)) }
-        assertEquals(0, accountRepo.findAllByUser(user()).size, "nothing was created")
     }
 
     @Test

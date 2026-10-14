@@ -57,18 +57,6 @@ app:
       # How long to keep waiting for the customer to approve a request. The bank keeps it
       # open for 24 hours; a dialog nobody is looking at any more should not.
       consent-timeout: ${MONOBANK_CONSENT_TIMEOUT:10m}
-  billing:
-    play:
-      # A Google Play service-account key: either the JSON itself or a path to the file.
-      # Empty - the state of every development machine - means the server cannot verify a
-      # purchase, and says so through `purchasesAccepted` on /api/billing/status rather
-      # than failing a request nobody could have made work. Manual grants still work.
-      service-account: ${PLAY_SERVICE_ACCOUNT:}
-      # The app the purchases belong to. A token is only meaningful against one package.
-      package-name: ${PLAY_PACKAGE_NAME:com.personalmoney}
-      # The subscription products that buy premium, in the order the paywall shows them.
-      # Served to the client so a renamed base plan does not need an app release.
-      products: ${PLAY_PRODUCTS:premium_monthly,premium_yearly}
 
 logging:
   level:

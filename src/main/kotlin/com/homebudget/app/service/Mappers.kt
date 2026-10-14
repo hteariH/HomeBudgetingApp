@@ -76,9 +76,6 @@ fun User.toResponse() = UserResponse(
     lastName = lastName,
     role = role,
     emailVerified = emailVerified,
-    // Resolved, not copied: see the note on UserResponse.entitlement.
-    entitlement = if (isPremium()) Entitlement.PREMIUM else Entitlement.FREE,
-    entitlementExpiresAt = entitlementExpiresAt,
     baseCurrency = baseCurrency?.toResponse()
 )
 

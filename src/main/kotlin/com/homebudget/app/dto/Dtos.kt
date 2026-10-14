@@ -314,20 +314,11 @@ data class VerifyEmailRequest(
 
 data class UserResponse(
     val id: Long,
-    /** The identifier the payment provider knows this customer by. */
     val uuid: String,
     val email: String,
     val firstName: String,
     val lastName: String,
     val role: Role,
     val emailVerified: Boolean,
-    /**
-     * What the account has paid for, resolved against the clock rather than copied out of
-     * the column - a lapsed subscription reads FREE here even if no expiry event has
-     * arrived yet. Clients may use it to decide what to *show*; every limit that matters
-     * is enforced on the server regardless.
-     */
-    val entitlement: Entitlement,
-    val entitlementExpiresAt: Instant?,
     val baseCurrency: CurrencyResponse?
 )

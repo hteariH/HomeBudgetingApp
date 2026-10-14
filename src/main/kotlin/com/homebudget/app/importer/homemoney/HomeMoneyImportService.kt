@@ -5,11 +5,9 @@ import com.homebudget.app.domain.AccountType
 import com.homebudget.app.domain.Category
 import com.homebudget.app.domain.CategoryType
 import com.homebudget.app.domain.MinorUnits
-import com.homebudget.app.domain.PlanLimits
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.domain.User
-import com.homebudget.app.domain.isPremium
 import com.homebudget.app.repository.AccountRepository
 import com.homebudget.app.repository.CategoryRepository
 import com.homebudget.app.repository.CurrencyRepository
@@ -100,28 +98,8 @@ class HomeMoneyImportService(
             transactionCount = rows.size,
             firstDate = dates.minOrNull(),
             lastDate = dates.maxOrNull(),
-            // Only the ones that would actually be created. Counting the unticked ones
-            // here would block a free account on currency slots nothing is going to make.
-            blockedReason = accountCapReason(
-                user,
-                plannedAccounts.count { it.included && it.targetAccountId == null }
-            )
+            blockedReason = null
         )
-    }
-
-    /**
-     * The free plan's account cap, phrased for a person rather than thrown at them.
-     *
-     * Checked up front because the alternative is finding out halfway through: accounts
-     * created, half the history in, and a 402 on account six.
-     */
-    fun accountCapReason(user: User, newAccounts: Int): String? {
-        if (user.isPremium(Instant.now(clock))) return null
-        val inPlay = accountRepo.countByUserAndArchivedFalse(user)
-        if (inPlay + newAccounts <= PlanLimits.FREE_ACCOUNTS) return null
-        return "The import would create $newAccounts accounts on top of the $inPlay you have, " +
-            "and the free plan covers ${PlanLimits.FREE_ACCOUNTS}. Subscribe, or point some of " +
-            "them at accounts you already have."
     }
 
     /** Same name and same currency. Anything looser would silently merge two real accounts. */
@@ -165,10 +143,7 @@ class HomeMoneyImportService(
     fun prepare(userId: Long, plan: HomeMoneyPlan): Targets {
         val user = requireUser(userId)
         val included = plan.accounts.filter { it.included }
-        plan.blockedReason?.let { throw com.homebudget.app.service.PlanLimitException(it) }
-        accountCapReason(user, included.count { it.targetAccountId == null })?.let {
-            throw com.homebudget.app.service.PlanLimitException(it)
-        }
+        plan.blockedReason?.let { throw IllegalStateException(it) }
 
         val accountIds = mutableMapOf<String, Long>()
         val openingTargets = mutableMapOf<Long, BigDecimal>()

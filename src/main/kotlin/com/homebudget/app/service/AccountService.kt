@@ -2,9 +2,6 @@ package com.homebudget.app.service
 
 import com.homebudget.app.domain.Account
 import com.homebudget.app.domain.MinorUnits
-import com.homebudget.app.domain.PlanLimits
-import com.homebudget.app.domain.User
-import com.homebudget.app.domain.isPremium
 import com.homebudget.app.dto.CreateAccountRequest
 import com.homebudget.app.dto.UpdateAccountRequest
 import com.homebudget.app.repository.AccountRepository
@@ -47,7 +44,6 @@ class AccountService(
 
     fun create(req: CreateAccountRequest): Account {
         val user = securityUtils.getCurrentUser()
-        requireAccountSlot(user)
         val currency = currencyService.findById(req.currencyId)
         return accountRepo.save(
             Account(
@@ -63,24 +59,6 @@ class AccountService(
                 includeInTotal = req.includeInTotal
             )
         )
-    }
-
-    /**
-     * Refuses a *new* account past the free plan's cap.
-     *
-     * Only creation is capped. An account that already exists keeps working however many
-     * there are - a limit introduced after the fact must not break an account somebody
-     * already has, and un-archiving one is not a purchase either.
-     */
-    fun requireAccountSlot(user: User) {
-        if (user.isPremium()) return
-        val inPlay = accountRepo.countByUserAndArchivedFalse(user)
-        if (inPlay >= PlanLimits.FREE_ACCOUNTS) {
-            throw PlanLimitException(
-                "The free plan covers ${PlanLimits.FREE_ACCOUNTS} accounts. " +
-                    "Subscribe to add more, or archive one you no longer use."
-            )
-        }
     }
 
     fun update(id: Long, req: UpdateAccountRequest): Account {
