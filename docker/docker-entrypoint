@@ -1,0 +1,9 @@
+#!/bin/sh
+# Docker creates a missing bind-mount source (./data) as root, but the app never runs as
+# root. Start as root only long enough to hand /data to the app user, then drop privileges.
+set -e
+if [ "$(id -u)" = 0 ]; then
+  chown -R personalmoney:personalmoney /data || true
+  exec setpriv --reuid=personalmoney --regid=personalmoney --init-groups "$@"
+fi
+exec "$@"

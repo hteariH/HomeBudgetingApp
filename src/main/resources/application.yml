@@ -73,6 +73,11 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    mail:
+      # Mail is optional: with MAIL_HOST empty a blank-host sender still exists and would
+      # report DOWN, marking a perfectly good no-mail install unhealthy.
+      enabled: false
 
 logging:
   level:

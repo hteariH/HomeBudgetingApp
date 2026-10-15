@@ -4,6 +4,8 @@
 #   docker compose up -d
 #   open http://<this machine>:8080 and create the administrator account
 #
+# ./data is created on first start and owned by the app's user.
+#
 # Put it behind your own reverse proxy (Caddy, Traefik, Nginx Proxy Manager, Tailscale)
 # for HTTPS; see the README.
 services:

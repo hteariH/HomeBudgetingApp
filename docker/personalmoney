@@ -6,7 +6,14 @@ usage() { echo "usage: personalmoney reset-password <email>" >&2; exit 2; }
 case "$1" in
   reset-password)
     [ -n "$2" ] || usage
-    exec java -jar /app/app.jar \
+    # `docker compose exec` runs as root; never let that create root-owned files in /data.
+    if [ "$(id -u)" = 0 ]; then
+      run_as="setpriv --reuid=personalmoney --regid=personalmoney --init-groups"
+    else
+      run_as=
+    fi
+    # shellcheck disable=SC2086 -- run_as is a fixed word list, empty when already unprivileged
+    exec $run_as java -jar /app/app.jar \
       --spring.main.web-application-type=none \
       --spring.main.banner-mode=off \
       --logging.level.root=WARN \
