@@ -1,0 +1,9 @@
+target
+client
+site
+src/main/frontend/node_modules
+src/main/frontend/build
+web-dist
+data
+postgres
+.git

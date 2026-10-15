@@ -61,3 +61,6 @@ Thumbs.db
 # because older builds unpacked bundles into this directory, and a stale copy left in a
 # working tree must not be committed.
 /src/main/resources/static/
+
+# Self-hosted compose state (docker-compose.yml bind mounts).
+/postgres/

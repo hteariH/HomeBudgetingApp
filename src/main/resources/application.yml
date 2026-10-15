@@ -64,6 +64,16 @@ app:
       # open for 24 hours; a dialog nobody is looking at any more should not.
       consent-timeout: ${MONOBANK_CONSENT_TIMEOUT:10m}
 
+# The container's HEALTHCHECK reads /actuator/health; nothing else is exposed.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
 logging:
   level:
     com.homebudget: DEBUG
