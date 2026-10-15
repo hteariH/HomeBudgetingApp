@@ -12,7 +12,7 @@ import javax.crypto.SecretKey
 
 @Component
 class JwtUtils(
-    @Value("\${app.jwt.secret:defaultSecretKeyWithAtLeast32CharactersLongForHS256}")
+    @Value("\${app.jwt.secret}")
     private val jwtSecret: String,
     @Value("\${app.jwt.expirationMs:86400000}")
     private val jwtExpirationMs: Int

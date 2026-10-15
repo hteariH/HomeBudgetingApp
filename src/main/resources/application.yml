@@ -31,6 +31,8 @@ springdoc:
     enabled: false
 
 app:
+  # Where state lives. Generated secrets are kept in <data-dir>/secrets.
+  data-dir: ${DATA_DIR:/data}
   # open | closed. Unset: open while the instance has no users, closed afterwards.
   # An administrator can flip it at runtime unless this is set.
   instance:

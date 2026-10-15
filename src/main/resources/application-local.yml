@@ -44,6 +44,7 @@ spring:
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:8085}
+  data-dir: ./data
   # Not a secret worth protecting - it is a throwaway local database - but SecretCrypto
   # needs *a* key, and without one every third-party credential (a Monobank token, a
   # HomeMoney authorisation) fails to store with a 500.

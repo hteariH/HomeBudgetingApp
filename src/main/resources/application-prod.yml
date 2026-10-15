@@ -31,9 +31,11 @@ app:
     from: ${MAIL_FROM:noreply@localhost}
   crypto:
     # Encrypts stored Monobank tokens. Rotating it makes existing links unreadable.
-    secret: ${APP_CRYPTO_SECRET:}
+    # Unset: generated into <data-dir>/secrets on first boot.
+    secret: ${CRYPTO_SECRET:}
   jwt:
-    secret: ${JWT_SECRET}
+    # Unset: generated into <data-dir>/secrets on first boot.
+    secret: ${JWT_SECRET:}
     # Key must match the @Value in JwtUtils - the old `expiration` was silently ignored.
     # Stays at 24h until /api/auth/refresh exists; shortening it before then would just
     # log the web client out once a day with no way to renew.

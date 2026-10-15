@@ -21,6 +21,9 @@ app:
   jwt:
     secret: test-secret-key-with-at-least-32-characters-for-hs256
     expirationMs: 86400000
+  # Set so the suite never generates a secrets file into the data dir.
+  crypto:
+    secret: test-storage-key-with-at-least-32-characters
 
 logging:
   level:
