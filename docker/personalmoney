@@ -1,0 +1,16 @@
+#!/bin/sh
+# Administrative commands inside the container:
+#   docker compose exec app personalmoney reset-password <email>
+set -e
+usage() { echo "usage: personalmoney reset-password <email>" >&2; exit 2; }
+case "$1" in
+  reset-password)
+    [ -n "$2" ] || usage
+    exec java -jar /app/app.jar \
+      --spring.main.web-application-type=none \
+      --spring.main.banner-mode=off \
+      --logging.level.root=WARN \
+      --reset-password="$2"
+    ;;
+  *) usage ;;
+esac

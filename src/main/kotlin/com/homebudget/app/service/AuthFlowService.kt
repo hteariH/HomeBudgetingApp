@@ -1,5 +1,6 @@
 package com.homebudget.app.service
 
+import com.homebudget.app.admin.ResetLinkResponse
 import com.homebudget.app.domain.AuthToken
 import com.homebudget.app.domain.AuthTokenPurpose
 import com.homebudget.app.domain.User
@@ -38,6 +39,7 @@ class AuthFlowService(
         val VERIFICATION_TTL: Duration = Duration.ofHours(24)
         // Short on purpose: this link is a full account takeover while it lives.
         val RESET_TTL: Duration = Duration.ofHours(1)
+        val ADMIN_RESET_TTL: Duration = Duration.ofHours(24)
         const val MIN_PASSWORD_LENGTH = 10
     }
 
@@ -75,6 +77,22 @@ class AuthFlowService(
         }
         val raw = issue(user, AuthTokenPurpose.PASSWORD_RESET, RESET_TTL)
         mailService.sendPasswordReset(user.email, raw)
+    }
+
+    /**
+     * A reset link handed to an administrator instead of mailed.
+     *
+     * Many self-hosted instances have no mail at all, so the person who runs the instance
+     * passes the link on themselves. Same token, same single use; a longer life because a
+     * human carries it across.
+     */
+    @Transactional
+    fun issueAdminResetLink(user: User): ResetLinkResponse {
+        val raw = issue(user, AuthTokenPurpose.PASSWORD_RESET, ADMIN_RESET_TTL)
+        return ResetLinkResponse(
+            path = "/reset-password?token=$raw",
+            expiresAt = Instant.now(clock).plus(ADMIN_RESET_TTL)
+        )
     }
 
     @Transactional
