@@ -43,4 +43,33 @@ class AccountSwitchTest {
 
         assertEquals(0, wiper.wipes)
     }
+
+    @Test
+    fun `an explicit sign-out leaves nothing to switch away from`() = runTest {
+        val store = FakeTokenStore(signedIn = true).apply { lastAccount = "https://old.example.com/|me@example.com" }
+        val wiper = RecordingWiper()
+        val auth = authRepositoryOver(engine(), store, wiper)
+
+        auth.logout()
+
+        assertEquals(1, wiper.wipes)
+        assertFalse(auth.wouldSwitchAccount("https://new.example.com/", "other@example.com"))
+    }
+
+    @Test
+    fun `a rejected sign-in neither wipes the phone nor forgets the last account`() = runTest {
+        val last = "https://old.example.com/|me@example.com"
+        val store = FakeTokenStore(signedIn = false).apply { lastAccount = last }
+        val wiper = RecordingWiper()
+        val rejecting = MockEngine {
+            respond("{}", HttpStatusCode.Unauthorized, headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
+        }
+        val auth = authRepositoryOver(rejecting, store, wiper)
+
+        val result = auth.login("https://new.example.com/", "me@example.com", "wrong-password")
+
+        assertTrue(result is AuthResult.Failure)
+        assertEquals(0, wiper.wipes)
+        assertEquals(last, store.lastAccount)
+    }
 }

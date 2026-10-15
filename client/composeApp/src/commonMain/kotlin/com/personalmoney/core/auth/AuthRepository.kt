@@ -132,6 +132,10 @@ class AuthRepository constructor(
      */
     private suspend fun endSession() {
         localData.wipe()
+        // The phone now holds nothing, so there is no ledger left to protect from the next
+        // sign-in. Only here: when a session ends by itself the tokens go but the data stays,
+        // and that case relies on lastAccount surviving clear().
+        tokenStore.lastAccount = null
         tokenStore.clear()
         api.forgetSession()
     }
