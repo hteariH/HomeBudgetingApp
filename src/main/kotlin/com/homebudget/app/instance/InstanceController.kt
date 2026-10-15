@@ -1,5 +1,6 @@
 package com.homebudget.app.instance
 
+import com.homebudget.app.ai.AiProviderSettings
 import com.homebudget.app.bank.BankConnectionService
 import com.homebudget.app.service.MailAvailability
 import com.homebudget.app.service.RegistrationService
@@ -16,6 +17,7 @@ class InstanceController(
     private val registration: RegistrationService,
     private val mail: MailAvailability,
     private val banks: BankConnectionService,
+    private val ai: AiProviderSettings,
     private val build: ObjectProvider<BuildProperties>,
     @Value("\${app.base-url:}") private val baseUrl: String
 ) {
@@ -35,6 +37,7 @@ class InstanceController(
         // a registered key). CSV files need nothing; the HomeMoney import needs APP_BASE_URL,
         // because HomeMoney redirects back to an absolute address on this instance.
         bankProviders = banks.availableProviders().map { it.id } + "CSV" +
-            (if (baseUrl.isNotBlank()) listOf("HOMEMONEY") else emptyList())
+            (if (baseUrl.isNotBlank()) listOf("HOMEMONEY") else emptyList()),
+        receiptScan = ai.instanceProvider() != null
     )
 }

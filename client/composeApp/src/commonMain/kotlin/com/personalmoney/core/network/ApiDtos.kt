@@ -177,7 +177,12 @@ data class SyncTransactionDto(
     val transferCounterpartAccountUuid: String? = null,
     val transferFee: String? = null,
     /** Who wrote it. Server-assigned and read-only: the push never sends it. */
-    val createdByUserId: Long? = null
+    val createdByUserId: Long? = null,
+    /**
+     * The receipt the entry was saved from. Pushed as the phone has it; the server reads a
+     * null as "leave the link alone", so there is no way - and no need - to detach one.
+     */
+    val receiptUuid: String? = null
 )
 
 @Serializable
@@ -246,4 +251,50 @@ data class InstanceDto(
     val registrationOpen: Boolean = false,
     val mailEnabled: Boolean = false,
     val bankProviders: List<String> = emptyList()
+)
+
+// ── Receipts ────────────────────────────────────────────────────────────────
+
+/** `POST /api/receipts`: the photo was taken in and is being read; poll the uuid. */
+@Serializable
+data class ReceiptAcceptedDto(val uuid: String, val status: String)
+
+@Serializable
+data class ReceiptItemDto(
+    val name: String,
+    /** Decimal string; absent when the receipt did not say. */
+    val quantity: String? = null,
+    /** Decimal string in the receipt's currency. */
+    val price: String
+)
+
+/** `GET /api/receipts/{uuid}`. [status] is `PENDING`, `READY` or `FAILED`. */
+@Serializable
+data class ReceiptDto(
+    val uuid: String,
+    val status: String,
+    val failureReason: String? = null,
+    val merchant: String? = null,
+    /** ISO date, `2026-10-14`. */
+    val date: String? = null,
+    val currency: String? = null,
+    /** Decimal string, `"249.90"`. */
+    val total: String? = null,
+    val totalMismatch: Boolean = false,
+    val suggestedCategoryId: Long? = null,
+    /** The category to offer, by uuid - this client knows categories by uuid, not server id. */
+    val suggestedCategoryUuid: String? = null,
+    val items: List<ReceiptItemDto> = emptyList()
+)
+
+/**
+ * `GET /api/household/ai-provider`: which receipt reader applies to the household, if any.
+ * [source] is `HOUSEHOLD`, `INSTANCE`, `ENVIRONMENT` or `NONE`. The key never leaves the server.
+ */
+@Serializable
+data class ProviderViewDto(
+    val source: String,
+    val type: String? = null,
+    val model: String? = null,
+    val host: String? = null
 )

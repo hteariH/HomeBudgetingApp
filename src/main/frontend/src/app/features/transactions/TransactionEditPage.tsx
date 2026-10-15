@@ -19,6 +19,7 @@ import { formatMediumDate } from '../../lib/format';
 import { money, parseAmount, toTrimmedString } from '../../lib/money';
 import { AppRoutes } from '../../lib/routes';
 import { BackButton, Page, PageLoading } from '../../shell/Page';
+import { ReceiptView } from '../receipts/ReceiptView';
 import { occurredAtFor, positiveAmount } from '../quickadd/quickadd.logic';
 
 /**
@@ -180,6 +181,7 @@ const TransactionEditPage: React.FC = () => {
                     </div>
                 </Card>
             )}
+            {tx.receiptUuid && <ReceiptView uuid={tx.receiptUuid} />}
             <ConfirmDialog
                 open={confirmDelete}
                 title={t('action_delete')}

@@ -37,6 +37,7 @@ import com.personalmoney.core.database.Transactor
 import com.personalmoney.core.database.seed.DatabaseSeeder
 import com.personalmoney.core.household.HouseholdMembers
 import com.personalmoney.core.network.HomeBudgetApi
+import com.personalmoney.core.receipt.ReceiptScanner
 import com.personalmoney.core.network.createBackendClient
 import com.personalmoney.core.network.createJson
 import com.personalmoney.core.network.createPlainClient
@@ -107,6 +108,7 @@ val networkModule = module {
         HomeBudgetApi(createBackendClient(get(), get(), { tokens.serverUrl }, tokens))
     }
     single { FrankfurterApi(createPlainClient(get(), get(), frankfurterBaseUrl)) }
+    single { ReceiptScanner(get()) }
 }
 
 val dataModule = module {

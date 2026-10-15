@@ -56,6 +56,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val deletion by viewModel.deletion.collectAsStateWithLifecycle()
+    val receiptSetupNeeded by viewModel.receiptSetupNeeded.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val openUrl = rememberUrlOpener()
@@ -133,6 +134,13 @@ fun SettingsScreen(
             BiometricLockSection(viewModel, state.biometricLockEnabled)
 
             BackupSection(snackbar)
+
+            if (receiptSetupNeeded) {
+                SettingsItem(
+                    title = stringResource(Res.string.quickadd_scan_receipt),
+                    subtitle = stringResource(Res.string.receipt_setup_on_web),
+                )
+            }
 
             SettingsItem(
                 title = stringResource(Res.string.settings_privacy_policy),
@@ -282,12 +290,13 @@ internal fun ToggleRow(
 internal fun SettingsItem(
     title: String,
     subtitle: String? = null,
-    onClick: () -> Unit
+    /** Null for an item that only informs. */
+    onClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium)

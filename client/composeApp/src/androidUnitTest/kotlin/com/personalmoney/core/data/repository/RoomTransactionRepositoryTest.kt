@@ -47,4 +47,20 @@ class RoomTransactionRepositoryTest {
 
         assertEquals(7L, repo.findById(4)?.createdByUserId)
     }
+
+    @Test
+    fun `an edit keeps the receipt the entry was scanned from`() = runTest {
+        coEvery { delegate.findById(4) } returns stored.copy(receiptUuid = "r-1")
+
+        repo.update(edited(author = null))
+
+        coVerify { delegate.update(match { it.receiptUuid == "r-1" && it.amountMinor == -900L }) }
+    }
+
+    @Test
+    fun `the receipt reaches the model`() = runTest {
+        coEvery { delegate.findById(4) } returns stored.copy(receiptUuid = "r-1")
+
+        assertEquals("r-1", repo.findById(4)?.receiptUuid)
+    }
 }

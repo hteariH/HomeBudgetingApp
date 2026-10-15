@@ -5,6 +5,7 @@ import com.homebudget.app.domain.HouseholdRole
 import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.User
 import com.homebudget.app.household.requireOwner
+import com.homebudget.app.receipt.ReceiptImages
 import com.homebudget.app.repository.HouseholdMemberRepository
 import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.UserRepository
@@ -22,7 +23,8 @@ class UserService(
     private val users: UserRepository,
     private val currencyService: CurrencyService,
     private val securityUtils: SecurityUtils,
-    private val em: EntityManager
+    private val em: EntityManager,
+    private val receiptImages: ReceiptImages
 ) {
     fun getCurrentUser(): User = securityUtils.getCurrentUser()
 
@@ -83,9 +85,15 @@ class UserService(
     }
 
     private fun deleteHousehold(householdId: Long) {
+        // Receipt photos are files, which no cascade reaches. Their own paths, not the
+        // household's directory: a receipt merged in from another household keeps its old path.
+        @Suppress("UNCHECKED_CAST")
+        val photos = em.createNativeQuery("SELECT image_path FROM receipts WHERE household_id = :id")
+            .setParameter("id", householdId).resultList as List<String>
         listOf(
             "DELETE FROM category_mcc_codes WHERE category_id IN (SELECT id FROM categories WHERE household_id = :id)",
             "DELETE FROM transactions WHERE household_id = :id",
+            "DELETE FROM receipts WHERE household_id = :id",
             "DELETE FROM subscriptions WHERE household_id = :id",
             // categories.parent_id points at categories; break the links before deleting.
             "UPDATE categories SET parent_id = NULL WHERE household_id = :id",
@@ -97,5 +105,6 @@ class UserService(
             "DELETE FROM household_members WHERE household_id = :id",
             "DELETE FROM households WHERE id = :id"
         ).forEach { em.createNativeQuery(it).setParameter("id", householdId).executeUpdate() }
+        photos.forEach(receiptImages::deleteAfterCommit)
     }
 }

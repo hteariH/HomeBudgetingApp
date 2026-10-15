@@ -1,5 +1,6 @@
 package com.personalmoney.feature.transactions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +27,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -78,6 +82,7 @@ fun TransactionEditScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var showNoteInput by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showReceipt by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.note) {
         if (state.note.isNotBlank()) showNoteInput = true
@@ -247,6 +252,20 @@ fun TransactionEditScreen(
                         .padding(horizontal = 16.dp),
                     singleLine = true
                 )
+            }
+
+            // The receipt the entry was scanned from. Opening it needs the server - the phone
+            // keeps only the uuid.
+            state.original?.receiptUuid?.let { receiptUuid ->
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.receipt_title)) },
+                    leadingContent = { Icon(Icons.Filled.Receipt, contentDescription = null) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier.clickable { showReceipt = true },
+                )
+                if (showReceipt) {
+                    ReceiptDialog(receiptUuid = receiptUuid, onDismiss = { showReceipt = false })
+                }
             }
 
             // One save button for both cases now. A transfer row has always been

@@ -15,6 +15,11 @@ import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.core.receipt.ReceiptDraft
+import com.personalmoney.core.receipt.ReceiptScanner
+import com.personalmoney.core.receipt.ScanOutcome
+import com.personalmoney.core.receipt.receiptScanAvailable
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -50,8 +55,43 @@ data class QuickAddUiState(
     val error: String? = null
 ) {
     val currencyCode: String? get() = selectedAccount?.currencyCode
-    val canSave: Boolean get() = isAmountValid && selectedAccount != null && selectedCategory != null && !saving
+    val canSave: Boolean
+        get() = isAmountValid && selectedAccount != null && selectedCategory != null && !saving && !saved
 }
+
+/** Something a scan has to tell the user, once. */
+/** A receipt in [receipt] currency, read into a form on an account in [account] currency. */
+data class CurrencyDiffers(val receipt: String, val account: String)
+
+sealed interface ScanNotice {
+    /**
+     * The form was filled. [withMerchant]: the note was too, so the screen shows it.
+     * [currencyDiffers]: the amount was left alone, because the receipt is in another
+     * currency. [totalMismatch]: the items do not add up to the total.
+     */
+    data class Filled(
+        val withMerchant: Boolean,
+        val currencyDiffers: CurrencyDiffers? = null,
+        val totalMismatch: Boolean = false,
+    ) : ScanNotice
+
+    /** [reason] is the server's own sentence, or null for "it did not work". */
+    data class Failed(val reason: String?) : ScanNotice
+
+    data object Offline : ScanNotice
+}
+
+/**
+ * Receipt scanning, kept out of [QuickAddUiState] because none of it feeds the form's own
+ * derivation - and that state is already rebuilt from a dozen flows.
+ */
+data class ReceiptScanState(
+    /** The household has a receipt reader. False until the server says so. */
+    val canScan: Boolean = false,
+    /** A photo is with the server, being read. */
+    val reading: Boolean = false,
+    val notice: ScanNotice? = null,
+)
 
 private fun currentDate(): LocalDate =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -61,7 +101,8 @@ class QuickAddViewModel constructor(
     private val accountRepository: AccountRepository,
     private val categoryRepository: CategoryRepository,
     private val transactionRepository: TransactionRepository,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val receiptScanner: ReceiptScanner,
 ) : ViewModel() {
 
     private val initialType: TransactionType = runCatching {
@@ -80,6 +121,12 @@ class QuickAddViewModel constructor(
     private val savingFlow = MutableStateFlow(false)
     private val savedFlow = MutableStateFlow(false)
     private val errorFlow = MutableStateFlow<String?>(null)
+
+    private val _scan = MutableStateFlow(ReceiptScanState())
+    val scan: StateFlow<ReceiptScanState> = _scan.asStateFlow()
+
+    /** The receipt the form was last filled from; saved with the entry. */
+    private var receiptUuid: String? = null
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val categoriesFlow = typeFlow.flatMapLatest { type ->
@@ -138,6 +185,18 @@ class QuickAddViewModel constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), QuickAddUiState(type = initialType))
 
     init {
+        // Asked each time the screen opens: an owner can set a provider up on the web at
+        // any moment. Anything short of a clear yes keeps the button hidden.
+        if (receiptScanAvailable) viewModelScope.launch {
+            val canScan = try {
+                receiptScanner.canScan()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                false
+            }
+            _scan.update { it.copy(canScan = canScan) }
+        }
         // Resolve default account on first run.
         viewModelScope.launch {
             if (selectedAccountIdFlow.value == null) {
@@ -160,6 +219,7 @@ class QuickAddViewModel constructor(
      */
     fun setAmountText(value: String) {
         expressionFlow.value = ExpressionInput.sanitize(value)
+        formChanged()
     }
 
     /** Saves from the button, or from the keyboard's own Done action. */
@@ -167,33 +227,100 @@ class QuickAddViewModel constructor(
 
     fun selectAccount(account: Account) {
         selectedAccountIdFlow.value = account.id
+        formChanged()
     }
 
     fun selectAccountById(id: Long) {
         selectedAccountIdFlow.value = id
+        formChanged()
     }
 
     fun selectCategory(category: Category) {
         selectedCategoryIdFlow.value = category.id
+        formChanged()
     }
 
     fun setNote(value: String) {
         noteFlow.value = value
+        formChanged()
     }
 
     fun setDate(date: LocalDate) {
         dateFlow.value = date
+        formChanged()
     }
 
     fun setType(type: TransactionType) {
         typeFlow.value = type
+        formChanged()
         selectedCategoryIdFlow.value = null
     }
 
     fun clearError() { errorFlow.value = null }
 
+    /**
+     * A saved form cannot be saved again until something in it changes. That is what stops
+     * a second tap (or the keyboard's Done) while "Saved" is showing from writing the same
+     * entry twice - and, with a receipt, a second row the server refuses because the receipt
+     * is already taken, which would sit unsynced forever. The inline panel stays on screen
+     * after a save, so the next entry typed into it clears this again.
+     */
+    private fun formChanged() {
+        savedFlow.value = false
+    }
+
+    /** Sends the photo to the server to be read, and fills the form from what comes back. */
+    fun scanReceipt(jpeg: ByteArray) {
+        if (_scan.value.reading) return
+        _scan.update { it.copy(reading = true, notice = null) }
+        viewModelScope.launch {
+            val notice = when (val outcome = receiptScanner.scan(jpeg)) {
+                is ScanOutcome.Ready -> ScanNotice.Filled(
+                    withMerchant = outcome.draft.merchant != null,
+                    currencyDiffers = apply(outcome.draft),
+                    totalMismatch = outcome.draft.totalMismatch,
+                )
+                is ScanOutcome.Failed -> ScanNotice.Failed(outcome.reason)
+                ScanOutcome.Offline -> ScanNotice.Offline
+            }
+            _scan.update { it.copy(reading = false, notice = notice) }
+        }
+    }
+
+    fun clearScanNotice() {
+        _scan.update { it.copy(notice = null) }
+    }
+
+    /**
+     * Fills what the receipt says, and only that: a field it did not read keeps whatever the
+     * user had typed. Everything stays editable - the scan fills the form and stops.
+     *
+     * The total goes into the amount only when the receipt is in the selected account's
+     * currency (or does not say); otherwise the amount is left alone and the currencies are
+     * returned, for the screen to explain.
+     */
+    private suspend fun apply(draft: ReceiptDraft): CurrencyDiffers? {
+        // The same account the form shows: the chosen one, else the first.
+        val accounts = accountRepository.observeActive().first()
+        val account = accounts.firstOrNull { it.id == selectedAccountIdFlow.value } ?: accounts.firstOrNull()
+        val differs = draft.currency
+            ?.takeIf { account != null && !it.equals(account.currencyCode, ignoreCase = true) }
+            ?.let { CurrencyDiffers(receipt = it, account = account!!.currencyCode) }
+        if (differs == null) draft.total?.let(::setAmountText)
+        draft.date?.let(::setDate)
+        draft.merchant?.let(::setNote)
+        // Only a category this phone has: the server suggests from the household's list,
+        // which a device that has not synced yet may not hold.
+        draft.suggestedCategoryUuid?.let { uuid ->
+            categoriesFlow.first().firstOrNull { it.uuid == uuid }?.let(::selectCategory)
+        }
+        receiptUuid = draft.receiptUuid
+        return differs
+    }
+
     private fun save() {
-        if (savingFlow.value) return
+        // The flows, not uiState: that one is derived and can lag a tap behind.
+        if (savingFlow.value || savedFlow.value) return
         val state = uiState.value
         if (!state.canSave) return
         val account = state.selectedAccount ?: return
@@ -219,16 +346,21 @@ class QuickAddViewModel constructor(
             accountAmountMinor = amountMinor,
             fxRateToAccount = 1.0,
             occurredAt = occurredAt,
-            note = state.note.takeIf { it.isNotBlank() }
+            note = state.note.takeIf { it.isNotBlank() },
+            receiptUuid = receiptUuid,
         )
 
+        // Set before the launch, so a second tap that arrives before the coroutine starts
+        // already sees it.
+        savingFlow.value = true
         viewModelScope.launch {
-            savingFlow.value = true
             errorFlow.value = null
             runCatching {
                 transactionRepository.insert(tx)
                 userPreferences.setDefaultAccount(account.id)
             }.onSuccess {
+                // A receipt belongs to one entry. The next one starts without it.
+                if (receiptUuid == tx.receiptUuid) receiptUuid = null
                 savedFlow.value = true
             }.onFailure { e ->
                 errorFlow.value = e.message ?: "Save failed"

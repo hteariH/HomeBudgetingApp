@@ -147,20 +147,20 @@ Tests: JUnit + MockK + Turbine, with a `MainDispatcherRule` (UnconfinedTestDispa
   itself in five currencies that were never used. Both conditions matter - a zero balance
   alone would drop the history of an account merely spent down to nothing, and with it the
   far end of every transfer it took part in.
-- **Receipt scanning** (`core/ocr`, Android only - `receiptScanAvailable` gates the button
-  the way `homeMoneyImportAvailable` gates Banks): the system camera via
-  `ActivityResultContracts.TakePicture` (full resolution - the preview contract's thumbnail is
-  unreadable), then **Tesseract** on-device (`ukr+rus+eng`), then `ReceiptParser` in
-  `commonMain`. No `CAMERA` permission (ACTION_IMAGE_CAPTURE is served by the camera app) and
-  the capture is deleted from the cache once read, so nothing of it stays on the device.
-  **Tesseract and not ML Kit because Google ships no Cyrillic model for ML Kit at all** - it
-  read `СУМА` as `CYMA` and the merchant name as noise, which is the wrong engine for this
-  market. Cost: ~11 MB of `*.traineddata` in `androidMain/assets/tessdata/`, extracted to
-  `filesDir/tesseract/tessdata` on first scan (`TESSDATA_VERSION` forces a re-extract), and a
-  slower pass. The parser's primary rule stays script-independent (the largest money-shaped
-  number); total keywords are matched both as Cyrillic and as homoglyph-folded Latin, because
-  `eng` is in the language list and a misread is still possible. A scan fills the QuickAdd form
-  and never saves.
+- **Receipt scanning** (`core/receipt`, Android only - `receiptScanAvailable` gates the
+  button the way `homeMoneyImportAvailable` gates Banks): the system camera via
+  `ActivityResultContracts.TakePicture` (`rememberReceiptCamera`; full resolution - the preview
+  contract's thumbnail is unreadable), then the photo goes to the server (`POST /api/receipts`,
+  part `image`) and `ReceiptScanner` polls `GET /api/receipts/{uuid}` every 2 s for up to 6 min.
+  The server reads it with whichever model the household or the instance configured; provider
+  settings are web-only, and the button is shown only when `GET /api/household/ai-provider`
+  says the source is not `NONE` (Settings then says to set it up on the web). No `CAMERA`
+  permission (ACTION_IMAGE_CAPTURE is served by the camera app) and the capture is deleted
+  from the cache once read. A scan fills the QuickAdd form - amount, date, merchant as note,
+  the suggested category matched by uuid - and never saves; the entry keeps `receiptUuid`
+  (Room v6), which sync pushes, and the transaction editor opens the photo and items from the
+  server (online only). The server reads a null `receiptUuid` in a push as "keep the link",
+  so the phone never needs to send one to detach. On-device Tesseract was removed with this.
 - **Encoding defaults:** kotlinx.serialization omits any value equal to its declared
   default, and Jackson fills the gap with `false`/`0` on the other side. A boolean whose
   meaningful state *is* the default needs `@EncodeDefault` - see `RestPlannedAccount` and

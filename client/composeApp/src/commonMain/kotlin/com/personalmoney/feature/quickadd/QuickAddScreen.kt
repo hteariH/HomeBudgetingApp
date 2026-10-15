@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -57,9 +59,8 @@ import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.calc.Calculator
 import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.TransactionType
-import com.personalmoney.core.ocr.ScanFailure
-import com.personalmoney.core.ocr.receiptScanAvailable
-import com.personalmoney.core.ocr.rememberReceiptScanner
+import com.personalmoney.core.receipt.receiptScanAvailable
+import com.personalmoney.core.receipt.rememberReceiptCamera
 import com.personalmoney.core.ui.components.AmountField
 import com.personalmoney.core.ui.components.CategoryChip
 import com.personalmoney.core.ui.theme.PmButtonShape
@@ -83,6 +84,7 @@ fun QuickAddScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val transferState by transferViewModel.uiState.collectAsStateWithLifecycle()
+    val scan by viewModel.scan.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var mode by remember {
@@ -99,22 +101,13 @@ fun QuickAddScreen(
     var showNoteInput by remember { mutableStateOf(false) }
     var showFromPicker by remember { mutableStateOf(false) }
     var showToPicker by remember { mutableStateOf(false) }
-    var scanFailure by remember { mutableStateOf<ScanFailure?>(null) }
+    var cameraFailed by remember { mutableStateOf(false) }
 
-    // A scan fills the form and stops - it never saves. Everything it found stays editable,
-    // which is the only safe contract for a number read off a crumpled thermal print.
-    val scanReceipt = rememberReceiptScanner(
-        onScanned = { receipt ->
-            receipt.total?.let(viewModel::setAmountText)
-            receipt.date?.let(viewModel::setDate)
-            receipt.merchant?.let { merchant ->
-                viewModel.setNote(merchant)
-                // Opened rather than left folded away: a note the user cannot see is a note
-                // they cannot correct, and the shop name is the field OCR gets wrong most.
-                showNoteInput = true
-            }
-        },
-        onFailed = { scanFailure = it },
+    // The photo goes to the server, which reads it; the form is filled from what comes back.
+    // A scan fills the form and stops - it never saves, and everything it found stays editable.
+    val scanReceipt = rememberReceiptCamera(
+        onCaptured = viewModel::scanReceipt,
+        onFailed = { cameraFailed = true },
     )
 
     // Opened in transfer mode: keep the quick-add VM's type strictly EXPENSE so its category
@@ -141,17 +134,29 @@ fun QuickAddScreen(
             onSaved()
         }
     }
-    LaunchedEffect(scanFailure) {
-        val failure = scanFailure ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(
-            getString(
-                when (failure) {
-                    ScanFailure.NOTHING_FOUND -> Res.string.quickadd_scan_nothing_found
-                    ScanFailure.ENGINE_ERROR -> Res.string.quickadd_scan_failed
+    LaunchedEffect(cameraFailed) {
+        if (!cameraFailed) return@LaunchedEffect
+        snackbarHostState.showSnackbar(getString(Res.string.quickadd_scan_failed))
+        cameraFailed = false
+    }
+    LaunchedEffect(scan.notice) {
+        val notice = scan.notice ?: return@LaunchedEffect
+        viewModel.clearScanNotice()
+        when (notice) {
+            // Opened rather than left folded away: a note the user cannot see is a note they
+            // cannot correct, and the shop name is the field a model gets wrong most.
+            is ScanNotice.Filled -> {
+                if (notice.withMerchant) showNoteInput = true
+                notice.currencyDiffers?.let {
+                    snackbarHostState.showSnackbar(getString(Res.string.receipt_currency_differs, it.receipt, it.account))
                 }
+                if (notice.totalMismatch) snackbarHostState.showSnackbar(getString(Res.string.receipt_mismatch))
+            }
+            is ScanNotice.Failed -> snackbarHostState.showSnackbar(
+                notice.reason ?: getString(Res.string.quickadd_scan_failed)
             )
-        )
-        scanFailure = null
+            ScanNotice.Offline -> snackbarHostState.showSnackbar(getString(Res.string.receipt_offline))
+        }
     }
     LaunchedEffect(transferState.error) {
         transferState.error?.let { msg ->
@@ -178,8 +183,10 @@ fun QuickAddScreen(
                 actions = {
                     // No scanning in transfer mode: a receipt records a purchase, and a
                     // transfer moves money between the user's own accounts.
-                    if (receiptScanAvailable && mode != EntryMode.TRANSFER) {
-                        IconButton(onClick = scanReceipt) {
+                    if (receiptScanAvailable && scan.canScan && mode != EntryMode.TRANSFER) {
+                        // Disabled while a photo is being read, so a second one is not sent
+                        // on top of it; the progress row below says what is happening.
+                        IconButton(onClick = scanReceipt, enabled = !scan.reading) {
                             Icon(
                                 Icons.Filled.DocumentScanner,
                                 contentDescription = stringResource(Res.string.quickadd_scan_receipt)
@@ -239,6 +246,22 @@ fun QuickAddScreen(
                             )
                         )
                     }
+                }
+            }
+
+            if (scan.reading && mode != EntryMode.TRANSFER) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Text(
+                        stringResource(Res.string.receipt_reading),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
 

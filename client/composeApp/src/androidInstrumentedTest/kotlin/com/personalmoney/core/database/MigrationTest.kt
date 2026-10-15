@@ -148,6 +148,42 @@ class MigrationTest {
         db.close()
     }
 
+    @Test
+    fun migrate5To6_addsTheReceiptColumn() {
+        helper.createDatabase(dbName, 5).apply {
+            execSQL(
+                """
+                INSERT INTO accounts (id, name, currency_code, initial_balance_minor, icon, color,
+                                      archived, sort_order, include_in_total, note,
+                                      uuid, updated_at, deleted, pending_sync)
+                VALUES (1, 'Cash', 'USD', 0, 'wallet', 4280427161, 0, 0, 1, NULL,
+                        'acc-1', 0, 0, 0)
+                """.trimIndent()
+            )
+            execSQL(
+                """
+                INSERT INTO transactions (id, type, account_id, category_id, amount_minor, currency_code,
+                                          account_amount_minor, fx_rate_to_account, occurred_at, created_at,
+                                          created_by_user_id, uuid, updated_at, deleted, pending_sync)
+                VALUES (1, 'EXPENSE', 1, NULL, -500, 'USD', -500, 1.0, 1700000000000, 1700000000000,
+                        7, 'tx-1', 0, 0, 0)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(dbName, 6, true, MIGRATION_5_6)
+
+        db.query("SELECT uuid, created_by_user_id, receipt_uuid FROM transactions").use { c ->
+            assertEquals("the existing row must survive", 1, c.count)
+            c.moveToFirst()
+            assertEquals("tx-1", c.getString(0))
+            assertEquals(7L, c.getLong(1))
+            assertTrue("an existing row has no receipt", c.isNull(2))
+        }
+        db.close()
+    }
+
     private fun hasIndex(
         db: SupportSQLiteDatabase,
         name: String,

@@ -18,6 +18,8 @@ spring:
     # schema `public`, so pinning it to `PUBLIC` fails with "Schema not found".
 
 app:
+  # Receipt photos land here, never in the production default /data.
+  data-dir: ${java.io.tmpdir}/homebudget-test-data
   jwt:
     secret: test-secret-key-with-at-least-32-characters-for-hs256
     expirationMs: 86400000

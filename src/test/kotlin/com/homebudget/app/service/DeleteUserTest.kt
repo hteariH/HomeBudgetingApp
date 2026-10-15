@@ -6,6 +6,10 @@ import com.homebudget.app.dto.CreateTransactionRequest
 import com.homebudget.app.dto.SyncAccount
 import com.homebudget.app.dto.SyncPayload
 import com.homebudget.app.dto.SyncPushRequest
+import com.homebudget.app.receipt.Receipt
+import com.homebudget.app.receipt.ReceiptImages
+import com.homebudget.app.receipt.ReceiptRepository
+import com.homebudget.app.receipt.ReceiptStatus
 import com.homebudget.app.repository.AccountRepository
 import com.homebudget.app.repository.UserRepository
 import org.junit.jupiter.api.AfterEach
@@ -37,6 +41,8 @@ class DeleteUserTest {
     @Autowired private lateinit var accountRepository: AccountRepository
     @Autowired private lateinit var users: UserRepository
     @Autowired private lateinit var jdbc: JdbcTemplate
+    @Autowired private lateinit var receiptRepository: ReceiptRepository
+    @Autowired private lateinit var receiptImages: ReceiptImages
 
     @AfterEach
     fun tearDown() = SecurityContextHolder.clearContext()
@@ -89,5 +95,39 @@ class DeleteUserTest {
         assertEquals(0L, count("SELECT COUNT(*) FROM accounts WHERE household_id = ?", householdId))
         assertEquals(0L, count("SELECT COUNT(*) FROM transactions WHERE household_id = ?", householdId))
         assertEquals(0L, count("SELECT COUNT(*) FROM household_members WHERE household_id = ?", householdId))
+    }
+
+    @Test
+    fun `deleting the last member deletes the household's receipt photos`() {
+        val owner = identity.newMember("photos")
+        val png = java.io.ByteArrayOutputStream().also {
+            javax.imageio.ImageIO.write(java.awt.image.BufferedImage(20, 20, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", it)
+        }.toByteArray()
+        val receipts = (1..2).map {
+            val uuid = UUID.randomUUID().toString()
+            receiptRepository.save(
+                Receipt(uuid = uuid, household = owner.household, status = ReceiptStatus.READY,
+                    imagePath = receiptImages.store(png, owner.household.uuid, uuid))
+            )
+        }
+        // One of them saved with an entry, the other not.
+        identity.signIn(owner)
+        val accountUuid = UUID.randomUUID().toString()
+        syncService.push(SyncPushRequest(SyncPayload(accounts = listOf(SyncAccount(uuid = accountUuid, name = "Cash", currencyCode = "USD")))))
+        transactionService.create(
+            CreateTransactionRequest(
+                accountId = accountRepository.findByUuidAndHousehold(accountUuid, owner.household)!!.id,
+                amount = BigDecimal("2.00"), type = TransactionType.EXPENSE, date = LocalDate.now(),
+                receiptUuid = receipts[0].uuid
+            )
+        )
+        receipts.forEach { assertTrue(java.nio.file.Files.exists(receiptImages.resolve(it.imagePath))) }
+
+        userService.deleteUser(owner.user)
+
+        assertEquals(0L, count("SELECT COUNT(*) FROM receipts WHERE household_id = ?", owner.household.id))
+        receipts.forEach {
+            assertFalse(java.nio.file.Files.exists(receiptImages.resolve(it.imagePath)), "photo ${it.imagePath} is deleted")
+        }
     }
 }

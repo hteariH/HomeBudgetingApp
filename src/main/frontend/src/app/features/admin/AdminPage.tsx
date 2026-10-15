@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorBanner, errorText } from '../../components/ErrorBanner';
 import { Card, Switch } from '../../components/forms';
 import { Page } from '../../shell/Page';
+import { ProviderForm } from '../ai/ProviderForm';
 
 /**
  * What the person who runs this instance needs: who has an account, whether anyone else
@@ -19,6 +20,7 @@ const AdminPage: React.FC = () => {
     const t = useT();
     const users = useQuery({ queryKey: qk.adminUsers, queryFn: endpoints.adminUsers });
     const registration = useQuery({ queryKey: qk.adminRegistration, queryFn: endpoints.adminRegistration });
+    const provider = useQuery({ queryKey: qk.adminAiProvider, queryFn: endpoints.adminAiProvider });
     const [link, setLink] = useState<{ email: string; url: string } | null>(null);
     const [deleting, setDeleting] = useState<AdminUserDto | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -55,6 +57,22 @@ const AdminPage: React.FC = () => {
                         />
                         <ErrorBanner error={registration.error ?? toggle.error} />
                     </div>
+                </Card>
+
+                <Card title={t('ai_title')}>
+                    <div className="px-5 pb-4">
+                        <ErrorBanner error={provider.error} fallbackKey="common_load_failed" />
+                        {provider.data?.source === 'ENVIRONMENT' ? (
+                            <>
+                                <p className="text-sm font-medium text-ink">{t('ai_environment_set')}</p>
+                                <p className="text-xs text-ink-soft">{t('ai_environment_hint')}</p>
+                                {provider.data.host && <p className="mt-2 text-xs text-ink-soft">{t('ai_sent_to', { host: provider.data.host })}</p>}
+                            </>
+                        ) : (
+                            <p className="text-xs text-ink-soft">{t('ai_admin_hint')}</p>
+                        )}
+                    </div>
+                    {provider.data && provider.data.source !== 'ENVIRONMENT' && <ProviderForm mode="admin" view={provider.data} />}
                 </Card>
 
                 {link && (

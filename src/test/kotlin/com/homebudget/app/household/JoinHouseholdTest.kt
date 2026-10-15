@@ -8,6 +8,10 @@ import com.homebudget.app.domain.RateSource
 import com.homebudget.app.domain.SubscriptionFrequency
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.*
+import com.homebudget.app.receipt.Receipt
+import com.homebudget.app.receipt.ReceiptImages
+import com.homebudget.app.receipt.ReceiptRepository
+import com.homebudget.app.receipt.ReceiptStatus
 import com.homebudget.app.repository.*
 import com.homebudget.app.security.UserPrincipal
 import com.homebudget.app.service.SyncService
@@ -56,6 +60,8 @@ open class JoinHouseholdTest {
     @Autowired lateinit var transactionRepository: TransactionRepository
     @Autowired lateinit var exchangeRateRepository: ExchangeRateRepository
     @Autowired lateinit var jdbc: JdbcTemplate
+    @Autowired lateinit var receiptRepository: ReceiptRepository
+    @Autowired lateinit var receiptImages: ReceiptImages
 
     @AfterEach
     fun tearDown() = SecurityContextHolder.clearContext()
@@ -370,5 +376,33 @@ open class JoinHouseholdTest {
         } finally {
             pool.shutdownNow()
         }
+    }
+
+    @Test
+    fun `a sole member's receipt moves into the family with its photo and its transaction`() {
+        val anna = identity.newMember("anna")
+        val boris = identity.newMember("boris")
+        val receiptUuid = uuid()
+        val png = java.io.ByteArrayOutputStream().also {
+            javax.imageio.ImageIO.write(java.awt.image.BufferedImage(20, 20, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", it)
+        }.toByteArray()
+        val path = receiptImages.store(png, boris.household.uuid, receiptUuid)
+        receiptRepository.save(Receipt(uuid = receiptUuid, household = boris.household, status = ReceiptStatus.READY, imagePath = path))
+        val card = uuid()
+        val tx = uuid()
+        push(boris, SyncPayload(
+            accounts = listOf(SyncAccount(uuid = card, name = "Card", currencyCode = "USD")),
+            transactions = listOf(expense(tx, card, null).copy(receiptUuid = receiptUuid))
+        ))
+
+        join(boris, inviteFrom(anna))
+
+        assertEquals(anna.household.id,
+            jdbc.queryForObject("SELECT household_id FROM receipts WHERE uuid = ?", Long::class.java, receiptUuid))
+        val moved = receiptRepository.findByUuidAndHouseholdId(receiptUuid, anna.household.id)!!
+        assertEquals(path, moved.imagePath, "the photo stays where it is; the row points at it")
+        assertTrue(java.nio.file.Files.exists(receiptImages.resolve(moved.imagePath)))
+        assertEquals(moved.id,
+            jdbc.queryForObject("SELECT receipt_id FROM transactions WHERE uuid = ?", Long::class.java, tx))
     }
 }

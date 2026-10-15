@@ -84,7 +84,8 @@ class HouseholdMergeService(
         // the JVM zone's wall-clock instead, and lands hours off on a non-UTC host.
         val stamp = syncClock.next(from, to)
         mergeCategories(from, to, stamp)
-        listOf("accounts", "subscriptions", "transactions").forEach { table ->
+        // Receipts move too: deleting the emptied household would otherwise cascade them away.
+        listOf("accounts", "subscriptions", "transactions", "receipts").forEach { table ->
             exec("UPDATE $table SET household_id = :to, updated_at = :stamp WHERE household_id = :from",
                 "to" to to, "stamp" to stamp, "from" to from)
         }

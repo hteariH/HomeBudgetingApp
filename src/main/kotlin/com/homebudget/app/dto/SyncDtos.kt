@@ -117,7 +117,12 @@ data class SyncTransaction(
     val transferCounterpartAccountUuid: String? = null,
     val transferFee: BigDecimal? = null,
     /** Filled on pull; ignored on push - the server records the author itself. */
-    val createdByUserId: Long? = null
+    val createdByUserId: Long? = null,
+    /**
+     * The receipt the entry was saved from. On push, null leaves the server's link as it
+     * is, so a client that predates receipts cannot drop one by editing the entry.
+     */
+    val receiptUuid: String? = null
 ) : SyncRecord
 
 data class SyncCurrencySetting(

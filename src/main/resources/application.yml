@@ -1,6 +1,11 @@
 spring:
   application:
     name: homebudgeting
+  servlet:
+    multipart:
+      # Receipt photos. The receipt endpoint answers 413 for anything over 15 MB itself.
+      max-file-size: 15MB
+      max-request-size: 16MB
   jackson:
     default-property-inclusion: non_null
     serialization:
@@ -63,6 +68,19 @@ app:
       # How long to keep waiting for the customer to approve a request. The bank keeps it
       # open for 24 hours; a dialog nobody is looking at any more should not.
       consent-timeout: ${MONOBANK_CONSENT_TIMEOUT:10m}
+  ai:
+    # The model that reads receipts. Naming a provider here wins over the administrator's
+    # choice in the app (which then cannot change it); a household's own choice wins over both.
+    # provider: OPENAI_COMPATIBLE | ANTHROPIC | GEMINI. Empty means "not set here".
+    provider: ${AI_PROVIDER:}
+    # Only for OPENAI_COMPATIBLE (e.g. http://ollama:11434/v1); the other two have fixed addresses.
+    base-url: ${AI_BASE_URL:}
+    model: ${AI_MODEL:}
+    api-key: ${AI_API_KEY:}
+    # How long one receipt may take before it is marked failed.
+    timeout: ${AI_TIMEOUT:5m}
+    # How many receipts are read at once.
+    concurrency: ${AI_CONCURRENCY:2}
 
 # The container's HEALTHCHECK reads /actuator/health; nothing else is exposed.
 management:

@@ -81,6 +81,8 @@ export interface RestTransaction {
     subscriptionId?: number | null;
     /** The household member who recorded it; null for rows that predate shared households. */
     createdByUserId?: number | null;
+    /** The scanned receipt this entry was saved from, if any. */
+    receiptUuid?: string | null;
 }
 
 export interface RestSubscription {
@@ -169,6 +171,8 @@ export interface CreateTransactionRequest {
     /** Preferred over [date] by the server when present: the time of day, not just the day. */
     occurredAt?: string | null;
     description?: string | null;
+    /** A receipt from `POST /receipts`, kept with this entry. */
+    receiptUuid?: string | null;
 }
 
 /**
@@ -181,6 +185,8 @@ export interface UpdateTransactionRequest {
     date?: string | null;
     occurredAt?: string | null;
     description?: string | null;
+    /** Attaches a receipt; left out keeps the current one. */
+    receiptUuid?: string | null;
 }
 
 export interface CreateTransferRequest {
@@ -495,6 +501,7 @@ export interface InstanceDto {
     registrationOpen: boolean;
     mailEnabled: boolean;
     bankProviders: string[];
+    receiptScan: boolean;
 }
 
 export interface AdminUserDto {
@@ -516,4 +523,64 @@ export interface RegistrationSettingDto {
 export interface ResetLinkDto {
     path: string;
     expiresAt: string;
+}
+
+export type AiProviderType = 'OPENAI_COMPATIBLE' | 'ANTHROPIC' | 'GEMINI';
+export type AiProviderSource = 'HOUSEHOLD' | 'INSTANCE' | 'ENVIRONMENT' | 'NONE';
+
+/** Which model reads receipts, and where. The key itself never comes back. */
+export interface ProviderView {
+    source: AiProviderSource;
+    type?: AiProviderType | null;
+    baseUrl?: string | null;
+    model?: string | null;
+    hasKey: boolean;
+    /** The host photos are sent to. */
+    host?: string | null;
+}
+
+/** `apiKey` left out keeps the stored key; an empty string clears it. */
+export interface ProviderRequest {
+    type: AiProviderType;
+    baseUrl?: string;
+    model: string;
+    apiKey?: string;
+}
+
+export interface ProviderTestResult {
+    ok: boolean;
+    receipt?: unknown;
+    reason?: string;
+}
+
+// ── ReceiptDtos.kt ──────────────────────────────────────────────────────────
+
+export type ReceiptStatus = 'PENDING' | 'READY' | 'FAILED';
+
+export interface ReceiptAccepted {
+    uuid: string;
+    status: ReceiptStatus;
+}
+
+export interface ReceiptItemDto {
+    name: string;
+    /** Decimal string; absent when the receipt did not say. */
+    quantity?: string | null;
+    /** Decimal string in the receipt's currency. */
+    price: string;
+}
+
+/** What the model read from a photo. Amounts are decimal strings. */
+export interface ReceiptDto {
+    uuid: string;
+    status: ReceiptStatus;
+    failureReason?: string | null;
+    merchant?: string | null;
+    date?: string | null;
+    currency?: string | null;
+    total?: string | null;
+    totalMismatch: boolean;
+    suggestedCategoryId?: number | null;
+    suggestedCategoryUuid?: string | null;
+    items: ReceiptItemDto[];
 }

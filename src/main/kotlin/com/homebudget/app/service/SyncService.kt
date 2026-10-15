@@ -3,6 +3,7 @@ package com.homebudget.app.service
 import com.homebudget.app.domain.*
 import com.homebudget.app.dto.*
 import com.homebudget.app.household.HouseholdChangedException
+import com.homebudget.app.receipt.ReceiptService
 import com.homebudget.app.repository.*
 import com.homebudget.app.security.SecurityUtils
 import org.slf4j.LoggerFactory
@@ -42,7 +43,8 @@ class SyncService(
     private val householdRepo: HouseholdRepository,
     private val memberRepo: HouseholdMemberRepository,
     private val securityUtils: SecurityUtils,
-    private val syncClock: SyncClock
+    private val syncClock: SyncClock,
+    private val receiptService: ReceiptService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -333,6 +335,10 @@ class SyncService(
         return applied
     }
 
+    /**
+     * Writes pushed transactions. A null `receiptUuid` keeps whatever receipt the server
+     * has linked - deliberately, so a client that predates receipts cannot unlink one.
+     */
     private fun applyTransactions(
         household: Household,
         actor: User,
@@ -370,6 +376,16 @@ class SyncService(
                     "unknown counterpart account ${record.transferCounterpartAccountUuid}")
                 continue
             }
+            // A receipt to attach must be the household's and not another entry's. One that is
+            // not is dropped rather than the entry: the entry is the record, the photo a bonus.
+            // A null uuid leaves the link alone; a tombstone takes its receipt with it below.
+            val receiptUuid = record.receiptUuid.takeUnless { record.deleted }
+            val receipt = receiptUuid?.let { receiptService.lookUp(it, household.id) }?.takeUnless {
+                receiptService.isLinkedElsewhere(it, record.uuid)
+            }
+            if (receiptUuid != null && receipt == null) {
+                log.info("Sync push for household {}: a transaction names a receipt it cannot have; saving it without", household.id)
+            }
 
             val decimals = account.currency.decimals
             // The author is whoever first pushed the row; later edits do not rewrite it.
@@ -399,7 +415,10 @@ class SyncService(
             entity.transferFeeMinor = record.transferFee?.let { MinorUnits.toMinor(it, decimals) }
             entity.deleted = record.deleted
             entity.updatedAt = now
+            val discardedReceipt = if (record.deleted) entity.receipt else null
+            if (record.deleted) entity.receipt = null else if (receipt != null) entity.receipt = receipt
             transactionRepo.save(entity)
+            discardedReceipt?.let(receiptService::deleteWithPhoto)
             applied++
         }
         return applied
@@ -489,6 +508,7 @@ class SyncService(
         transferGroupId = transferGroupId,
         transferCounterpartAccountUuid = transferCounterpartAccountId?.let { accountUuids[it] },
         transferFee = transferFeeMinor?.let { MinorUnits.toDecimal(it, account.currency.decimals) },
-        createdByUserId = createdBy?.id
+        createdByUserId = createdBy?.id,
+        receiptUuid = receipt?.uuid
     )
 }

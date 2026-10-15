@@ -8,6 +8,9 @@ import com.personalmoney.core.data.ThemeMode
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.data.CurrencyRepository
 import com.personalmoney.core.domain.model.Currency
+import com.personalmoney.core.receipt.ReceiptScanner
+import com.personalmoney.core.receipt.ScanAvailability
+import com.personalmoney.core.receipt.receiptScanAvailable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +40,23 @@ class SettingsViewModel(
     private val preferences: UserPreferences,
     private val auth: AuthRepository,
     currencyRepository: CurrencyRepository,
+    receiptScanner: ReceiptScanner,
 ) : ViewModel() {
+
+    private val _receiptSetupNeeded = MutableStateFlow(false)
+
+    /**
+     * The household has no receipt reader, so quick add hides its scan button. Provider
+     * settings are web-only; this is where the phone says so. Only on a clear "none" from
+     * the server - not when the server could not be asked.
+     */
+    val receiptSetupNeeded: StateFlow<Boolean> = _receiptSetupNeeded.asStateFlow()
+
+    init {
+        if (receiptScanAvailable) viewModelScope.launch {
+            _receiptSetupNeeded.value = receiptScanner.availability() == ScanAvailability.NOT_SET_UP
+        }
+    }
 
     private val _deletion = MutableStateFlow(AccountDeletionState())
 

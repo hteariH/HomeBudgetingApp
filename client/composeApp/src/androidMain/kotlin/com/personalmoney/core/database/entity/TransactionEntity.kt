@@ -59,6 +59,9 @@ data class TransactionEntity(
     // The household member who wrote the row. Assigned by the server and only ever read
     // from a pull; null for a row it has not attributed (including every row from before v5).
     @ColumnInfo(name = "created_by_user_id") val createdByUserId: Long? = null,
+    // The server-side receipt this entry was saved from (v6). The photo and the items live
+    // on the server; the row keeps only the uuid, and sync pushes it.
+    @ColumnInfo(name = "receipt_uuid") val receiptUuid: String? = null,
     // ── Sync metadata ───────────────────────────────────────────────────────
     // uuid is the identity the server keys on; it is minted here so a row created
     // offline can be referenced before the server has ever seen it.

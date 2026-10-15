@@ -70,12 +70,31 @@ repository's `.env.example`) lists every setting. Only `DB_PASSWORD` is required
 | `MONOBANK_PRIVATE_KEY` | unset | The matching private key for the corporate API. |
 | `HOMEMONEY_CLIENT_ID` | HomeMoney's public demo client | Your own HomeMoney API client id, if you registered one. |
 | `HOMEMONEY_CLIENT_SECRET` | HomeMoney's public demo client | The matching client secret. |
+| `AI_PROVIDER` | unset | Model that reads receipts: `OPENAI_COMPATIBLE`, `ANTHROPIC` or `GEMINI`. When set it wins over the administrator's choice in the app; see [Receipt scanning](#receipt-scanning). |
+| `AI_BASE_URL` | unset | `OPENAI_COMPATIBLE` only: the API address, for example `http://ollama:11434/v1`. Anthropic and Gemini use their own fixed addresses. |
+| `AI_MODEL` | unset | The model's name, for example `gpt-4o`. It must be able to read images. |
+| `AI_API_KEY` | unset | The provider's API key. Empty is fine for a local model. Stored and shown nowhere. |
+| `AI_TIMEOUT` | `5m` | How long one receipt may take before it is marked failed. |
+| `AI_CONCURRENCY` | `2` | How many receipts are read at the same time. |
 | `SERVER_FORWARD_HEADERS_STRATEGY` | unset | Set to `native` behind a reverse proxy; see [HTTPS](#https). |
 
 `JWT_SECRET` and `CRYPTO_SECRET` are generated into `/data/secrets` (`./data/secrets` on the
 host) the first time the server starts and reused afterwards; a value set in `.env` always
 wins. The container's entrypoint hands `./data` to the application's user on every start. Back
 that directory up: without `CRYPTO_SECRET` the stored bank connections cannot be decrypted.
+
+## Receipt scanning
+
+Receipt scanning is optional and off until a model is configured. Photos of receipts are sent
+to the model you pick, so choose a local one (Ollama, LM Studio, vLLM through an
+OpenAI-compatible address) if that matters to you.
+
+The model is chosen in this order: the household owner's own choice, then the `AI_*`
+variables above, then the administrator's choice on the admin page in the app, then none.
+When `AI_PROVIDER` is set the administrator's page shows it but cannot change it. Household
+owners can pick OpenAI or OpenRouter with their own key; any other address, such as a local
+model, is set by the administrator or the environment. API keys are encrypted with
+`CRYPTO_SECRET` and never shown again after they are saved.
 
 ## HTTPS
 
@@ -99,6 +118,14 @@ A minimal Caddy example:
 money.example.com {
 	reverse_proxy <machine>:8080
 }
+```
+
+The proxy must accept request bodies of at least 16 MB, or receipt photos are refused before
+they reach the server. Caddy and Traefik have no limit by default; Nginx (and Nginx Proxy
+Manager) allows only 1 MB unless told otherwise:
+
+```
+client_max_body_size 16m;
 ```
 
 ## Updating

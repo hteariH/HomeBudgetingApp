@@ -55,8 +55,15 @@
     <string name="quickadd_invalid_amount">Введите сумму</string>
     <string name="quickadd_calc_error">Неверное выражение</string>
     <string name="quickadd_scan_receipt">Сканировать чек</string>
-    <string name="quickadd_scan_nothing_found">На фото нечего распознать</string>
     <string name="quickadd_scan_failed">Не удалось отсканировать чек</string>
+    <string name="receipt_reading">Читаем чек…</string>
+    <string name="receipt_offline">Для сканирования нужно подключение к вашему серверу</string>
+    <string name="receipt_title">Чек</string>
+    <string name="receipt_currency_differs">Чек в валюте %1$s, а счёт в %2$s. Введите сумму сами.</string>
+    <string name="receipt_mismatch">Позиции не сходятся с итогом — проверьте сумму</string>
+    <string name="receipt_items">Позиции</string>
+    <string name="receipt_setup_on_web">Настройте распознавание чеков в веб-приложении</string>
+    <string name="receipt_unavailable">Не удалось загрузить чек. Нужно подключение к вашему серверу.</string>
 
     <string name="accounts_title">Счета</string>
     <string name="account_picker_title">Выберите счёт</string>

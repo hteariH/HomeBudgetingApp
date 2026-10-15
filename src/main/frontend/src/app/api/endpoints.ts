@@ -1,4 +1,4 @@
-import { api } from './http';
+import { api, apiBlob } from './http';
 import type * as T from './types';
 
 /**
@@ -113,6 +113,17 @@ export const endpoints = {
         api<T.RestHomeMoneyStatus>('/import/homemoney/apply', { method: 'POST', json: body }),
     homeMoneyStatus: () => api<T.RestHomeMoneyStatus>('/import/homemoney/status'),
 
+    // ── receipts ────────────────────────────────────────────────────────────
+    uploadReceipt: (file: Blob, filename = 'receipt.jpg') => {
+        const form = new FormData();
+        // The browser writes the multipart boundary itself; a filename is what makes Spring
+        // treat the part as an uploaded file.
+        form.append('image', file, file instanceof File ? file.name : filename);
+        return api<T.ReceiptAccepted>('/receipts', { method: 'POST', form });
+    },
+    receipt: (uuid: string) => api<T.ReceiptDto>(`/receipts/${uuid}`),
+    receiptImage: (uuid: string) => apiBlob(`/receipts/${uuid}/image`),
+
     // ── fx ──────────────────────────────────────────────────────────────────
     fxRates: () => api<T.RestFxRate[]>('/fx/rates'),
     setFxOverride: (code: string, perUsd: string) =>
@@ -136,9 +147,21 @@ export const endpoints = {
     adminResetLink: (userId: number) => api<T.ResetLinkDto>(`/admin/users/${userId}/reset-link`, { method: 'POST' }),
     adminDeleteUser: (userId: number) => api<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
 
+    adminAiProvider: () => api<T.ProviderView>('/admin/ai-provider'),
+    setAdminAiProvider: (body: T.ProviderRequest) => api<T.ProviderView>('/admin/ai-provider', { method: 'PUT', json: body }),
+    deleteAdminAiProvider: () => api<void>('/admin/ai-provider', { method: 'DELETE' }),
+    /** With a body, tries the unsaved settings; without, the saved ones. */
+    testAdminAiProvider: (body?: T.ProviderRequest) =>
+        api<T.ProviderTestResult>('/admin/ai-provider/test', { method: 'POST', json: body }),
+
     // ── households ──────────────────────────────────────────────────────────
     household: () => api<T.HouseholdDto>('/household'),
     renameHousehold: (name: string) => api<T.HouseholdDto>('/household', { method: 'PUT', json: { name } }),
+    householdAiProvider: () => api<T.ProviderView>('/household/ai-provider'),
+    setHouseholdAiProvider: (body: T.ProviderRequest) => api<T.ProviderView>('/household/ai-provider', { method: 'PUT', json: body }),
+    deleteHouseholdAiProvider: () => api<void>('/household/ai-provider', { method: 'DELETE' }),
+    testHouseholdAiProvider: (body?: T.ProviderRequest) =>
+        api<T.ProviderTestResult>('/household/ai-provider/test', { method: 'POST', json: body }),
     invites: () => api<T.InviteDto[]>('/household/invites'),
     createInvite: (origin: string) =>
         api<T.CreatedInviteDto>('/household/invites', { method: 'POST', json: { origin } }),

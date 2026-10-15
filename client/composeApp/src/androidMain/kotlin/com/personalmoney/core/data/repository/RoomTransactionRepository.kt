@@ -45,12 +45,13 @@ class RoomTransactionRepository(
         // Room writes the whole row, so createdAt has to be carried over from the stored
         // one. Rebuilding it from the model would stamp every edit as a new entry. The author
         // is kept the same way: the server owns it, and an edit must not rewrite whose it is.
+        // A receipt, once attached, stays: an edit built without it must not drop the link.
         val existing = delegate.findById(transaction.id)
         delegate.update(
             transaction.toEntity(
                 createdAt = existing?.createdAt ?: Clock.System.now(),
                 createdByUserId = existing?.createdByUserId,
-            )
+            ).copy(receiptUuid = transaction.receiptUuid ?: existing?.receiptUuid)
         )
     }
 
@@ -79,6 +80,7 @@ private fun TransactionEntity.toTransaction() = Transaction(
     transferCounterpartAccountId = transferCounterpartAccountId,
     transferFeeMinor = transferFeeMinor,
     createdByUserId = createdByUserId,
+    receiptUuid = receiptUuid,
 )
 
 private fun Transaction.toEntity(createdAt: Instant, createdByUserId: Long? = this.createdByUserId) = TransactionEntity(
@@ -99,5 +101,6 @@ private fun Transaction.toEntity(createdAt: Instant, createdByUserId: Long? = th
     transferCounterpartAccountId = transferCounterpartAccountId,
     transferFeeMinor = transferFeeMinor,
     createdByUserId = createdByUserId,
+    receiptUuid = receiptUuid,
     uuid = uuid,
 )

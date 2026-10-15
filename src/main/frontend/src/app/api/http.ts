@@ -9,7 +9,7 @@ const TOKEN_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh'];
  * Statuses whose `message` the server writes for a person to read. 500 is left out on
  * purpose: its message is a raw exception, which belongs in a log, not on a screen.
  */
-const USER_FACING = new Set([400, 404, 409, 422, 502]);
+const USER_FACING = new Set([400, 404, 409, 413, 415, 422, 502]);
 
 export class ApiError extends Error {
     constructor(
@@ -108,14 +108,30 @@ function send(path: string, opts: RequestOptions): Promise<Response> {
 const mayBeExpired = (status: number, path: string) =>
     (status === 401 || status === 403) && !TOKEN_ENDPOINTS.includes(path) && session.get() !== null;
 
-/** Calls the backend. Throws [ApiError] on any non-2xx, after one refresh if the token looked stale. */
-export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+/** Sends a request, and sends it once more if a refresh renewed a token that looked stale. */
+async function sendRenewing(path: string, opts: RequestOptions): Promise<Response> {
     let res = await send(path, opts);
     if (mayBeExpired(res.status, path) && (await refreshOnce())) {
         res = await send(path, opts);
     }
+    return res;
+}
+
+/** Calls the backend. Throws [ApiError] on any non-2xx, after one refresh if the token looked stale. */
+export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+    const res = await sendRenewing(path, opts);
     if (!res.ok) throw await apiErrorFrom(res);
     if (res.status === 204) return undefined as T;
     const text = await res.text();
     return (text ? JSON.parse(text) : undefined) as T;
+}
+
+/**
+ * Fetches a file the API protects, such as a receipt photo. An <img src> cannot carry the
+ * bearer token, so the bytes come through here and the caller makes an object URL from them.
+ */
+export async function apiBlob(path: string): Promise<Blob> {
+    const res = await sendRenewing(path, {});
+    if (!res.ok) throw await apiErrorFrom(res);
+    return res.blob();
 }

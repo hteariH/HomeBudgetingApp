@@ -2,19 +2,20 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, ExternalLink } from 'lucide-react';
-import { LANGUAGES, useI18n, type Lang } from '../../../i18n';
+import { LANGUAGES, useI18n, useT, type Lang } from '../../../i18n';
 import { useTheme, type ThemeMode } from '../../../theme';
 import { endpoints } from '../../api/endpoints';
-import { useBaseCurrency, useCurrencies } from '../../api/hooks';
+import { useBaseCurrency, useCurrencies, useMe } from '../../api/hooks';
 import { queryClient, qk } from '../../api/queryClient';
 import { session } from '../../api/session';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { CurrencySelect } from '../../components/CurrencySelect';
-import { errorText } from '../../components/ErrorBanner';
+import { ErrorBanner, errorText } from '../../components/ErrorBanner';
 import { Card, Segmented } from '../../components/forms';
 import { AppRoutes } from '../../lib/routes';
 import { prefs } from '../../prefs';
 import { Page } from '../../shell/Page';
+import { ProviderForm } from '../ai/ProviderForm';
 
 /** The instance serves its own privacy page. */
 const PRIVACY_POLICY_URL = '/privacy.html';
@@ -22,6 +23,46 @@ const PRIVACY_POLICY_URL = '/privacy.html';
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="px-5 pb-2 pt-4 text-xs font-semibold uppercase tracking-wide text-brand-light">{children}</div>
 );
+
+const SOURCE_KEYS = {
+    HOUSEHOLD: 'ai_source_household',
+    INSTANCE: 'ai_source_instance',
+    ENVIRONMENT: 'ai_source_environment',
+} as const;
+
+/**
+ * Which model reads receipts and where the photos go. The household owner chooses it;
+ * everyone else just gets told.
+ */
+const ReceiptRecognitionCard: React.FC = () => {
+    const t = useT();
+    const me = useMe();
+    const provider = useQuery({ queryKey: qk.aiProvider, queryFn: endpoints.householdAiProvider });
+    const view = provider.data;
+    const isOwner = me.data?.householdRole === 'OWNER';
+
+    return (
+        <Card>
+            <SectionLabel>{t('ai_title')}</SectionLabel>
+            <div className="px-5 pb-4">
+                <ErrorBanner error={provider.error} fallbackKey="common_load_failed" />
+                {view && (
+                    <p className="text-sm text-ink-soft">
+                        {view.source === 'NONE' ? (
+                            t(isOwner ? 'ai_none_owner' : 'ai_none_member')
+                        ) : (
+                            <>
+                                {t(SOURCE_KEYS[view.source])}
+                                {view.host && <> {t('ai_sent_to', { host: view.host })}</>}
+                            </>
+                        )}
+                    </p>
+                )}
+            </div>
+            {view && isOwner && <ProviderForm mode="household" view={view} />}
+        </Card>
+    );
+};
 
 /**
  * Settings, as the Compose web client had them - base currency, theme, the privacy policy,
@@ -122,6 +163,8 @@ const SettingsPage: React.FC = () => {
                         </span>
                     </div>
                 </Card>
+
+                <ReceiptRecognitionCard />
 
                 {/* The way out of the product, at the bottom where it belongs - deliberately
                     awkward to trigger by accident, and not hidden behind a support email. */}

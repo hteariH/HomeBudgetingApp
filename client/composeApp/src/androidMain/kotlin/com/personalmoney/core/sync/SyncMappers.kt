@@ -140,7 +140,8 @@ object SyncMappers {
         subscriptionUuid = subscriptionUuid,
         transferGroupId = transferGroupId,
         transferCounterpartAccountUuid = counterpartUuid,
-        transferFee = transferFeeMinor?.let { minorToDecimalString(it, decimals) }
+        transferFee = transferFeeMinor?.let { minorToDecimalString(it, decimals) },
+        receiptUuid = receiptUuid
     )
 
     fun SyncTransactionDto.toEntity(
@@ -168,6 +169,7 @@ object SyncMappers {
         transferCounterpartAccountId = counterpartAccountId,
         transferFeeMinor = transferFee?.let { decimalStringToMinor(it, decimals) },
         createdByUserId = createdByUserId,
+        receiptUuid = receiptUuid,
         updatedAt = isoToStamp(updatedAt),
         deleted = deleted,
         pendingSync = false

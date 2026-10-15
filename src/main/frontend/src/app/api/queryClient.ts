@@ -21,6 +21,7 @@ export const qk = {
     transaction: (id: number) => ['transactions', 'one', id] as const,
     transfers: ['transfers'] as const,
     subscriptions: ['subscriptions'] as const,
+    receipt: (uuid: string) => ['receipts', uuid] as const,
     me: ['me'] as const,
     bank: ['bank'] as const,
     homeMoney: ['homemoney'] as const,
@@ -28,6 +29,8 @@ export const qk = {
     household: ['household'] as const,
     invites: ['household', 'invites'] as const,
     adminUsers: ['admin', 'users'] as const,
+    aiProvider: ['household', 'ai-provider'] as const,
+    adminAiProvider: ['admin', 'ai-provider'] as const,
     adminRegistration: ['admin', 'registration'] as const,
 };
 

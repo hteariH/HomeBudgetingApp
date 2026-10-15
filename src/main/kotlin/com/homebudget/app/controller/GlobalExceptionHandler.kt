@@ -112,6 +112,51 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 409, error = "Too Many Invitations", message = ex.message)
         )
 
+    /** The environment decides the AI provider; the admin page cannot overrule it. */
+    @ExceptionHandler(com.homebudget.app.ai.AiProviderLockedException::class)
+    fun handleAiProviderLocked(ex: com.homebudget.app.ai.AiProviderLockedException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            ErrorResponse(status = 409, error = "Set By Environment", message = ex.message)
+        )
+
+    /** Every Test slot is in use; the caller tries again shortly. */
+    @ExceptionHandler(com.homebudget.app.ai.AiBusyException::class)
+    fun handleAiBusy(ex: com.homebudget.app.ai.AiBusyException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(
+            ErrorResponse(status = 429, error = "Too Many Requests", message = ex.message)
+        )
+
+    /** No model reads receipts for this household; an owner or the administrator can set one up. */
+    @ExceptionHandler(com.homebudget.app.receipt.ReceiptScanUnavailableException::class)
+    fun handleReceiptScanUnavailable(ex: com.homebudget.app.receipt.ReceiptScanUnavailableException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            ErrorResponse(status = 409, error = "Not Set Up", message = ex.message)
+        )
+
+    /** A receipt photo over 15 MB. */
+    @ExceptionHandler(com.homebudget.app.receipt.ReceiptTooLargeException::class)
+    fun handlePhotoTooLarge(ex: com.homebudget.app.receipt.ReceiptTooLargeException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(
+            ErrorResponse(status = 413, error = "Payload Too Large", message = ex.message)
+        )
+
+    /**
+     * Any upload over the multipart limit (`spring.servlet.multipart`). Generic on purpose:
+     * the CSV import is a multipart endpoint too.
+     */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException::class)
+    fun handleUploadTooLarge(ex: org.springframework.web.multipart.MaxUploadSizeExceededException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(
+            ErrorResponse(status = 413, error = "Payload Too Large", message = "The file is too large")
+        )
+
+    /** Not a JPEG, PNG or WebP this server can read - HEIC included. */
+    @ExceptionHandler(com.homebudget.app.receipt.UnsupportedImageException::class)
+    fun handleUnsupportedImage(ex: com.homebudget.app.receipt.UnsupportedImageException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(
+            ErrorResponse(status = 415, error = "Unsupported Media Type", message = ex.message)
+        )
+
     /** The caller's membership moved after the request was authenticated; they sync again. */
     @ExceptionHandler(com.homebudget.app.household.HouseholdChangedException::class)
     fun handleHouseholdChanged(ex: com.homebudget.app.household.HouseholdChangedException): ResponseEntity<ErrorResponse> =
