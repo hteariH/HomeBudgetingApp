@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from './authApi';
 import { AlertTriangle, LogIn, Mail, Lock } from 'lucide-react';
 import { useT } from '../i18n';
 import AuthShell from './AuthShell';
 import { nextPath, saveSession } from './session';
+import { useInstance } from './instance';
 
 const Login: React.FC = () => {
     const t = useT();
@@ -14,6 +15,12 @@ const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const instance = useInstance();
+
+    // A new instance has nobody to sign in as: its first visitor creates the administrator.
+    useEffect(() => {
+        if (instance?.setupRequired) navigate('/setup' + location.search, { replace: true });
+    }, [instance, navigate, location.search]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,17 +44,21 @@ const Login: React.FC = () => {
             subtitle={t('login.subtitle')}
             footer={
                 <>
-                    <p className="text-ink-dim">
-                        {t('login.noAccount')}{' '}
-                        <Link to="/register" className="font-semibold text-brand-light transition-colors hover:text-brand">
-                            {t('login.createOne')}
-                        </Link>
-                    </p>
-                    <p className="mt-3">
-                        <Link to="/forgot-password" className="text-ink-dim transition-colors hover:text-ink-soft">
-                            {t('login.forgot')}
-                        </Link>
-                    </p>
+                    {instance?.registrationOpen && (
+                        <p className="text-ink-dim">
+                            {t('login.noAccount')}{' '}
+                            <Link to="/register" className="font-semibold text-brand-light transition-colors hover:text-brand">
+                                {t('login.createOne')}
+                            </Link>
+                        </p>
+                    )}
+                    {instance?.mailEnabled && (
+                        <p className="mt-3">
+                            <Link to="/forgot-password" className="text-ink-dim transition-colors hover:text-ink-soft">
+                                {t('login.forgot')}
+                            </Link>
+                        </p>
+                    )}
                 </>
             }
         >

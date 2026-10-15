@@ -84,6 +84,9 @@ export const en = {
     'register.failed': 'Could not create the account',
     'register.hasAccount': 'Already have an account?',
     'register.signIn': 'Sign in instead',
+    'register.closed': 'Registration on this instance is closed. Ask the person who runs it for an account.',
+    'setup.title': 'Create the administrator account',
+    'setup.subtitle': 'This instance is new. The first account manages it: who can join, and password resets.',
 
     'forgot.title': 'Reset your password',
     'forgot.subtitle': 'Enter your address and we will send a link to choose a new password.',
