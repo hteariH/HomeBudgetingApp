@@ -13,12 +13,14 @@
 
     <groupId>com.homebudget</groupId>
     <artifactId>homebudgeting</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>${revision}</version>
     <name>Home Budgeting App</name>
     <description>Personal home budgeting web application</description>
     <packaging>jar</packaging>
 
     <properties>
+        <!-- The release build passes -Drevision=X.Y.Z. -->
+        <revision>0.0.0-dev</revision>
         <!-- Matches the Kotlin plugin's -jvm-target below and the eclipse-temurin:21
              images the Dockerfile builds and runs on. It can be *built* with a newer
              JDK; this is the bytecode level that actually ships. -->
@@ -241,6 +243,13 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <excludes>
                         <exclude>

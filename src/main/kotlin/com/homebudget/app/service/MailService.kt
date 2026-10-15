@@ -35,9 +35,9 @@ interface MailService {
 class SmtpMailService(
     // Optional: with `log-only` there is no SMTP configured at all.
     private val mailSender: ObjectProvider<JavaMailSender>,
-    @Value("\${app.mail.from:noreply@personalmoney.app}") private val from: String,
+    @Value("\${app.mail.from:noreply@localhost}") private val from: String,
     @Value("\${app.mail.log-only:false}") private val logOnly: Boolean,
-    @Value("\${app.base-url:https://personalmoney.app}") private val baseUrl: String
+    @Value("\${app.base-url:}") private val baseUrl: String
 ) : MailService {
     private val log = LoggerFactory.getLogger(javaClass)
 

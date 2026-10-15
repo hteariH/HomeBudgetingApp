@@ -57,6 +57,9 @@ class SecurityConfig(
                     // signed state minted when the flow started, not by this filter -
                     // see HomeMoneyConnectionService.
                     .requestMatchers("/api/import/homemoney/callback").permitAll()
+                    // Read before anyone signs in: whether to show setup, register and
+                    // "forgot password", and whether this is a PersonalMoney server at all.
+                    .requestMatchers("/api/instance").permitAll()
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
             }

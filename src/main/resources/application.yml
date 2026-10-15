@@ -31,6 +31,10 @@ springdoc:
     enabled: false
 
 app:
+  # open | closed. Unset: open while the instance has no users, closed afterwards.
+  # An administrator can flip it at runtime unless this is set.
+  instance:
+    registration: ${REGISTRATION:}
   homemoney:
     base-url: ${HOMEMONEY_BASE_URL:https://homemoney.ua}
     # Until an application is registered with homemoney.ua, their published demo client

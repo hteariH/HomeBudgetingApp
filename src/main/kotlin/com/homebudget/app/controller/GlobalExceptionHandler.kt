@@ -48,6 +48,13 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 400, error = "Bad Request", message = ex.message)
         )
 
+    /** The instance is not taking new accounts; only its administrator can change that. */
+    @ExceptionHandler(com.homebudget.app.service.RegistrationClosedException::class)
+    fun handleRegistrationClosed(ex: com.homebudget.app.service.RegistrationClosedException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+            ErrorResponse(status = 403, error = "Registration Closed", message = ex.message)
+        )
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         val messages = ex.bindingResult.fieldErrors.joinToString("; ") {

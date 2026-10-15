@@ -297,3 +297,11 @@ CREATE INDEX idx_tx_occurred_at    ON transactions (occurred_at);
 CREATE INDEX idx_tx_transfer_group ON transactions (transfer_group_id);
 CREATE INDEX idx_tx_subscription   ON transactions (subscription_id);
 CREATE INDEX idx_tx_external       ON transactions (household_id, external_id);
+
+-- ── Instance settings ───────────────────────────────────────────────────────
+-- What an administrator changed at runtime. An environment variable for the same
+-- setting always wins; see RegistrationPolicy.
+CREATE TABLE instance_settings (
+    setting_key   VARCHAR(100) PRIMARY KEY,
+    setting_value VARCHAR(500) NOT NULL
+);

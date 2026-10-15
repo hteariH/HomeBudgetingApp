@@ -1,23 +1,19 @@
 package com.homebudget.app.controller
 
-import com.homebudget.app.domain.Role
-import com.homebudget.app.domain.User
 import com.homebudget.app.dto.*
-import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.JwtUtils
 import com.homebudget.app.security.SecurityUtils
 import com.homebudget.app.security.UserPrincipal
-import com.homebudget.app.service.CategoryService
 import com.homebudget.app.service.AuthFlowService
 import com.homebudget.app.service.HouseholdService
 import com.homebudget.app.service.RefreshTokenService
+import com.homebudget.app.service.RegistrationService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
@@ -26,12 +22,10 @@ import java.time.Instant
 class AuthController(
     private val authenticationManager: AuthenticationManager,
     private val userRepository: UserRepository,
-    private val currencyRepository: CurrencyRepository,
-    private val categoryService: CategoryService,
     private val householdService: HouseholdService,
     private val refreshTokenService: RefreshTokenService,
     private val authFlowService: AuthFlowService,
-    private val passwordEncoder: PasswordEncoder,
+    private val registrationService: RegistrationService,
     private val securityUtils: SecurityUtils,
     private val jwtUtils: JwtUtils
 ) {
@@ -122,33 +116,7 @@ class AuthController(
 
     @PostMapping("/register")
     fun registerUser(@Valid @RequestBody registerRequest: RegisterRequest): ResponseEntity<*> {
-        if (userRepository.existsByEmail(registerRequest.email)) {
-            return ResponseEntity.badRequest().body("Error: Email is already in use!")
-        }
-
-        val baseCurrency = registerRequest.baseCurrencyId?.let {
-            currencyRepository.findById(it).orElse(null)
-        } ?: currencyRepository.findByCode("USD")
-
-        // Every registration is a plain USER. The role used to be derived from the
-        // email address, which on a public site hands administrator rights to whoever
-        // types that address first - there is no proof of ownership at registration.
-        // Promotion is a deliberate act against the database.
-        val user = User(
-            email = registerRequest.email,
-            passwordHash = passwordEncoder.encode(registerRequest.password),
-            firstName = registerRequest.firstName,
-            lastName = registerRequest.lastName,
-            role = Role.USER
-        )
-
-        val savedUser = userRepository.save(user)
-        val household = householdService.createFor(savedUser, baseCurrency)
-        categoryService.seedDefaultCategories(household)
-        // Sent asynchronously; a mail failure must not fail the registration, and the
-        // user can ask for another link.
-        authFlowService.sendVerification(savedUser)
-
+        registrationService.register(registerRequest)
         return ResponseEntity.ok(mapOf("message" to "User registered successfully!"))
     }
 }

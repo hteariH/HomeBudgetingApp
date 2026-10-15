@@ -1,0 +1,15 @@
+package com.homebudget.app.instance
+
+/** What a client needs to know about an instance before anyone signs in. */
+data class InstanceInfo(
+    val name: String,
+    val version: String,
+    /** Bumped on a breaking API change; clients compare it with the range they support. */
+    val apiVersion: Int,
+    /** Nobody has an account yet: the next registration creates the administrator. */
+    val setupRequired: Boolean,
+    val registrationOpen: Boolean,
+    /** False hides "forgot password"; an administrator issues reset links instead. */
+    val mailEnabled: Boolean,
+    val bankProviders: List<String>
+)
