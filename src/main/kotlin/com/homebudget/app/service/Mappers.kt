@@ -98,6 +98,7 @@ fun Transaction.toResponse(balanceMinor: Long, baseDecimals: Int) = TransactionR
     description = description,
     transferGroupId = transferGroupId,
     subscriptionId = subscription?.id,
+    createdByUserId = createdBy?.id,
     createdAt = createdAt,
     updatedAt = updatedAt
 )

@@ -151,6 +151,8 @@ data class TransactionResponse(
     val description: String?,
     val transferGroupId: String?,
     val subscriptionId: Long?,
+    /** Null for entries no person wrote, such as subscription charges. */
+    val createdByUserId: Long?,
     val createdAt: LocalDateTime,
     val updatedAt: Instant
 )

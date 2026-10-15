@@ -99,6 +99,7 @@ class LedgerBalanceTest {
             accountId = null,
             categoryId = null,
             type = null,
+            createdBy = null,
             dateFrom = null,
             dateTo = null,
             pageable = org.springframework.data.domain.PageRequest.of(0, 10)

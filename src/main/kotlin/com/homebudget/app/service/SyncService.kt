@@ -480,6 +480,7 @@ class SyncService(
         subscriptionUuid = subscription?.uuid,
         transferGroupId = transferGroupId,
         transferCounterpartAccountUuid = transferCounterpartAccountId?.let { accountUuids[it] },
-        transferFee = transferFeeMinor?.let { MinorUnits.toDecimal(it, account.currency.decimals) }
+        transferFee = transferFeeMinor?.let { MinorUnits.toDecimal(it, account.currency.decimals) },
+        createdByUserId = createdBy?.id
     )
 }

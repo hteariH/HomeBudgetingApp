@@ -115,7 +115,9 @@ data class SyncTransaction(
     val subscriptionUuid: String? = null,
     val transferGroupId: String? = null,
     val transferCounterpartAccountUuid: String? = null,
-    val transferFee: BigDecimal? = null
+    val transferFee: BigDecimal? = null,
+    /** Filled on pull; ignored on push - the server records the author itself. */
+    val createdByUserId: Long? = null
 ) : SyncRecord
 
 data class SyncCurrencySetting(

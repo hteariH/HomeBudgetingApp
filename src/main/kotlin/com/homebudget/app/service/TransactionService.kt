@@ -28,6 +28,7 @@ class TransactionService(
         accountId: Long?,
         categoryId: Long?,
         type: TransactionType?,
+        createdBy: Long?,
         dateFrom: LocalDate?,
         dateTo: LocalDate?,
         pageable: Pageable
@@ -36,6 +37,7 @@ class TransactionService(
         accountId = accountId,
         categoryId = categoryId,
         type = type,
+        createdBy = createdBy,
         from = dateFrom?.atStartOfDay(ZoneOffset.UTC)?.toInstant(),
         // Exclusive upper bound on the day *after* dateTo, so the whole of dateTo is
         // included now that the column carries a time as well as a date.

@@ -25,6 +25,7 @@ class TransactionController(
         @RequestParam accountId: Long?,
         @RequestParam categoryId: Long?,
         @RequestParam type: TransactionType?,
+        @RequestParam createdBy: Long?,
         @RequestParam dateFrom: LocalDate?,
         @RequestParam dateTo: LocalDate?,
         @RequestParam(defaultValue = "0") page: Int,
@@ -33,7 +34,7 @@ class TransactionController(
         // Ordering is baked into the query - occurred_at carries a time now, so it
         // alone is enough to keep same-day entries stable.
         val pageable = PageRequest.of(page, size)
-        val result = service.findFiltered(accountId, categoryId, type, dateFrom, dateTo, pageable)
+        val result = service.findFiltered(accountId, categoryId, type, createdBy, dateFrom, dateTo, pageable)
         val balances = accountService.balances()
         val decimals = categoryService.baseDecimals()
         return PagedResponse(

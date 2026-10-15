@@ -300,4 +300,29 @@ class SyncServiceTest {
         assertNotNull(response.rejected.single().message)
         assertFalse(response.rejected.single().message.isBlank())
     }
+
+    @Test
+    fun `a pulled transaction names its author`() {
+        val accountUuid = uuid()
+        val txUuid = uuid()
+        syncService.push(
+            SyncPushRequest(
+                SyncPayload(
+                    accounts = listOf(SyncAccount(uuid = accountUuid, name = "Cash", currencyCode = "USD")),
+                    transactions = listOf(
+                        SyncTransaction(
+                            uuid = txUuid, accountUuid = accountUuid, amount = BigDecimal("5.00"),
+                            currencyCode = "USD", accountAmount = BigDecimal("5.00"),
+                            type = TransactionType.EXPENSE, occurredAt = Instant.parse("2026-04-01T10:00:00Z"),
+                            // A client has no say in who the author is.
+                            createdByUserId = bob.user.id
+                        )
+                    )
+                )
+            )
+        )
+
+        val pulled = syncService.pull(Instant.EPOCH, 500).changes.transactions.single()
+        assertEquals(alice.user.id, pulled.createdByUserId)
+    }
 }

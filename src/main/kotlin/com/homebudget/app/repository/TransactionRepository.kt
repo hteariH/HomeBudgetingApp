@@ -30,6 +30,7 @@ interface TransactionRepository : JpaRepository<Transaction, Long> {
           AND (:accountId IS NULL OR t.account.id = :accountId)
           AND (:categoryId IS NULL OR t.category.id = :categoryId)
           AND (:type IS NULL OR t.type = :type)
+          AND (:createdBy IS NULL OR t.createdBy.id = :createdBy)
           AND (:from IS NULL OR t.occurredAt >= :from)
           AND (:until IS NULL OR t.occurredAt < :until)
         ORDER BY t.occurredAt DESC, t.id DESC
@@ -40,6 +41,7 @@ interface TransactionRepository : JpaRepository<Transaction, Long> {
         accountId: Long?,
         categoryId: Long?,
         type: TransactionType?,
+        createdBy: Long?,
         from: Instant?,
         until: Instant?,
         pageable: Pageable
