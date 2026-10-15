@@ -31,10 +31,10 @@ data class Category(
     @Column(nullable = false)
     var type: CategoryType,
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     var icon: String = "tag",
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     var color: String = "#6366F1",
 
     @Column(length = 500)

@@ -2,7 +2,6 @@ package com.homebudget.app.controller
 
 import com.homebudget.app.dto.SyncPayload
 import com.homebudget.app.security.SecurityUtils
-import com.homebudget.app.service.RefreshTokenService
 import com.homebudget.app.service.SyncService
 import com.homebudget.app.service.UserService
 import com.homebudget.app.service.toResponse
@@ -15,7 +14,6 @@ import java.time.Instant
 class UserController(
     private val userService: UserService,
     private val syncService: SyncService,
-    private val refreshTokenService: RefreshTokenService,
     private val securityUtils: SecurityUtils
 ) {
 
@@ -39,13 +37,10 @@ class UserController(
      * Deletes the account and everything in it, irreversibly.
      *
      * A real delete rather than a tombstone: tombstones exist so other clients learn
-     * about a deletion, and there is no client left to tell.
+     * about a deletion, and there is no client left to tell. The account's refresh tokens
+     * go with it, so every session ends.
      */
     @DeleteMapping("/me")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteMyAccount() {
-        val user = userService.getCurrentUser()
-        refreshTokenService.revokeAll(user)
-        userService.deleteCurrentUser()
-    }
+    fun deleteMyAccount() = userService.deleteCurrentUser()
 }

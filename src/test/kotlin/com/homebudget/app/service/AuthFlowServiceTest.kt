@@ -2,6 +2,7 @@ package com.homebudget.app.service
 
 import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.User
+import com.homebudget.app.repository.AuthTokenRepository
 import com.homebudget.app.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -15,6 +16,10 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.TestPropertySource
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
+import java.time.Clock
 import java.util.UUID
 
 /**
@@ -27,12 +32,21 @@ import java.util.UUID
  */
 @SpringBootTest(classes = [com.homebudget.app.HomeBudgetingApplication::class, AuthFlowServiceTest.Mail::class])
 @ActiveProfiles("test")
+// An instance that can mail: "forgot password" only does anything there.
+@TestPropertySource(properties = [
+    "spring.mail.host=localhost",
+    "app.base-url=https://money.example.com",
+    "app.mail.log-only=false"
+])
 class AuthFlowServiceTest {
 
     @Autowired private lateinit var service: AuthFlowService
     @Autowired private lateinit var userRepository: UserRepository
     @Autowired private lateinit var refreshTokenService: RefreshTokenService
     @Autowired private lateinit var passwordEncoder: PasswordEncoder
+    @Autowired private lateinit var tokenRepository: AuthTokenRepository
+    @Autowired private lateinit var clock: Clock
+    @Autowired private lateinit var transactions: PlatformTransactionManager
 
     @Autowired private lateinit var mailer: RecordingMailService
 
@@ -101,6 +115,24 @@ class AuthFlowServiceTest {
     fun `requesting a reset for an unknown address is silent rather than an error`() {
         // Anything else turns the form into a test for which addresses are registered.
         service.requestPasswordReset("nobody-${UUID.randomUUID()}@example.com")
+    }
+
+    @Test
+    fun `without mail, forgot password leaves an administrator's reset link working`() {
+        // The same service on an instance with no mail: the form answers the same, but must
+        // not retire the link the administrator handed over - nothing could replace it.
+        val withoutMail = AuthFlowService(
+            userRepository, tokenRepository, refreshTokenService, mailer, passwordEncoder, clock,
+            MailAvailability(host = "", logOnly = false, baseUrl = "")
+        )
+        val user = newUser()
+        val adminLink = service.issueAdminResetLink(user).path.substringAfter("token=")
+
+        // Built by hand, so it gets the transaction the bean would have had.
+        TransactionTemplate(transactions).executeWithoutResult { withoutMail.requestPasswordReset(user.email) }
+
+        assertFalse(mailer.resets.containsKey(user.email), "nothing can be mailed")
+        assertTrue(passwordEncoder.matches("brand-new-password", service.resetPassword(adminLink, "brand-new-password").passwordHash))
     }
 
     @Test

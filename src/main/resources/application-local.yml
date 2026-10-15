@@ -27,13 +27,13 @@ spring:
     init:
       mode: never
 
-  # Off unless MAIL_PASSWORD is supplied. Set it (plus APP_MAIL_LOG_ONLY=false) to send
-  # for real from a developer machine - useful once, to prove the provider and the
-  # domain are actually set up, without deploying anything.
+  # Off unless MAIL_HOST is supplied: links are written to the log instead. Set MAIL_HOST
+  # and the credentials (plus APP_MAIL_LOG_ONLY=false) to send for real from a developer
+  # machine - useful once, to prove a provider is set up, without deploying anything.
   mail:
-    host: ${MAIL_HOST:smtp.resend.com}
+    host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:resend}
+    username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
       mail.smtp.auth: true
@@ -64,3 +64,7 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
+
+logging:
+  level:
+    com.homebudget: DEBUG

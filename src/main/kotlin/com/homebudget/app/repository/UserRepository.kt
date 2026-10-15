@@ -1,5 +1,6 @@
 package com.homebudget.app.repository
 
+import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.User
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -10,4 +11,5 @@ interface UserRepository : JpaRepository<User, Long> {
     fun findByEmail(email: String): Optional<User>
     fun existsByEmail(email: String): Boolean
     fun findAllByOrderByCreatedAtAsc(): List<User>
+    fun countByRole(role: Role): Long
 }

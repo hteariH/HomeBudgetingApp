@@ -81,4 +81,4 @@ management:
 
 logging:
   level:
-    com.homebudget: DEBUG
+    com.homebudget: INFO

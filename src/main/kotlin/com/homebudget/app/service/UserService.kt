@@ -1,9 +1,11 @@
 package com.homebudget.app.service
 
 import com.homebudget.app.domain.Household
+import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.User
 import com.homebudget.app.repository.HouseholdMemberRepository
 import com.homebudget.app.repository.HouseholdRepository
+import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.SecurityUtils
 import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Service
@@ -15,6 +17,7 @@ import java.time.Instant
 class UserService(
     private val householdRepository: HouseholdRepository,
     private val memberRepository: HouseholdMemberRepository,
+    private val users: UserRepository,
     private val currencyService: CurrencyService,
     private val securityUtils: SecurityUtils,
     private val em: EntityManager
@@ -28,7 +31,18 @@ class UserService(
         return householdRepository.save(household)
     }
 
-    fun deleteCurrentUser() = deleteUser(getCurrentUser())
+    /**
+     * Refused for the only administrator while anyone else still uses the instance: nobody
+     * would be left who can issue reset links, delete accounts or open registration.
+     */
+    fun deleteCurrentUser() {
+        val user = getCurrentUser()
+        require(user.role != Role.ADMIN || users.countByRole(Role.ADMIN) > 1 || users.count() == 1L) {
+            "You are this instance's only administrator. Delete the other accounts first, " +
+                "or leave yours in place."
+        }
+        deleteUser(user)
+    }
 
     /**
      * Erases a login. The household and its whole ledger go with it when it was the

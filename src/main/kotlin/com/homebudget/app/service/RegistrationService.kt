@@ -7,6 +7,7 @@ import com.homebudget.app.dto.RegisterRequest
 import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.InstanceSettingRepository
 import com.homebudget.app.repository.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -18,21 +19,27 @@ class RegistrationClosedException : RuntimeException(
 )
 
 /**
- * Who may register, in order of authority: the `REGISTRATION` environment variable, then
- * the administrator's toggle, then the default - open only while the instance has nobody,
- * so the person who installed it can create the first account and nobody else can.
+ * Who may register. The first account is always allowed while the instance has nobody -
+ * `closed` means "nobody after the administrator", and an instance nobody can set up is
+ * locked out for good. After that, in order of authority: the `REGISTRATION` environment
+ * variable, then the administrator's toggle, then the default (closed).
  */
 object RegistrationPolicy {
     private val EXPLICIT = setOf("open", "closed")
 
     fun isOpen(environment: String, stored: String?, userCount: Long): Boolean {
+        if (userCount == 0L) return true
         val env = environment.trim().lowercase()
         if (env in EXPLICIT) return env == "open"
         if (stored != null) return stored == "open"
-        return userCount == 0L
+        return false
     }
 
     fun lockedByEnvironment(environment: String): Boolean = environment.trim().lowercase() in EXPLICIT
+
+    /** Set, but neither `open` nor `closed`: treated as unset, and worth a warning. */
+    fun unrecognised(environment: String): Boolean =
+        environment.isNotBlank() && !lockedByEnvironment(environment)
 }
 
 @Service
@@ -49,6 +56,15 @@ class RegistrationService(
 ) {
     companion object {
         const val REGISTRATION_KEY = "registration"
+    }
+
+    init {
+        if (RegistrationPolicy.unrecognised(registrationEnv)) {
+            LoggerFactory.getLogger(javaClass).warn(
+                "REGISTRATION={} is not recognised (use open or closed); treating it as unset",
+                registrationEnv
+            )
+        }
     }
 
     fun setupRequired(): Boolean = users.count() == 0L

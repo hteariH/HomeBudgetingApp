@@ -74,10 +74,10 @@ data class Subscription(
     @Column(name = "reminder_minutes_before")
     var reminderMinutesBefore: Int? = 24 * 60,
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     var icon: String = "subscriptions",
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     var color: String = "#008080",
 
     @Column(length = 500)

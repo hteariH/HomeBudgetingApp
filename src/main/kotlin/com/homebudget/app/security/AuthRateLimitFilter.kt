@@ -21,9 +21,14 @@ import java.util.concurrent.ConcurrentHashMap
  * useful thing to point a script at on a public site. The window is deliberately
  * coarse: it exists to make bulk guessing impractical, not to be a precise quota.
  *
- * State is per-process and in memory, which is correct for the current single-container
- * deployment. Running more than one replica would need this moved to Redis, otherwise
- * the effective limit multiplies by the replica count.
+ * Counted per socket address. Behind a reverse proxy that address is the proxy's until the
+ * operator sets `server.forward-headers-strategy` (SERVER_FORWARD_HEADERS_STRATEGY=native),
+ * which makes it the real client's - forwarding headers are never read here, because
+ * whoever is guessing can put anything in them and get a fresh allowance per request.
+ *
+ * State is per-process and in memory, which is correct for the single-container
+ * deployment. Windows that have ended are swept out, at most once per window, so the map
+ * holds roughly the addresses seen in the last two windows rather than every one ever.
  */
 @Component
 class AuthRateLimitFilter(
@@ -35,8 +40,11 @@ class AuthRateLimitFilter(
 
     private val log = LoggerFactory.getLogger(javaClass)
     private val attempts = ConcurrentHashMap<String, Window>()
+    @Volatile private var lastSweep: Instant = Instant.EPOCH
 
     private data class Window(val startedAt: Instant, val count: Int)
+
+    private fun Window.endedBy(now: Instant) = startedAt.plusSeconds(windowSeconds).isBefore(now)
 
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         val path = request.servletPath ?: return true
@@ -57,9 +65,10 @@ class AuthRateLimitFilter(
     ) {
         val key = clientKey(request)
         val now = Instant.now(clock)
+        sweep(now)
 
         val window = attempts.compute(key) { _, existing ->
-            if (existing == null || existing.startedAt.plusSeconds(windowSeconds).isBefore(now)) {
+            if (existing == null || existing.endedBy(now)) {
                 Window(now, 1)
             } else {
                 existing.copy(count = existing.count + 1)
@@ -86,21 +95,17 @@ class AuthRateLimitFilter(
         filterChain.doFilter(request, response)
     }
 
-    /**
-     * Behind the reverse proxy the socket address is the proxy's, so the forwarded
-     * header is used when present. It is client-controlled and therefore spoofable -
-     * this is a speed bump against bulk guessing, not an identity check.
-     */
-    private fun clientKey(request: HttpServletRequest): String =
-        // CF-Connecting-IP first: the domain is proxied through Cloudflare, so
-        // X-Forwarded-For carries Cloudflare's edge address and every user in the world
-        // would share a single bucket - ten failed logins anywhere and nobody can sign
-        // in. Falls back to the forwarded chain, then the socket, so the filter still
-        // works if the proxy setup changes.
-        request.getHeader("CF-Connecting-IP")?.trim()?.takeIf { it.isNotBlank() }
-            ?: request.getHeader("X-Forwarded-For")?.substringBefore(',')?.trim()?.takeIf { it.isNotBlank() }
-            ?: request.remoteAddr
-            ?: "unknown"
+    private fun clientKey(request: HttpServletRequest): String = request.remoteAddr ?: "unknown"
+
+    private fun sweep(now: Instant) {
+        if (lastSweep.plusSeconds(windowSeconds).isAfter(now)) return
+        lastSweep = now
+        // Removes an entry only if it still holds the ended window it was read with.
+        attempts.values.removeIf { it.endedBy(now) }
+    }
+
+    /** How many addresses are being counted right now. */
+    internal fun trackedClients(): Int = attempts.size
 
     /** Lets a successful login clear the counter so a real user is not punished. */
     fun reset(request: HttpServletRequest) {

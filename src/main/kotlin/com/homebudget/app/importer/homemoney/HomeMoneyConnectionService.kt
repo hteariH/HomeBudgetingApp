@@ -59,7 +59,7 @@ class HomeMoneyConnectionService(
     @Value("\${app.homemoney.client-id:5}") private val clientId: String,
     @Value("\${app.homemoney.client-secret:demo}") private val clientSecret: String,
     @Value("\${app.base-url:http://localhost:8085}") private val appBaseUrl: String,
-    @Value("\${app.jwt.secret:defaultSecretKeyWithAtLeast32CharactersLongForHS256}") private val jwtSecret: String
+    @Value("\${app.jwt.secret}") private val jwtSecret: String
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 

@@ -30,7 +30,8 @@ class AuthFlowService(
     private val refreshTokenService: RefreshTokenService,
     private val mailService: MailService,
     private val passwordEncoder: PasswordEncoder,
-    private val clock: Clock
+    private val clock: Clock,
+    private val mail: MailAvailability
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val random = SecureRandom()
@@ -67,9 +68,16 @@ class AuthFlowService(
      *
      * Answering differently would turn this form into an oracle for which addresses
      * have accounts - on a public site that is a list worth harvesting.
+     *
+     * Does nothing on an instance that cannot mail: issuing a token there would only retire
+     * the reset link an administrator handed out, with nothing to replace it.
      */
     @Transactional
     fun requestPasswordReset(email: String) {
+        if (!mail.enabled) {
+            log.info("Password reset requested, but this instance has no mail; ignored")
+            return
+        }
         val user = userRepository.findByEmail(email.trim()).orElse(null)
         if (user == null) {
             log.info("Password reset requested for an address with no account")

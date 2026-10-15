@@ -49,10 +49,10 @@ data class Account(
     @Column(length = 500)
     var description: String? = null,
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     var icon: String = "wallet",
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     var color: String = "#4F46E5",
 
     @Column(nullable = false)
