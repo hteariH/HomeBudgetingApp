@@ -112,6 +112,13 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 409, error = "Too Many Invitations", message = ex.message)
         )
 
+    /** The environment decides the AI provider; the admin page cannot overrule it. */
+    @ExceptionHandler(com.homebudget.app.ai.AiProviderLockedException::class)
+    fun handleAiProviderLocked(ex: com.homebudget.app.ai.AiProviderLockedException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            ErrorResponse(status = 409, error = "Set By Environment", message = ex.message)
+        )
+
     /** The caller's membership moved after the request was authenticated; they sync again. */
     @ExceptionHandler(com.homebudget.app.household.HouseholdChangedException::class)
     fun handleHouseholdChanged(ex: com.homebudget.app.household.HouseholdChangedException): ResponseEntity<ErrorResponse> =

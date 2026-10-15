@@ -11,5 +11,7 @@ data class InstanceInfo(
     val registrationOpen: Boolean,
     /** False hides "forgot password"; an administrator issues reset links instead. */
     val mailEnabled: Boolean,
-    val bankProviders: List<String>
+    val bankProviders: List<String>,
+    /** An AI model is configured for the instance, so receipts can be scanned. */
+    val receiptScan: Boolean
 )
