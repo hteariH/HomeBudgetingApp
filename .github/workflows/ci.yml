@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   server:
@@ -76,11 +77,15 @@ jobs:
     name: Secret scan
     runs-on: ubuntu-latest
     steps:
-      # Full history: this is the scan that covers every commit before the repository
-      # is made public.
+      # Scans every commit in the repository's history on every run, not just the commits
+      # of the push or pull request (gitleaks-action only looks at those). The container
+      # runs as root over a checkout owned by the runner, so git is told to trust it.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Scan the whole history
+        run: |
+          docker run --rm -v "$PWD:/repo" \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
+            ghcr.io/gitleaks/gitleaks:v8.18.4 \
+            detect --source /repo --log-opts="--all" --redact -v
