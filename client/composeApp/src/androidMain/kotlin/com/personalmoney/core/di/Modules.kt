@@ -35,6 +35,7 @@ import com.personalmoney.core.database.ALL_MIGRATIONS
 import com.personalmoney.core.database.AppDatabase
 import com.personalmoney.core.database.Transactor
 import com.personalmoney.core.database.seed.DatabaseSeeder
+import com.personalmoney.core.household.HouseholdMembers
 import com.personalmoney.core.network.HomeBudgetApi
 import com.personalmoney.core.network.createBackendClient
 import com.personalmoney.core.network.createJson
@@ -129,6 +130,7 @@ val dataModule = module {
     singleOf(::SubscriptionRepository)
     singleOf(::TransactionRepository)
     singleOf(::BackupManager)
+    singleOf(::HouseholdMembers)
     singleOf(::SyncEngine)
     // SyncTrigger is an interface so repositories can be unit-tested without dragging
     // WorkManager - and therefore the Android framework - into those tests.

@@ -167,6 +167,7 @@ object SyncMappers {
         transferGroupId = transferGroupId,
         transferCounterpartAccountId = counterpartAccountId,
         transferFeeMinor = transferFee?.let { decimalStringToMinor(it, decimals) },
+        createdByUserId = createdByUserId,
         updatedAt = isoToStamp(updatedAt),
         deleted = deleted,
         pendingSync = false

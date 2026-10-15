@@ -55,7 +55,28 @@ data class UserDto(
     val email: String,
     val firstName: String = "",
     val lastName: String = "",
-    val baseCurrency: CurrencyDto? = null
+    val baseCurrency: CurrencyDto? = null,
+    val householdId: Long? = null,
+    val householdName: String? = null,
+    val householdRole: String? = null
+)
+
+@Serializable
+data class MemberDto(
+    val userId: Long,
+    val firstName: String = "",
+    val lastName: String = "",
+    val email: String = "",
+    val role: String = "MEMBER",
+    val joinedAt: String? = null
+)
+
+@Serializable
+data class HouseholdDto(
+    val id: Long,
+    val name: String,
+    val baseCurrency: CurrencyDto? = null,
+    val members: List<MemberDto> = emptyList()
 )
 
 @Serializable
@@ -146,7 +167,9 @@ data class SyncTransactionDto(
     val subscriptionUuid: String? = null,
     val transferGroupId: String? = null,
     val transferCounterpartAccountUuid: String? = null,
-    val transferFee: String? = null
+    val transferFee: String? = null,
+    /** Who wrote it. Server-assigned and read-only: the push never sends it. */
+    val createdByUserId: Long? = null
 )
 
 @Serializable

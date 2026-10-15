@@ -7,9 +7,11 @@ import com.personalmoney.core.domain.TransactionType
 import com.personalmoney.core.domain.model.Account
 import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.model.Transaction
+import com.personalmoney.core.household.HouseholdMembers
 import com.personalmoney.util.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
@@ -56,7 +58,9 @@ class LedgerFilterRequestTest {
             flowOf(listOf(tx(1L, 7L), tx(2L, 9L)))
         every { accRepo.observeAll() } returns flowOf(listOf(checking, savings))
         every { catRepo.observeAll() } returns flowOf(listOf(category))
-        return TransactionsViewModel(txRepo, accRepo, catRepo, filter)
+        val members = mockk<HouseholdMembers>(relaxed = true)
+        every { members.members } returns MutableStateFlow(emptyList())
+        return TransactionsViewModel(txRepo, accRepo, catRepo, filter, members)
     }
 
     @Test

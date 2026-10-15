@@ -56,6 +56,9 @@ data class TransactionEntity(
     @ColumnInfo(name = "transfer_group_id") val transferGroupId: String? = null,
     @ColumnInfo(name = "transfer_counterpart_account_id") val transferCounterpartAccountId: Long? = null,
     @ColumnInfo(name = "transfer_fee_minor") val transferFeeMinor: Long? = null,
+    // The household member who wrote the row. Assigned by the server and only ever read
+    // from a pull; null for a row it has not attributed (including every row from before v5).
+    @ColumnInfo(name = "created_by_user_id") val createdByUserId: Long? = null,
     // ── Sync metadata ───────────────────────────────────────────────────────
     // uuid is the identity the server keys on; it is minted here so a row created
     // offline can be referenced before the server has ever seen it.

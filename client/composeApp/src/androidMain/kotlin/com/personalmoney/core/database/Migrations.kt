@@ -87,4 +87,16 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+/**
+ * v4 → v5: a transaction remembers which household member wrote it.
+ *
+ * Nullable, so existing rows stay NULL ("unknown") until the next pull brings the
+ * server's answer; nothing is guessed locally.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE transactions ADD COLUMN created_by_user_id INTEGER")
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)

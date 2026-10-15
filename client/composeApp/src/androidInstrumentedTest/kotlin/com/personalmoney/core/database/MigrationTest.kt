@@ -113,6 +113,41 @@ class MigrationTest {
         db.close()
     }
 
+    @Test
+    fun migrate4To5_addsTheAuthorColumn() {
+        helper.createDatabase(dbName, 4).apply {
+            execSQL(
+                """
+                INSERT INTO accounts (id, name, currency_code, initial_balance_minor, icon, color,
+                                      archived, sort_order, include_in_total, note,
+                                      uuid, updated_at, deleted, pending_sync)
+                VALUES (1, 'Cash', 'USD', 0, 'wallet', 4280427161, 0, 0, 1, NULL,
+                        'acc-1', 0, 0, 0)
+                """.trimIndent()
+            )
+            execSQL(
+                """
+                INSERT INTO transactions (id, type, account_id, category_id, amount_minor, currency_code,
+                                          account_amount_minor, fx_rate_to_account, occurred_at, created_at,
+                                          uuid, updated_at, deleted, pending_sync)
+                VALUES (1, 'EXPENSE', 1, NULL, -500, 'USD', -500, 1.0, 1700000000000, 1700000000000,
+                        'tx-1', 0, 0, 0)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(dbName, 5, true, MIGRATION_4_5)
+
+        db.query("SELECT uuid, created_by_user_id FROM transactions").use { c ->
+            assertEquals("the existing row must survive", 1, c.count)
+            c.moveToFirst()
+            assertEquals("tx-1", c.getString(0))
+            assertTrue("an existing row has no known author yet", c.isNull(1))
+        }
+        db.close()
+    }
+
     private fun hasIndex(
         db: SupportSQLiteDatabase,
         name: String,

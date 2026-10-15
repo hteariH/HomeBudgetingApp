@@ -10,14 +10,18 @@ import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.core.household.HouseholdMembers
+import com.personalmoney.core.network.MemberDto
 import com.personalmoney.util.MainDispatcherRule
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -44,11 +48,15 @@ class TransactionsViewModelTest {
     private val accRepo = mockk<AccountRepository>(relaxed = true)
     private val catRepo = mockk<CategoryRepository>(relaxed = true)
 
+    private val householdMembers = mockk<HouseholdMembers>(relaxed = true)
+    private val memberList = MutableStateFlow<List<MemberDto>>(emptyList())
+
     private fun vm(): TransactionsViewModel {
+        every { householdMembers.members } returns memberList
         every { txRepo.observeFiltered(any(), any(), any(), any(), any()) } returns flowOf(listOf(txCoffee, txRent))
         every { accRepo.observeAll() } returns flowOf(listOf(account))
         every { catRepo.observeAll() } returns flowOf(listOf(category))
-        return TransactionsViewModel(txRepo, accRepo, catRepo, LedgerFilterRequest())
+        return TransactionsViewModel(txRepo, accRepo, catRepo, LedgerFilterRequest(), householdMembers)
     }
 
     @Test fun `search matches category name`() = runTest {
@@ -91,6 +99,38 @@ class TransactionsViewModelTest {
         vm.duplicate(txCoffee)
         coVerify {
             txRepo.insert(match { it.id == 0L && it.categoryId == 10L && it.accountAmountMinor == 1500L })
+        }
+    }
+
+    @Test fun `duplicate is not attributed to the original's author`() = runTest {
+        val vm = vm()
+        vm.duplicate(txCoffee.copy(createdByUserId = 2L))
+        coVerify { txRepo.insert(match { it.createdByUserId == null }) }
+    }
+
+    @Test fun `author initials appear once the household has two people`() = runTest {
+        val vm = vm()
+        vm.uiState.test {
+            assertTrue(awaitItem().authorInitials.isEmpty())
+            memberList.value = listOf(
+                MemberDto(userId = 1L, firstName = "Anna", lastName = "Berkunsky"),
+                MemberDto(userId = 2L, firstName = "Ivan", lastName = "Petrov"),
+            )
+            var s = awaitItem()
+            while (s.authorInitials.isEmpty()) s = awaitItem()
+            assertEquals(mapOf(1L to "AB", 2L to "IP"), s.authorInitials)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test fun `a household of one has no author initials`() = runTest {
+        memberList.value = listOf(MemberDto(userId = 1L, firstName = "Anna", lastName = "Berkunsky"))
+        val vm = vm()
+        vm.uiState.test {
+            var s = awaitItem()
+            while (s.transactions.isEmpty()) s = awaitItem()
+            assertTrue(s.authorInitials.isEmpty())
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

@@ -57,6 +57,8 @@ class HomeBudgetApi(private val client: HttpClient) {
 
     suspend fun me(): UserDto = client.get("api/users/me").body()
 
+    suspend fun household(): HouseholdDto = client.get("api/household").body()
+
     /**
      * Deletes the account and everything the server holds for it, irreversibly.
      *

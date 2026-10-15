@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
@@ -352,12 +354,29 @@ private fun TransactionList(
                     categoryIcon = if (isTransfer) "currency_exchange"
                         else tx.categoryId?.let { state.categoriesById[it]?.icon } ?: "more_horiz",
                     categoryColor = tx.categoryId?.let { state.categoriesById[it]?.color } ?: 0xFF94A3B8L,
+                    author = tx.createdByUserId?.let { state.authorInitials[it] },
                     onClick = { onEdit(tx.id) },
                     onDuplicate = { onDuplicate(tx) },
                     onDelete = { deleteTarget = tx }
                 )
             }
         }
+    }
+}
+
+/** Who wrote the row, as a small tag before its title. Only drawn in a shared household. */
+@Composable
+private fun AuthorBadge(initials: String) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Text(
+            text = initials,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+        )
     }
 }
 
@@ -371,6 +390,7 @@ private fun TransactionRow(
     categoryName: String?,
     categoryIcon: String,
     categoryColor: Long,
+    author: String?,
     onClick: () -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit
@@ -401,7 +421,13 @@ private fun TransactionRow(
         ) {
             IconCircle(iconKey = categoryIcon, color = Color(categoryColor), size = 36.dp)
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.titleSmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (author != null) {
+                        AuthorBadge(author)
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    Text(text = title, style = MaterialTheme.typography.titleSmall)
+                }
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,

@@ -35,4 +35,6 @@ data class Transaction(
     val transferGroupId: String? = null,
     val transferCounterpartAccountId: Long? = null,
     val transferFeeMinor: Long? = null,
+    /** The household member who wrote it; null for a row the server has not attributed. */
+    val createdByUserId: Long? = null,
 )

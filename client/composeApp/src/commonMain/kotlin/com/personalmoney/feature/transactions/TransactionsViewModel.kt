@@ -11,6 +11,7 @@ import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.currency.CurrencyRegistry
 import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.core.household.HouseholdMembers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,7 +45,9 @@ data class TransactionsUiState(
     val accountsById: Map<Long, Account> = emptyMap(),
     val categoriesById: Map<Long, Category> = emptyMap(),
     /** For a collapsed transfer row, its partner leg (the other side) when both are in the result. */
-    val transferCounterpartsById: Map<Long, Transaction> = emptyMap()
+    val transferCounterpartsById: Map<Long, Transaction> = emptyMap(),
+    /** Author initials by user id; empty while the household is just one person. */
+    val authorInitials: Map<Long, String> = emptyMap()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -53,6 +56,7 @@ class TransactionsViewModel constructor(
     accountRepository: AccountRepository,
     categoryRepository: CategoryRepository,
     private val ledgerFilter: LedgerFilterRequest,
+    private val householdMembers: HouseholdMembers,
 ) : ViewModel() {
 
     private val filterFlow = MutableStateFlow(TransactionsFilter())
@@ -70,8 +74,9 @@ class TransactionsViewModel constructor(
                 type = filter.type
             ),
             accountRepository.observeAll(),
-            categoryRepository.observeAll()
-        ) { tx, accounts, categories ->
+            categoryRepository.observeAll(),
+            householdMembers.members
+        ) { tx, accounts, categories, members ->
             val accountsById = accounts.associateBy { it.id }
             val categoriesById = categories.associateBy { it.id }
             val q = filter.query.trim().lowercase()
@@ -98,7 +103,8 @@ class TransactionsViewModel constructor(
                 transactions = collapsed,
                 accountsById = accountsById,
                 categoriesById = categoriesById,
-                transferCounterpartsById = counterpartsById
+                transferCounterpartsById = counterpartsById,
+                authorInitials = HouseholdMembers.initialsByUser(members)
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TransactionsUiState())
@@ -154,11 +160,17 @@ class TransactionsViewModel constructor(
             transactionRepository.insert(
                 // Blank uuid as well as a zero id: a duplicate is a new row, and reusing the
                 // original's uuid would make the server treat it as an edit of that one.
-                transaction.copy(id = 0L, uuid = "", occurredAt = now, subscriptionId = null)
+                transaction.copy(
+                    id = 0L, uuid = "", occurredAt = now, subscriptionId = null, createdByUserId = null
+                )
             )
         }
     }
     init {
+        // Who wrote what is only worth showing once we know who is in the household. A
+        // failure (offline, signed out) leaves the last known list, so it is not surfaced.
+        viewModelScope.launch { householdMembers.refresh() }
+
         // Applied as a starting filter, not a lock: the account dropdown still shows it and
         // the clear-filters action still removes it. Consumed straight away so returning to
         // this tab later does not silently re-narrow a list the user has since widened.

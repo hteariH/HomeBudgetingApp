@@ -43,10 +43,15 @@ class RoomTransactionRepository(
 
     override suspend fun update(transaction: Transaction) {
         // Room writes the whole row, so createdAt has to be carried over from the stored
-        // one. Rebuilding it from the model would stamp every edit as a new entry.
-        val existingCreatedAt = delegate.findById(transaction.id)?.createdAt
-            ?: Clock.System.now()
-        delegate.update(transaction.toEntity(createdAt = existingCreatedAt))
+        // one. Rebuilding it from the model would stamp every edit as a new entry. The author
+        // is kept the same way: the server owns it, and an edit must not rewrite whose it is.
+        val existing = delegate.findById(transaction.id)
+        delegate.update(
+            transaction.toEntity(
+                createdAt = existing?.createdAt ?: Clock.System.now(),
+                createdByUserId = existing?.createdByUserId,
+            )
+        )
     }
 
     override suspend fun insertTransferPair(debit: Transaction, credit: Transaction) {
@@ -73,9 +78,10 @@ private fun TransactionEntity.toTransaction() = Transaction(
     transferGroupId = transferGroupId,
     transferCounterpartAccountId = transferCounterpartAccountId,
     transferFeeMinor = transferFeeMinor,
+    createdByUserId = createdByUserId,
 )
 
-private fun Transaction.toEntity(createdAt: Instant) = TransactionEntity(
+private fun Transaction.toEntity(createdAt: Instant, createdByUserId: Long? = this.createdByUserId) = TransactionEntity(
     id = id,
     type = type,
     accountId = accountId,
@@ -92,5 +98,6 @@ private fun Transaction.toEntity(createdAt: Instant) = TransactionEntity(
     transferGroupId = transferGroupId,
     transferCounterpartAccountId = transferCounterpartAccountId,
     transferFeeMinor = transferFeeMinor,
+    createdByUserId = createdByUserId,
     uuid = uuid,
 )
