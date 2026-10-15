@@ -13,12 +13,9 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 /**
- * Moves a user, and every row their household holds, into the household an invitation
- * names. One transaction; both households' sync locks are taken lowest id first, the
- * same lock a sync push takes, so no push and no second join can interleave.
- *
- * A member of a household others share leaves its books behind, as leaving would: they
- * belong to the people who stay.
+ * Moves a user into the household an invitation names. One transaction; both households'
+ * sync locks are taken lowest id first, the same lock a sync push takes, so no push and
+ * no second join can interleave.
  */
 @Service
 class HouseholdMergeService(
@@ -28,6 +25,16 @@ class HouseholdMergeService(
     private val syncClock: SyncClock,
     private val em: EntityManager
 ) {
+    /**
+     * Makes [user] a `MEMBER` of [invite]'s household.
+     *
+     * - A sole member brings their books: every row their household holds moves into the
+     *   family, and the emptied household is deleted.
+     * - A `MEMBER` of a household shared with others moves alone: the books stay with that
+     *   family, as they would if the user had left it.
+     * - The `OWNER` of a household shared with others is refused (400): ownership has to be
+     *   handed over or the members removed first.
+     */
     @Transactional
     fun join(user: User, invite: HouseholdInvite): Household {
         val fromId = members.findFirstByUserId(user.id)?.household?.id ?: throw IllegalStateException("No household")

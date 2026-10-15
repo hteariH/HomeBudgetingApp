@@ -33,11 +33,15 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-/** Accepting an invitation: the joiner and every row they kept move into the family. */
+/**
+ * Accepting an invitation: a sole member brings their books into the family; a member of
+ * a shared household moves alone. Open so [PostgresJoinHouseholdTest] runs the merge SQL
+ * on Postgres.
+ */
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestIdentity::class)
-class JoinHouseholdTest {
+open class JoinHouseholdTest {
 
     @Autowired lateinit var identity: TestIdentity
     @Autowired lateinit var syncService: SyncService
@@ -91,7 +95,7 @@ class JoinHouseholdTest {
         categoryRepository.findByHouseholdAndType(owner.household, CategoryType.EXPENSE).filter { it.name == name }
 
     @Test
-    fun `joining moves the joiner's books into the family`() {
+    fun `a sole member joining brings their books into the family`() {
         val anna = identity.newMember("anna")
         val annaFood = uuid()
         push(anna, SyncPayload(
@@ -260,7 +264,7 @@ class JoinHouseholdTest {
     }
 
     @Test
-    fun `a member of a shared household joins elsewhere without taking the family's books`() {
+    fun `a member of a shared household moves alone and the books stay with that family`() {
         val anna = identity.newMember("anna")
         val boris = identity.newMember("boris")
         push(boris, SyncPayload(accounts = listOf(SyncAccount(uuid = uuid(), name = "Boris card", currencyCode = "USD"))))
