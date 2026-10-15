@@ -78,7 +78,7 @@ class AuthRateLimitFilter(
         }!!
 
         if (window.count > maxAttempts) {
-            log.warn("Rate limit hit for {} on {}", key, request.servletPath)
+            log.warn("Rate limit hit for {} on {}", key, loggablePath(request))
             response.status = HttpStatus.TOO_MANY_REQUESTS.value()
             response.contentType = MediaType.APPLICATION_JSON_VALUE
             val retryAfter = windowSeconds - (now.epochSecond - window.startedAt.epochSecond)
@@ -95,6 +95,15 @@ class AuthRateLimitFilter(
         }
 
         filterChain.doFilter(request, response)
+    }
+
+    /**
+     * The path as it may be logged. An invitation link's token is a bearer secret, so
+     * everything under /api/invites/ is logged as just that prefix plus a star.
+     */
+    private fun loggablePath(request: HttpServletRequest): String {
+        val path = request.servletPath ?: return "unknown"
+        return if (path.startsWith("/api/invites/")) "/api/invites/*" else path
     }
 
     private fun clientKey(request: HttpServletRequest): String = request.remoteAddr ?: "unknown"

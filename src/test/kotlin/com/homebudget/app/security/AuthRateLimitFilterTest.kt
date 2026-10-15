@@ -2,7 +2,12 @@ package com.homebudget.app.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
@@ -12,6 +17,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 
+@ExtendWith(OutputCaptureExtension::class)
 class AuthRateLimitFilterTest {
 
     private class MovableClock(var now: Instant = Instant.parse("2026-10-15T12:00:00Z")) : Clock() {
@@ -55,6 +61,26 @@ class AuthRateLimitFilterTest {
         clock.now = clock.now.plus(Duration.ofSeconds(61))
         assertEquals(200, login("192.0.2.100"))
         assertEquals(1, filter.trackedClients())
+    }
+
+    @Test
+    fun `an invitation token never reaches the log`(output: CapturedOutput) {
+        val token = "s3cret-invite-token-0123456789"
+        fun preview(): Int {
+            val request = MockHttpServletRequest("GET", "/api/invites/$token").apply {
+                servletPath = "/api/invites/$token"
+                remoteAddr = "203.0.113.50"
+            }
+            val response = MockHttpServletResponse()
+            filter.doFilter(request, response, MockFilterChain())
+            return response.status
+        }
+
+        repeat(2) { assertEquals(200, preview()) }
+        assertEquals(429, preview())
+        assertTrue(output.all.contains("Rate limit hit"), "the limit trip should still be logged")
+        assertFalse(output.all.contains(token), "the token must not be logged")
+        assertTrue(output.all.contains("/api/invites/*"))
     }
 
     @Test

@@ -55,6 +55,22 @@ class InviteEndpointsTest {
     }
 
     @Test
+    fun `invitation management needs a session`() {
+        mvc.perform(get("/api/household/invites")).andExpect(status().is4xxClientError).andExpect { r ->
+            check(r.response.status == 401 || r.response.status == 403) { "got ${r.response.status}" }
+        }
+        mvc.perform(post("/api/household/invites")).andExpect { r ->
+            check(r.response.status == 401 || r.response.status == 403) { "got ${r.response.status}" }
+        }
+    }
+
+    @Test
+    fun `the preview is reachable without a session`() {
+        // Not refused by the security chain: it reaches the controller, which says 404 for an unknown token.
+        mvc.perform(get("/api/invites/not-a-real-token")).andExpect(status().isNotFound)
+    }
+
+    @Test
     fun `an unknown token is 404 and a revoked one is 410`() {
         val owner = identity.newMember("anna")
         val (id, token) = createInvite(owner)
