@@ -58,41 +58,6 @@ data class UserDto(
     val baseCurrency: CurrencyDto? = null
 )
 
-// -- billing ------------------------------------------------------------------
-
-/**
- * What the server says this account is entitled to, and what it could buy.
- *
- * The client never decides this. The server resolves the entitlement against its own
- * clock and against what Google said about the purchase, so a phone with a wound-forward
- * clock or a patched build gets the same answer as everyone else - and every limit is
- * enforced there regardless of what this says.
- */
-@Serializable
-data class BillingStatusDto(
-    val premium: Boolean = false,
-    /** ISO-8601. Null means the entitlement does not expire. */
-    val expiresAt: String? = null,
-    /** NONE, PLAY or MANUAL - see the server's `EntitlementSource`. */
-    val source: String = "NONE",
-    val autoRenewing: Boolean = false,
-    val productId: String? = null,
-    /**
-     * Whether the server can take a purchase at all. False in a browser and on a
-     * deployment with no Play service account, and the reason the paywall can say where
-     * to buy instead of showing a button that cannot work.
-     */
-    val purchasesAccepted: Boolean = false,
-    val products: List<String> = emptyList()
-)
-
-/** A purchase token from Play, for the server to check with Google. */
-@Serializable
-data class RegisterPurchaseRequestDto(
-    val purchaseToken: String,
-    val productId: String? = null
-)
-
 @Serializable
 data class FxRateDto(
     val baseCode: String,

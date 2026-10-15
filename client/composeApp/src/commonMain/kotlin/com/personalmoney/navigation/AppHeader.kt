@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -90,7 +89,6 @@ internal fun AppHeader(
     /** Null when signed out - there is no account to offer, only a page to sign in on. */
     email: String?,
     onOpenSettings: () -> Unit,
-    onOpenPremium: () -> Unit,
     onSignOut: () -> Unit,
     dark: Boolean,
     onToggleTheme: () -> Unit,
@@ -167,7 +165,6 @@ internal fun AppHeader(
                     email = email,
                     showName = navInline,
                     onOpenSettings = onOpenSettings,
-                    onOpenPremium = onOpenPremium,
                     onSignOut = onSignOut,
                 )
             }
@@ -312,7 +309,6 @@ private fun AccountChip(
     email: String,
     showName: Boolean,
     onOpenSettings: () -> Unit,
-    onOpenPremium: () -> Unit,
     onSignOut: () -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
@@ -373,14 +369,6 @@ private fun AccountChip(
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.premium_menu)) },
-                leadingIcon = { Icon(Icons.Filled.WorkspacePremium, contentDescription = null) },
-                onClick = {
-                    open = false
-                    onOpenPremium()
-                },
-            )
             DropdownMenuItem(
                 text = { Text(stringResource(Res.string.dashboard_settings)) },
                 leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = null) },

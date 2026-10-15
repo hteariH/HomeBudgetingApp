@@ -18,15 +18,6 @@ val keystoreProps = Properties().apply {
 }
 val hasReleaseSigning = keystoreProps.getProperty("storeFile").orEmpty().isNotBlank()
 
-// AdMob production IDs live in the same keystore.properties file. The fallbacks below are
-// the Google test IDs from https://developers.google.com/admob/android/test-ads — safe to
-// ship to internal testers, never to production.
-val admobAppId = keystoreProps.getProperty("admobAppId")
-    ?: "ca-app-pub-3940256099942544~3347511713"
-val admobBanner = keystoreProps.getProperty("admobBannerUnitId")
-    ?: "ca-app-pub-3940256099942544/6300978111"
-val admobInterstitial = keystoreProps.getProperty("admobInterstitialUnitId")
-    ?: "ca-app-pub-3940256099942544/1033173712"
 val privacyPolicyUrl = keystoreProps.getProperty("privacyPolicyUrl")
     ?: "https://gist.github.com/hteariH/bfd7d6412cc41a227bcc53646655bfc2"
 
@@ -151,15 +142,6 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
 
             implementation(libs.tesseract4android)
-
-            implementation(libs.play.services.ads)
-            implementation(libs.user.messaging.platform)
-
-            // Play Billing, Android only and deliberately not in commonMain: buying is
-            // the one part of premium that cannot be shared. The browser has no store,
-            // and Play is the only rail this project can sell through - see
-            // ../docs/PREMIUM.md.
-            implementation(libs.play.billing)
         }
 
         androidUnitTest.dependencies {
@@ -226,8 +208,6 @@ android {
         vectorDrawables { useSupportLibrary = true }
 
         resourceConfigurations += listOf("en", "ru", "uk")
-
-        manifestPlaceholders["admobAppId"] = admobAppId
     }
 
     signingConfigs {
@@ -246,8 +226,6 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isDebuggable = true
-            buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"ca-app-pub-3940256099942544/6300978111\"")
-            buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
             buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
             buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrlDebug\"")
         }
@@ -258,8 +236,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobBanner\"")
-            buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"$admobInterstitial\"")
             buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
             buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
             if (hasReleaseSigning) {

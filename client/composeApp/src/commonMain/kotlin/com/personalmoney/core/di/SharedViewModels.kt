@@ -12,7 +12,6 @@ import com.personalmoney.feature.currencies.CurrenciesViewModel
 import com.personalmoney.feature.currencies.CurrencyEditViewModel
 import com.personalmoney.feature.dashboard.DashboardViewModel
 import com.personalmoney.feature.onboarding.OnboardingViewModel
-import com.personalmoney.feature.premium.PremiumViewModel
 import com.personalmoney.feature.quickadd.QuickAddViewModel
 import com.personalmoney.feature.settings.SettingsViewModel
 import com.personalmoney.feature.shell.AppShellViewModel
@@ -48,7 +47,6 @@ val sharedViewModelModule = module {
     viewModelOf(::CurrencyEditViewModel)
     viewModelOf(::DashboardViewModel)
     viewModelOf(::OnboardingViewModel)
-    viewModelOf(::PremiumViewModel)
     viewModelOf(::QuickAddViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::SubscriptionEditViewModel)

@@ -63,11 +63,6 @@
 # Frankfurter API response DTOs
 -keep class com.personalmoney.core.currency.FrankfurterRate { *; }
 
-# --- AdMob ---
--keep class com.google.android.gms.** { *; }
--dontwarn com.google.android.gms.**
--keep class com.google.android.ump.** { *; }
-
 # --- Coroutines ---
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}

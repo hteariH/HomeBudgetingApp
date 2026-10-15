@@ -228,7 +228,6 @@ class QuickAddViewModel constructor(
             runCatching {
                 transactionRepository.insert(tx)
                 userPreferences.setDefaultAccount(account.id)
-                userPreferences.incrementTransactionSaveCount()
             }.onSuccess {
                 savedFlow.value = true
             }.onFailure { e ->

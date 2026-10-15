@@ -74,7 +74,6 @@ import com.personalmoney.feature.dashboard.DashboardScreen
 import com.personalmoney.feature.homemoney.HomeMoneyImportScreen
 import com.personalmoney.feature.more.MoreScreen
 import com.personalmoney.feature.onboarding.OnboardingScreen
-import com.personalmoney.feature.premium.PremiumScreen
 import com.personalmoney.feature.quickadd.QuickAddScreen
 import com.personalmoney.feature.quickadd.QuickAddViewModel
 import com.personalmoney.feature.settings.SettingsScreen
@@ -157,7 +156,6 @@ internal val registeredRoutes: List<String> = listOfNotNull(
     Routes.CURRENCIES,
     Routes.CURRENCY_EDIT,
     Routes.SETTINGS,
-    Routes.PREMIUM,
     Routes.ANALYTICS,
     Routes.MORE.takeIf { moreTabAvailable },
     Routes.BANKS.takeIf { bankConnectionsAvailable },
@@ -205,11 +203,11 @@ private fun NavController.switchTab(route: String) {
 }
 
 /**
- * Opens a screen that is not a section - an editor, the entry form, the premium page.
+ * Opens a screen that is not a section - an editor, the entry form.
  *
  * `launchSingleTop` because several of these are reached from a control that stays on
  * screen while they are open: the header's "+" is still there over the entry form, and the
- * account menu is still there over the premium page. Without it a second press stacked a
+ * account menu is still there over the settings page. Without it a second press stacked a
  * second identical copy, and in a browser each copy is also a history entry, so backing out
  * of a double-click meant pressing Back twice to cross one screen.
  */
@@ -331,7 +329,6 @@ fun PersonalMoneyNavHost(
             onOpenMenu = { scope.launch { drawerState.open() } },
             email = shell.email,
             onOpenSettings = { navController.switchTab(Routes.SETTINGS) },
-            onOpenPremium = { navController.open(Routes.PREMIUM) },
             onSignOut = { shell.signOut() },
             dark = dark,
             onToggleTheme = { shell.setDark(!dark) },
@@ -420,7 +417,6 @@ fun PersonalMoneyNavHost(
                         onOpenAccounts = { navController.open(Routes.ACCOUNTS) },
                         onOpenCategories = { navController.open(Routes.CATEGORIES) },
                         onOpenSubscriptions = { navController.open(Routes.SUBSCRIPTIONS) },
-                        onOpenPremium = { navController.open(Routes.PREMIUM) },
                         onOpenSettings = { navController.open(Routes.SETTINGS) }
                     )
                 }
@@ -495,8 +491,7 @@ fun PersonalMoneyNavHost(
             ) {
                 AccountEditScreen(
                     onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() },
-                    onOpenPremium = { navController.open(Routes.PREMIUM) }
+                    onSaved = { navController.popBackStack() }
                 )
             }
 
@@ -583,9 +578,6 @@ fun PersonalMoneyNavHost(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() }
                 )
-            }
-            composable(Routes.PREMIUM) {
-                PremiumScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(

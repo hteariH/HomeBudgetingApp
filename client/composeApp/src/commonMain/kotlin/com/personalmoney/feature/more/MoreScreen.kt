@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material.icons.filled.Wallet
-import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +40,6 @@ fun MoreScreen(
     onOpenAccounts: () -> Unit,
     onOpenCategories: () -> Unit,
     onOpenSubscriptions: () -> Unit,
-    onOpenPremium: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     Scaffold(
@@ -64,7 +62,6 @@ fun MoreScreen(
             MoreItem(Icons.Filled.Wallet, Res.string.dashboard_accounts, onOpenAccounts)
             MoreItem(Icons.Filled.Category, Res.string.dashboard_categories, onOpenCategories)
             MoreItem(Icons.Filled.Subscriptions, Res.string.dashboard_subscriptions, onOpenSubscriptions)
-            MoreItem(Icons.Filled.WorkspacePremium, Res.string.premium_menu, onOpenPremium)
             MoreItem(Icons.Filled.Settings, Res.string.dashboard_settings, onOpenSettings)
         }
     }

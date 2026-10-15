@@ -11,9 +11,7 @@ import io.ktor.http.ContentType
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /**
  * What the user is shown when a request fails.
@@ -90,27 +88,5 @@ class ApiErrorsTest {
     @Test
     fun `a non-HTTP failure has no server message`() = runTest {
         assertNull(RuntimeException("offline").serverMessage())
-    }
-
-    @Test
-    fun `the free plan's refusal is recognised as one, not just read`() = runTest {
-        // 402 is the only status the server uses for a plan limit, and a screen keys the
-        // "see Premium" action off it - so this is what stops that action appearing on an
-        // unrelated failure, or failing to appear on this one.
-        val body = """
-            {"status":402,"error":"Plan Limit Reached",
-             "message":"The free plan covers 5 accounts. Subscribe to add more."}
-        """.trimIndent()
-
-        val failure = runCatching {
-            clientReturning(HttpStatusCode.PaymentRequired, body).get("http://localhost/api/accounts")
-        }.exceptionOrNull()!!
-
-        assertTrue(failure.isPlanLimit())
-        assertFalse(
-            runCatching { clientReturning(HttpStatusCode.NotFound, body).get("http://localhost/api/accounts") }
-                .exceptionOrNull()!!
-                .isPlanLimit()
-        )
     }
 }

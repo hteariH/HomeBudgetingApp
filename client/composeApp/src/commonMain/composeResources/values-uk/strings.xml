@@ -507,34 +507,6 @@
         <item quantity="other">%1$d рядка не вдалося прочитати</item>
     </plurals>
 
-    <!-- Premium -->
-    <string name="premium_title">Преміум</string>
-    <string name="premium_menu">Преміум</string>
-    <string name="premium_pitch_title">Більше п'яти рахунків</string>
-    <string name="premium_pitch_body">На безкоштовному плані — п'ять рахунків, якими ви користуєтесь. Архівні не рахуються ніколи.</string>
-    <string name="premium_benefit_accounts">Скільки завгодно рахунків — картки, готівка, депозити, чужий гаманець.</string>
-    <string name="premium_benefit_no_ads">Жодної реклами — ніде в застосунку.</string>
-    <string name="premium_benefit_everywhere">Одна підписка на всі пристрої, де ви увійшли: і телефон, і веб.</string>
-    <string name="premium_benefit_support">Це оплачує роботу над застосунком.</string>
-    <string name="premium_active">Преміум увімкнено</string>
-    <string name="premium_active_forever">Без дати завершення.</string>
-    <string name="premium_active_until">Оплачено до %1$s.</string>
-    <string name="premium_renews_on">Продовжиться %1$s.</string>
-    <string name="premium_lapsing">Продовження вимкнено. Преміум діє до %1$s.</string>
-    <string name="premium_granted">Надано вам напряму, не куплено.</string>
-    <string name="premium_buy_elsewhere_title">Купити можна з телефона</string>
-    <string name="premium_buy_elsewhere_body">Підписка купується лише через Google Play, тож оформити її треба в застосунку для Android. Після купівлі вона працює скрізь, де ви увійшли, включно з цим браузером.</string>
-    <string name="premium_unavailable">Підписки на цьому сервері поки не увімкнені.</string>
-    <string name="premium_no_offers">Google Play поки нічого не пропонує. Спробуйте за хвилину.</string>
-    <string name="premium_restore">Я вже платив</string>
-    <string name="premium_restore_none">Покупок для цього акаунта не знайшлося.</string>
-    <string name="premium_purchase_pending">Google Play ще проводить платіж. Преміум увімкнеться, щойно він пройде.</string>
-    <string name="premium_purchase_problem">Покупка не пройшла.</string>
-    <string name="premium_manage">Керувати підпискою</string>
-    <string name="premium_per_month">на місяць</string>
-    <string name="premium_per_year">на рік</string>
-    <string name="premium_upsell_action">Про преміум</string>
-
     <!-- Видалення акаунта. -->
     <string name="settings_danger_zone">Небезпечна зона</string>
     <string name="settings_delete_account">Видалити акаунт</string>

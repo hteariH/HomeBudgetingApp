@@ -37,10 +37,6 @@ class UserPreferences(private val store: KeyValueStore) {
      */
     val dynamicColor: Flow<Boolean> = store.observeBoolean(Keys.DYNAMIC_COLOR).map { it ?: false }
     val fxLastRefreshMs: Flow<Long> = store.observeLong(Keys.FX_LAST_REFRESH_MS).map { it ?: 0L }
-    val transactionSaveCount: Flow<Long> =
-        store.observeLong(Keys.TRANSACTION_SAVE_COUNT).map { it ?: 0L }
-    val adsConsentObtained: Flow<Boolean> =
-        store.observeBoolean(Keys.ADS_CONSENT_OBTAINED).map { it ?: false }
     val biometricLockEnabled: Flow<Boolean> =
         store.observeBoolean(Keys.BIOMETRIC_LOCK_ENABLED).map { it ?: false }
     /**
@@ -52,18 +48,6 @@ class UserPreferences(private val store: KeyValueStore) {
      * Cleared the moment it is spent.
      */
     val homeMoneyAuthState: Flow<String?> = store.observeString(Keys.HOMEMONEY_AUTH_STATE)
-
-    /**
-     * The last entitlement the server reported, so a launch with no network knows what to
-     * show instead of flashing the free plan at a subscriber.
-     *
-     * A cache of what to *display*, never a decision: every limit is enforced on the
-     * server, which is why it is safe for this to live in a store the user can edit.
-     */
-    val premium: Flow<Boolean> = store.observeBoolean(Keys.PREMIUM).map { it ?: false }
-
-    /** Epoch millis, or null for an entitlement that does not expire. */
-    val premiumExpiresAtMs: Flow<Long?> = store.observeLong(Keys.PREMIUM_EXPIRES_AT_MS)
 
     val syncCursor: Flow<String> = store.observeString(Keys.SYNC_CURSOR).map { it ?: "" }
     val syncLastOkMs: Flow<Long> = store.observeLong(Keys.SYNC_LAST_OK_MS).map { it ?: 0L }
@@ -84,12 +68,6 @@ class UserPreferences(private val store: KeyValueStore) {
 
     suspend fun setFxLastRefresh(ms: Long) = store.putLong(Keys.FX_LAST_REFRESH_MS, ms)
 
-    suspend fun incrementTransactionSaveCount(): Long =
-        store.updateLong(Keys.TRANSACTION_SAVE_COUNT) { it + 1L }
-
-    suspend fun setAdsConsentObtained(value: Boolean) =
-        store.putBoolean(Keys.ADS_CONSENT_OBTAINED, value)
-
     suspend fun setBiometricLockEnabled(value: Boolean) =
         store.putBoolean(Keys.BIOMETRIC_LOCK_ENABLED, value)
 
@@ -97,12 +75,6 @@ class UserPreferences(private val store: KeyValueStore) {
     suspend fun setHomeMoneyAuthState(state: String?) =
         if (state == null) store.remove(Keys.HOMEMONEY_AUTH_STATE)
         else store.putString(Keys.HOMEMONEY_AUTH_STATE, state)
-
-    suspend fun setPremium(premium: Boolean, expiresAtMs: Long?) {
-        store.putBoolean(Keys.PREMIUM, premium)
-        if (expiresAtMs == null) store.remove(Keys.PREMIUM_EXPIRES_AT_MS)
-        else store.putLong(Keys.PREMIUM_EXPIRES_AT_MS, expiresAtMs)
-    }
 
     suspend fun setSyncCursor(cursor: String) = store.putString(Keys.SYNC_CURSOR, cursor)
 
@@ -113,25 +85,21 @@ class UserPreferences(private val store: KeyValueStore) {
      * next sign-in on this phone starts clean.
      *
      * What goes: sync bookkeeping, because the next account's history has nothing to do
-     * with this cursor; the cached entitlement, because leaving it would show the next
-     * person to sign in a subscription that is not theirs; the default account and the
-     * base currency, which name rows and settings that are about to stop existing; and any
-     * half-finished HomeMoney consent.
+     * with this cursor; the default account and the base currency, which name rows and
+     * settings that are about to stop existing; and any half-finished HomeMoney consent.
      *
-     * What stays: theme, language, dynamic colour, the biometric lock, the ads-consent
-     * record and the save counter. Those describe this device and this phone's owner, not
-     * the account - resetting someone's dark mode because they signed out would be a
-     * strange thing to do, and re-asking for ad consent already granted is not ours to
-     * decide.
+     * What stays: theme, language, dynamic colour and the biometric lock. Those describe
+     * this device and this phone's owner, not the account - resetting someone's dark mode
+     * because they signed out would be a strange thing to do.
      */
     suspend fun clearAccountScoped() = store.remove(
         Keys.SYNC_CURSOR,
         Keys.SYNC_LAST_OK_MS,
-        Keys.PREMIUM,
-        Keys.PREMIUM_EXPIRES_AT_MS,
         Keys.DEFAULT_ACCOUNT,
         Keys.BASE_CURRENCY,
         Keys.HOMEMONEY_AUTH_STATE,
+        // Left by builds that sold premium.
+        "premium", "premium_expires_at_ms",
     )
 }
 
@@ -147,8 +115,6 @@ internal object PreferenceKeys {
     const val ONBOARDED = "onboarded"
     const val DYNAMIC_COLOR = "dynamic_color"
     const val FX_LAST_REFRESH_MS = "fx_last_refresh_ms"
-    const val TRANSACTION_SAVE_COUNT = "transaction_save_count"
-    const val ADS_CONSENT_OBTAINED = "ads_consent_obtained"
     const val BIOMETRIC_LOCK_ENABLED = "biometric_lock_enabled"
 
     // Outstanding HomeMoney OAuth state, written before leaving for their consent screen
@@ -158,11 +124,6 @@ internal object PreferenceKeys {
     // Server-issued cursor for the last successful sync pull. Kept as the exact string
     // the server sent rather than a parsed instant, so no local clock or formatting quirk
     // can shift it and skip changes.
-    // What the server last said about this account's entitlement. A display cache only -
-    // see the note on UserPreferences.premium.
-    const val PREMIUM = "premium"
-    const val PREMIUM_EXPIRES_AT_MS = "premium_expires_at_ms"
-
     const val SYNC_CURSOR = "sync_cursor"
     const val SYNC_LAST_OK_MS = "sync_last_ok_ms"
 }

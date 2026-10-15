@@ -59,7 +59,6 @@ import androidx.compose.ui.unit.dp
 import com.personalmoney.core.ui.PageWidth
 import com.personalmoney.feature.quickadd.QuickEntryPanel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personalmoney.ads.BannerAd
 import com.personalmoney.core.domain.formatMediumDate
 import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CurrencyCode
@@ -276,7 +275,6 @@ fun TransactionsScreen(
                     onDuplicate = viewModel::duplicate
                 )
             }
-            BannerAd()
         }
     }
 }

@@ -25,23 +25,9 @@ private val errorJson = Json { ignoreUnknownKeys = true; isLenient = true }
 private val USER_FACING = setOf(
     HttpStatusCode.BadRequest,
     HttpStatusCode.NotFound,
-    // A limit of the free plan. The server's sentence names the limit and what to do about
-    // it, and without this the one refusal a user can actually act on is the one that comes
-    // back as a shrug.
-    HttpStatusCode.PaymentRequired,
     HttpStatusCode.UnprocessableEntity,
     HttpStatusCode.BadGateway,
 )
-
-/**
- * Whether this failure was the free plan's doing rather than a mistake in the request.
- *
- * The server answers 402 for exactly one reason - see its `PlanLimitException` - which is
- * what lets a screen offer the way out (the paywall) alongside the server's sentence,
- * instead of showing a refusal with nothing to do about it.
- */
-fun Throwable.isPlanLimit(): Boolean =
-    (this as? ResponseException)?.response?.status == HttpStatusCode.PaymentRequired
 
 /**
  * The message the server meant for the user, or null when there is not one.
