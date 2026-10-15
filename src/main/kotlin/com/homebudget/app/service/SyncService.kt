@@ -40,6 +40,7 @@ class SyncService(
     private val settingRepo: UserCurrencySettingRepository,
     private val currencyRepo: CurrencyRepository,
     private val cursorRepo: SyncCursorRepository,
+    private val householdRepo: HouseholdRepository,
     private val securityUtils: SecurityUtils,
     private val clock: Clock
 ) {
@@ -108,6 +109,11 @@ class SyncService(
         require(changes.size() <= MAX_PUSH) {
             "Push of ${changes.size()} records exceeds the limit of $MAX_PUSH; split it"
         }
+
+        // One push per household at a time: two members pushing together would otherwise
+        // read the same latest stamp and write the same instant, and a pull whose cursor
+        // fell between their commits would skip one of them for good.
+        householdRepo.lockById(household.id)
 
         val now = nextStamp(household)
         val rejected = mutableListOf<SyncRejection>()
