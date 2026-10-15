@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # Every branch, so pushing a branch is enough to see whether it is green.
   push:
-    branches: [master]
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 

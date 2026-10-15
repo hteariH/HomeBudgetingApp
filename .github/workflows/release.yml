@@ -30,9 +30,11 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: APP_VERSION=${{ steps.version.outputs.value }}
+          # A pre-release tag (anything with a '-', such as v1.0.0-rc1) is published under
+          # its own name only; :latest moves for real releases alone. Empty lines are ignored.
           tags: |
             ghcr.io/htearih/personalmoney:${{ github.ref_name }}
-            ghcr.io/htearih/personalmoney:latest
+            ${{ !contains(github.ref_name, '-') && 'ghcr.io/htearih/personalmoney:latest' || '' }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=AGPL-3.0-only
@@ -88,6 +90,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             personalmoney-*.apk
             docker-compose.yml

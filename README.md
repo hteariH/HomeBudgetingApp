@@ -40,11 +40,15 @@ Your data stays in `./data` and `./postgres` next to the compose file. The admin
 is at `/app/admin`, and `/actuator/health` answers once the server is up.
 
 Step-by-step guides for Synology, Unraid, TrueNAS and Portainer are on
-[personalmoney.app](https://personalmoney.app/#install).
+[personalmoney.app](https://personalmoney.app/#install). Where there is no `.env` file, as in
+Portainer and TrueNAS, give `DB_PASSWORD` in the stack's environment variables (Portainer) or
+type it in place of `${DB_PASSWORD:?Set DB_PASSWORD}` in the YAML (TrueNAS), and put any
+optional setting under the `app` service's `environment:`.
 
 ## Configuration
 
-Configuration is a `.env` file next to `docker-compose.yml`. The release's `env.example` (the
+Configuration is a `.env` file next to `docker-compose.yml`; the file is optional, but
+`DB_PASSWORD` must reach Compose one way or another. The release's `env.example` (the
 repository's `.env.example`) lists every setting. Only `DB_PASSWORD` is required.
 
 | Variable | Default | Meaning |
@@ -52,10 +56,10 @@ repository's `.env.example`) lists every setting. Only `DB_PASSWORD` is required
 | `DB_PASSWORD` | none, required | Password of the bundled Postgres database. Pick a long random one (`openssl rand -base64 24`); you never type it anywhere else. |
 | `PERSONALMONEY_VERSION` | `latest` | Image tag to run. Set it to a release's version tag to stay on that release. |
 | `PERSONALMONEY_PORT` | `8080` | Port published on the host. |
-| `REGISTRATION` | unset | Who may create an account: `open` or `closed`. Unset means open until the first account (the administrator) exists, then closed. The administrator can toggle it in the app unless it is set here. |
-| `JWT_SECRET` | generated | Key that signs sign-in sessions. Generated on first start when unset. Changing it signs everyone out. |
-| `CRYPTO_SECRET` | generated | Key that encrypts stored bank connections. Generated on first start when unset. Changing it makes stored bank connections unreadable. |
-| `APP_BASE_URL` | unset | The address people open PersonalMoney at, for example `https://money.example.com`. Needed for links in emails. |
+| `REGISTRATION` | unset | Who may create an account: `open` or `closed`. Unset means open until the first account (the administrator) exists, then closed. The first account can always be created, so `closed` means nobody after the administrator. The administrator can toggle it in the app unless it is set here. |
+| `JWT_SECRET` | generated | Key that signs sign-in sessions. Generated on first start when unset; at least 32 characters if you set it. Changing it signs everyone out. |
+| `CRYPTO_SECRET` | generated | Key that encrypts stored bank connections. Generated on first start when unset; at least 32 characters if you set it. Changing it makes stored bank connections unreadable. |
+| `APP_BASE_URL` | unset | The address people open PersonalMoney at, for example `https://money.example.com`. Needed for links in emails and for the HomeMoney import, which is offered only when it is set. |
 | `MAIL_HOST` | unset | SMTP server. Without mail, nobody is asked to verify an address and "forgot password" is replaced by reset links the administrator issues. |
 | `MAIL_PORT` | `587` | SMTP port. |
 | `MAIL_USERNAME` | unset | SMTP user name. |
@@ -65,6 +69,7 @@ repository's `.env.example`) lists every setting. Only `DB_PASSWORD` is required
 | `MONOBANK_PRIVATE_KEY` | unset | The matching private key for the corporate API. |
 | `HOMEMONEY_CLIENT_ID` | HomeMoney's public demo client | Your own HomeMoney API client id, if you registered one. |
 | `HOMEMONEY_CLIENT_SECRET` | HomeMoney's public demo client | The matching client secret. |
+| `SERVER_FORWARD_HEADERS_STRATEGY` | unset | Set to `native` behind a reverse proxy; see [HTTPS](#https). |
 
 `JWT_SECRET` and `CRYPTO_SECRET` are generated into `/data/secrets` (`./data/secrets` on the
 host) the first time the server starts and reused afterwards; a value set in `.env` always
@@ -76,7 +81,18 @@ that directory up: without `CRYPTO_SECRET` the stored bank connections cannot be
 PersonalMoney speaks plain HTTP on port 8080. To reach it from outside your home network, or
 simply to get a padlock, put a reverse proxy in front of it (Caddy, Traefik, Nginx Proxy
 Manager), or use a private network such as Tailscale. Set `APP_BASE_URL` to the public
-address. A minimal Caddy example:
+address.
+
+Behind a reverse proxy, also set `SERVER_FORWARD_HEADERS_STRATEGY=native`. The server then
+takes the visitor's address and the `https` scheme from the proxy's `X-Forwarded-*` headers,
+which it trusts only from private-network addresses (a proxy on the same machine or in the same
+Docker network). Without it every visitor appears to come from the proxy, and the limit on
+sign-in attempts, which counts per address, is shared by everyone. If a CDN such as Cloudflare
+sits in front of your proxy, the proxy has to put the CDN's visitor header into
+`X-Forwarded-For` (in Caddy, `header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}`
+inside `reverse_proxy`).
+
+A minimal Caddy example:
 
 ```
 money.example.com {
@@ -96,7 +112,7 @@ if you want to choose when to move to a new release.
 
 ## Backups
 
-Back up the database and `./data` (it holds the generated secrets):
+Back up the database and `./data`:
 
 ```bash
 docker compose exec db pg_dump -U personalmoney personalmoney > personalmoney-$(date +%F).sql
@@ -132,8 +148,8 @@ credentials, Install a certificate, CA certificate); the app trusts CAs installe
 
 ### Requirements
 
-- **JDK 25** for the toolchain; the bytecode target is Java 21 (`java.version` in `pom.xml`),
-  which is also what the release image is built with.
+- **JDK 21 or newer** (the image runs on a Java 25 JRE); the bytecode target is Java 21
+  (`java.version` in `pom.xml`).
 - **Maven**: use the wrapper (`./mvnw`, `mvnw.cmd` on Windows).
 - **Node.js and npm** are installed locally by Maven for a full build; for hot reload while
   you work on the web app, use Node 20 or newer.
@@ -211,6 +227,7 @@ HomeBudgetingApp/
 ├── docker/                 # Container entrypoint and the `personalmoney` admin command
 ├── deploy/                 # How the project page at personalmoney.app is deployed
 ├── docs/                   # Extra documentation (e.g. Monobank corporate API)
+├── scripts/                # Helper scripts (currency seed, Monobank registration, strings)
 ├── site/                   # The project page: personalmoney.app (React + Vite)
 ├── client/                 # The Android app (Kotlin, Compose Multiplatform)
 ├── src/

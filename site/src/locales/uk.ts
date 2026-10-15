@@ -69,14 +69,14 @@ export const uk: Record<keyof typeof en, string> = {
     'install.unraid.2': 'Додайте стек із файлом compose та .env, у якому задано DB_PASSWORD.',
     'install.unraid.3': 'Натисніть Compose Up, відкрийте порт 8080 і створіть обліковий запис адміністратора.',
     'install.truenas.1': 'Відкрийте Apps → Discover → Custom App і виберіть «Install via YAML».',
-    'install.truenas.2': 'Вставте файл compose, підставивши DB_PASSWORD.',
+    'install.truenas.2': 'Вставте файл compose і впишіть пароль бази даних замість кожного ${DB_PASSWORD:?Set DB_PASSWORD}; необов’язкові налаштування додайте в environment: сервісу app.',
     'install.truenas.3': 'Запустіть, відкрийте порт 8080 і створіть обліковий запис адміністратора.',
     'install.portainer.1': 'Відкрийте Stacks → Add stack і завантажте файл compose.',
-    'install.portainer.2': 'Додайте DB_PASSWORD до змінних середовища.',
+    'install.portainer.2': 'Додайте DB_PASSWORD до Environment variables; необов’язкові налаштування додайте в редакторі до environment: сервісу app.',
     'install.portainer.3': 'Розгорніть стек, відкрийте порт 8080 і створіть обліковий запис адміністратора.',
     'install.https.title': 'Доступ ззовні',
     'install.https.body':
-        'Поставте його за свій зворотний проксі (Caddy, Traefik, Nginx Proxy Manager) або заходьте через Tailscale. Якщо налаштовано пошту, вкажіть в APP_BASE_URL публічну адресу, щоб посилання в листах працювали. Android-застосунок попереджає, коли сервер відповідає за звичайним http.',
+        'Поставте його за свій зворотний проксі (Caddy, Traefik, Nginx Proxy Manager) або заходьте через Tailscale. За проксі задайте SERVER_FORWARD_HEADERS_STRATEGY=native, щоб сервер бачив адресу кожного відвідувача. Вкажіть в APP_BASE_URL публічну адресу, щоб працювали посилання в листах та імпорт із HomeMoney. Android-застосунок попереджає, коли сервер відповідає за звичайним http.',
     'install.update.title': 'Оновлення',
     'install.backup.title': 'Резервні копії',
     'install.backup.body':

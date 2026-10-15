@@ -1,0 +1,6 @@
+# Scripts that run inside the Linux image or a Unix shell break on CRLF line endings,
+# whatever line-ending setting the machine that checked them out uses.
+docker/* text eol=lf
+mvnw text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf

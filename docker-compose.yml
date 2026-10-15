@@ -14,9 +14,14 @@ services:
     restart: unless-stopped
     ports:
       - "${PERSONALMONEY_PORT:-8080}:8080"
-    env_file: .env
+    # Optional settings come from .env when there is one. Without it (Portainer, TrueNAS)
+    # DB_PASSWORD below is still required, and optional settings go under environment:.
+    env_file:
+      - path: .env
+        required: false
     environment:
       DB_HOST: db
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
     volumes:
       # Generated secrets live here (and, later, receipt images). Back it up.
       - ./data:/data
@@ -30,7 +35,7 @@ services:
     environment:
       POSTGRES_DB: personalmoney
       POSTGRES_USER: personalmoney
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
     volumes:
       - ./postgres:/var/lib/postgresql/data
     healthcheck:
