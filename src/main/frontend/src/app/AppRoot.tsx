@@ -25,6 +25,7 @@ const CurrencyEditPage = lazy(() => import('./features/currencies/CurrencyEditPa
 const AnalyticsPage = lazy(() => import('./features/analytics/AnalyticsPage'));
 const BanksPage = lazy(() => import('./features/banks/BanksPage'));
 const HomeMoneyPage = lazy(() => import('./features/homemoney/HomeMoneyPage'));
+const HouseholdPage = lazy(() => import('./features/household/HouseholdPage'));
 const AdminPage = lazy(() => import('./features/admin/AdminPage'));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 const OnboardingPage = lazy(() => import('./features/onboarding/OnboardingPage'));
@@ -103,6 +104,7 @@ const Shell: React.FC = () => {
                             <Route path="analytics" element={<AnalyticsPage />} />
                             <Route path="banks" element={<BanksPage />} />
                             <Route path="import/homemoney" element={<HomeMoneyPage />} />
+                            <Route path="household" element={<HouseholdPage />} />
                             <Route path="admin" element={<AdminPage />} />
                             <Route path="settings" element={<SettingsPage />} />
                             <Route path="onboarding" element={<OnboardingPage />} />

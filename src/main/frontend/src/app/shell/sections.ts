@@ -8,6 +8,7 @@ import {
     Repeat,
     Settings,
     Tags,
+    Users,
     Wallet,
     type LucideIcon,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ export const HEADER_SECTIONS: Section[] = [
     { path: AppRoutes.currencies, label: 'nav_currencies', icon: Globe },
     { path: AppRoutes.homeMoney, label: 'nav_homemoney', icon: ArrowLeftRight },
     { path: AppRoutes.banks, label: 'nav_banks', icon: Landmark },
+    { path: AppRoutes.household, label: 'nav_household', icon: Users },
 ];
 
 export const DRAWER_SECTIONS: Section[] = [

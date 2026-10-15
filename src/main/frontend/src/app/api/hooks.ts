@@ -57,6 +57,8 @@ export const useCategories = (type?: CategoryType) =>
 
 export const useMe = () => useQuery({ queryKey: qk.me, queryFn: endpoints.me, staleTime: 5 * 60_000 });
 
+export const useHousehold = () => useQuery({ queryKey: qk.household, queryFn: endpoints.household });
+
 /** The currency every total is shown in. See prefs.baseCurrency. */
 export function useBaseCurrency(): string {
     return useSyncExternalStore(prefs.subscribe, () => prefs.baseCurrency, () => 'USD');

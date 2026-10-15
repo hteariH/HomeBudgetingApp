@@ -438,6 +438,42 @@ export interface UserDto {
     lastName?: string;
     baseCurrency?: CurrencyDto | null;
     role?: 'USER' | 'ADMIN';
+    householdId?: number;
+    householdName?: string;
+    householdRole?: HouseholdRole;
+}
+
+export type HouseholdRole = 'OWNER' | 'MEMBER';
+
+export interface MemberDto {
+    userId: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: HouseholdRole;
+    joinedAt: string;
+}
+
+export interface HouseholdDto {
+    id: number;
+    name: string;
+    baseCurrency: string;
+    members: MemberDto[];
+}
+
+/** A live invitation, without the token: that is shown once, when it is created. */
+export interface InviteDto {
+    id: number;
+    createdAt: string;
+    expiresAt: string;
+    createdBy?: string | null;
+}
+
+export interface CreatedInviteDto {
+    id: number;
+    path: string;
+    expiresAt: string;
+    qrRows?: string[] | null;
 }
 
 export interface JwtResponseDto {

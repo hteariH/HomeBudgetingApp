@@ -11,6 +11,7 @@ import { Dialog } from '../../components/Dialog';
 import { ErrorBanner, errorText } from '../../components/ErrorBanner';
 import { Card, Field } from '../../components/forms';
 import { MoneyText } from '../../components/MoneyText';
+import { QrRows } from '../../components/QrRows';
 import { Page, PageLoading } from '../../shell/Page';
 import { splitAccounts } from '../accounts/accounts.logic';
 import { defaultImportRange, importSelections, minorToMoney, suggestedChoices, type Choice } from './banks.logic';
@@ -19,24 +20,6 @@ import { ImportRows } from './ImportRows';
 
 const CONSENT_POLL_MS = 2_500;
 const refreshConnections = () => queryClient.invalidateQueries({ queryKey: [...qk.bank, 'connections'] });
-
-/**
- * A QR code the server already encoded, as rows of '1' and '0'. Drawn black on white with a
- * quiet zone, whatever the theme - the one thing on this screen whose job is to be scanned.
- */
-const QrCode: React.FC<{ rows: string[] }> = ({ rows }) => {
-    if (rows.length === 0) return null;
-    const n = rows.length;
-    return (
-        <div className="self-center rounded-lg bg-white p-3">
-            <svg width={200} height={200} viewBox={`0 0 ${n} ${n}`} shapeRendering="crispEdges" role="img" aria-label="QR">
-                {rows.flatMap((row, y) =>
-                    [...row].map((cell, x) => (cell === '1' ? <rect key={`${x}-${y}`} x={x} y={y} width={1.02} height={1.02} fill="#000" /> : null)),
-                )}
-            </svg>
-        </div>
-    );
-};
 
 /** Asking the bank for a connection the user approves in the bank's own app. Port of ConsentDialog. */
 const ConsentDialog: React.FC<{ provider: RestBankProvider; onClose: () => void }> = ({ provider, onClose }) => {
@@ -116,7 +99,7 @@ const ConsentDialog: React.FC<{ provider: RestBankProvider; onClose: () => void 
                 ) : (
                     <>
                         <p>{t('banks_consent_scan', { 0: provider.displayName })}</p>
-                        <QrCode rows={challenge.qrRows ?? []} />
+                        <QrRows rows={challenge.qrRows ?? []} />
                         <a href={challenge.approveUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary self-center">
                             {t('banks_consent_open')} <ExternalLink size={14} />
                         </a>

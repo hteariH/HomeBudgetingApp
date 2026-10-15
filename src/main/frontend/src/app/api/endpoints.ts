@@ -136,6 +136,15 @@ export const endpoints = {
     adminDeleteUser: (userId: number) => api<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
 
     // ── households ──────────────────────────────────────────────────────────
+    household: () => api<T.HouseholdDto>('/household'),
+    renameHousehold: (name: string) => api<T.HouseholdDto>('/household', { method: 'PUT', json: { name } }),
+    invites: () => api<T.InviteDto[]>('/household/invites'),
+    createInvite: (origin: string) =>
+        api<T.CreatedInviteDto>('/household/invites', { method: 'POST', json: { origin } }),
+    revokeInvite: (id: number) => api<void>(`/household/invites/${id}`, { method: 'DELETE' }),
+    removeMember: (userId: number) => api<void>(`/household/members/${userId}`, { method: 'DELETE' }),
+    transferOwnership: (userId: number) => api<void>('/household/owner', { method: 'POST', json: { userId } }),
+    leaveHousehold: () => api<void>('/household/leave', { method: 'POST' }),
     /** Moves the caller's books into the household the invitation belongs to. */
     acceptInvite: (token: string) =>
         api<{ householdId: number; householdName: string }>(`/invites/${encodeURIComponent(token)}/accept`, { method: 'POST' }),
