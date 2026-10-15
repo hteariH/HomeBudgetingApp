@@ -28,6 +28,8 @@ export const qk = {
     household: ['household'] as const,
     invites: ['household', 'invites'] as const,
     adminUsers: ['admin', 'users'] as const,
+    aiProvider: ['household', 'ai-provider'] as const,
+    adminAiProvider: ['admin', 'ai-provider'] as const,
     adminRegistration: ['admin', 'registration'] as const,
 };
 

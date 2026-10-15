@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { api } from './http';
+import { api, apiBlob } from './http';
 import { session } from './session';
 
 const json = (status: number, body: unknown) =>
@@ -89,4 +89,33 @@ it('a genuine 403 still fails after one refresh', async () => {
     );
     await expect(api('/currencies', { method: 'POST', json: {} })).rejects.toMatchObject({ status: 403 });
     expect(session.get()?.access).toBe('new');
+});
+
+it('apiBlob sends the bearer token and returns the bytes', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('jpeg-bytes', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const blob = await apiBlob('/receipts/1/photo');
+    expect(blob.size).toBe('jpeg-bytes'.length);
+    expect((fetchMock.mock.calls[0][1] as Init).headers.Authorization).toBe('Bearer old');
+});
+
+it('apiBlob retries once after a refresh on 401', async () => {
+    let refreshes = 0;
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init: Init) => {
+            if (url.endsWith('/auth/refresh')) {
+                refreshes++;
+                return json(200, { token: 'new', refreshToken: 'r2', email: 'a@b.c' });
+            }
+            return init.headers.Authorization === 'Bearer new' ? new Response('ok', { status: 200 }) : json(401, {});
+        }),
+    );
+    expect((await apiBlob('/receipts/1/photo')).size).toBe(2);
+    expect(refreshes).toBe(1);
+});
+
+it('apiBlob throws an ApiError when the file is refused', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json(404, {})));
+    await expect(apiBlob('/receipts/1/photo')).rejects.toMatchObject({ status: 404 });
 });

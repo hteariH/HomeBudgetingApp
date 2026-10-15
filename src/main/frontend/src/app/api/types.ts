@@ -495,6 +495,7 @@ export interface InstanceDto {
     registrationOpen: boolean;
     mailEnabled: boolean;
     bankProviders: string[];
+    receiptScan: boolean;
 }
 
 export interface AdminUserDto {
@@ -516,4 +517,32 @@ export interface RegistrationSettingDto {
 export interface ResetLinkDto {
     path: string;
     expiresAt: string;
+}
+
+export type AiProviderType = 'OPENAI_COMPATIBLE' | 'ANTHROPIC' | 'GEMINI';
+export type AiProviderSource = 'HOUSEHOLD' | 'INSTANCE' | 'ENVIRONMENT' | 'NONE';
+
+/** Which model reads receipts, and where. The key itself never comes back. */
+export interface ProviderView {
+    source: AiProviderSource;
+    type?: AiProviderType | null;
+    baseUrl?: string | null;
+    model?: string | null;
+    hasKey: boolean;
+    /** The host photos are sent to. */
+    host?: string | null;
+}
+
+/** `apiKey` left out keeps the stored key; an empty string clears it. */
+export interface ProviderRequest {
+    type: AiProviderType;
+    baseUrl?: string;
+    model: string;
+    apiKey?: string;
+}
+
+export interface ProviderTestResult {
+    ok: boolean;
+    receipt?: unknown;
+    reason?: string;
 }
