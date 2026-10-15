@@ -195,8 +195,9 @@ android {
         // insets - verify the header, the bottom bar and the Quick Add sheet on a device
         // before a release goes out.
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // Release builds pass these from the git tag; local builds keep a dev version.
+        versionCode = (findProperty("appVersionCode") as String?)?.toInt() ?: 1
+        versionName = (findProperty("appVersionName") as String?) ?: "0.0.0-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

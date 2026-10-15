@@ -55,8 +55,10 @@ from `src/main/frontend/public/privacy.html`. Change both together if the wordin
 ### 1.1 Decide the version
 
 The version comes from the tag: `release.yml` takes `X.Y.Z` from the tag `vX.Y.Z` for the
-image, the server and the APK's `versionName`, and uses the workflow run number as the APK's
-`versionCode`, so it always goes up. There is nothing to edit in `build.gradle.kts`.
+server and the APK's `versionName` (Maven and Gradle versions cannot start with `v`), and uses
+the workflow run number as the APK's `versionCode`, so it always goes up. The image itself is
+tagged `vX.Y.Z`, exactly as the git tag, and `latest`. There is nothing to edit in
+`build.gradle.kts`.
 
 ### 1.2 Run everything locally first
 
@@ -88,7 +90,7 @@ git push origin v0.1.1
 
 Watch the run on the repository's **Actions** tab. When it is green the GitHub Release has the
 signed APK, `docker-compose.yml` and `env.example` attached, and
-`ghcr.io/htearih/personalmoney` has the new version's tag and `latest`.
+`ghcr.io/htearih/personalmoney` has the tags `vX.Y.Z` and `latest`.
 
 ### 1.5 Check the image runs on both architectures
 
