@@ -111,8 +111,48 @@ class QuickAddViewModelReceiptTest {
 
     @Test
     fun `the button stays hidden when the server cannot be asked`() = runTest {
-        coEvery { scanner.canScan() } returns false
+        coEvery { scanner.canScan() } throws IllegalStateException("no server")
 
-        assertFalse(viewModel().scan.value.canScan)
+        val vm = viewModel()
+
+        coVerify(exactly = 1) { scanner.canScan() }
+        assertFalse(vm.scan.value.canScan)
+    }
+
+    @Test
+    fun `a second tap after saving does not save the receipt twice`() = runTest {
+        coEvery { scanner.canScan() } returns true
+        coEvery { scanner.scan(any()) } returns ScanOutcome.Ready(
+            ReceiptDraft(receiptUuid = "r-1", total = "10.00", suggestedCategoryUuid = "cat-food")
+        )
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.scanReceipt(byteArrayOf(1))
+
+        vm.submit()
+        vm.submit()
+
+        coVerify(exactly = 1) { transactionRepository.insert(any()) }
+        coVerify(exactly = 1) { transactionRepository.insert(match { it.receiptUuid == "r-1" }) }
+        assertFalse(vm.uiState.value.canSave)
+    }
+
+    @Test
+    fun `the next entry starts without the receipt`() = runTest {
+        coEvery { scanner.canScan() } returns true
+        coEvery { scanner.scan(any()) } returns ScanOutcome.Ready(
+            ReceiptDraft(receiptUuid = "r-1", total = "10.00", suggestedCategoryUuid = "cat-food")
+        )
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.scanReceipt(byteArrayOf(1))
+        vm.submit()
+
+        // The inline panel stays on screen: the next amount typed is a new entry.
+        vm.setAmountText("5")
+        vm.submit()
+
+        coVerify(exactly = 1) { transactionRepository.insert(match { it.receiptUuid == "r-1" }) }
+        coVerify(exactly = 1) { transactionRepository.insert(match { it.receiptUuid == null && it.amountMinor == 500L }) }
     }
 }

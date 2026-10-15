@@ -90,6 +90,28 @@ class ReceiptScannerTest {
     }
 
     @Test
+    fun `a dropped poll is ridden out`() = runTest {
+        val scanner = scannerOver {
+            when (polls) {
+                1 -> respond("""{"uuid":"r-1","status":"PENDING"}""", HttpStatusCode.OK, json)
+                2 -> throw IOException("connection reset")
+                else -> respond("""{"uuid":"r-1","status":"READY","total":"10.00"}""", HttpStatusCode.OK, json)
+            }
+        }
+
+        assertEquals(ScanOutcome.Ready(ReceiptDraft(receiptUuid = "r-1", total = "10.00")), scanner.scan(byteArrayOf(1)))
+        assertEquals(3, polls)
+    }
+
+    @Test
+    fun `three dropped polls in a row are offline`() = runTest {
+        val scanner = scannerOver { throw IOException("no route") }
+
+        assertEquals(ScanOutcome.Offline, scanner.scan(byteArrayOf(1)))
+        assertEquals(3, polls)
+    }
+
+    @Test
     fun `a receipt the model could not read fails with the server's reason`() = runTest {
         val scanner = scannerOver {
             respond(

@@ -139,7 +139,6 @@ fun SettingsScreen(
                 SettingsItem(
                     title = stringResource(Res.string.quickadd_scan_receipt),
                     subtitle = stringResource(Res.string.receipt_setup_on_web),
-                    onClick = { }
                 )
             }
 
@@ -291,12 +290,13 @@ internal fun ToggleRow(
 internal fun SettingsItem(
     title: String,
     subtitle: String? = null,
-    onClick: () -> Unit
+    /** Null for an item that only informs. */
+    onClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium)

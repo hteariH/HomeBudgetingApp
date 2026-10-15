@@ -101,9 +101,17 @@ class ReceiptScanner(
         }
 
     private suspend fun poll(uuid: String): ScanOutcome {
+        // The photo is already on the server and being read, so one dropped poll on a
+        // mobile connection is no reason to give up on it. Only a run of them is.
+        var failedPolls = 0
         repeat(maxPolls) {
             delay(pollInterval)
-            val receipt = api.receipt(uuid)
+            val receipt = try {
+                api.receipt(uuid).also { failedPolls = 0 }
+            } catch (e: IOException) {
+                if (++failedPolls >= MAX_FAILED_POLLS) throw e
+                return@repeat
+            }
             when (receipt.status) {
                 "READY" -> return ScanOutcome.Ready(receipt.toDraft())
                 "FAILED" -> return ScanOutcome.Failed(receipt.failureReason)
@@ -120,6 +128,9 @@ private fun ReceiptDto.toDraft() = ReceiptDraft(
     merchant = merchant?.takeIf { it.isNotBlank() },
     suggestedCategoryUuid = suggestedCategoryUuid,
 )
+
+/** Consecutive polls that may fail to reach the server before the scan counts as offline. */
+private const val MAX_FAILED_POLLS = 3
 
 @Serializable
 private data class ErrorBody(val message: String? = null)
