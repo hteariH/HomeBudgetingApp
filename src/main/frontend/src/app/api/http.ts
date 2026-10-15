@@ -9,7 +9,7 @@ const TOKEN_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh'];
  * Statuses whose `message` the server writes for a person to read. 500 is left out on
  * purpose: its message is a raw exception, which belongs in a log, not on a screen.
  */
-const USER_FACING = new Set([400, 402, 404, 422, 502]);
+const USER_FACING = new Set([400, 404, 422, 502]);
 
 export class ApiError extends Error {
     constructor(
@@ -18,11 +18,6 @@ export class ApiError extends Error {
     ) {
         super(serverMessage ?? `HTTP ${status}`);
         this.name = 'ApiError';
-    }
-
-    /** 402 means exactly one thing on this server: a limit of the free plan. */
-    get isPlanLimit(): boolean {
-        return this.status === 402;
     }
 }
 

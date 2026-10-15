@@ -7,21 +7,19 @@ import { en } from './i18n/locales/en';
  * The default create-react-app test asserted on a "learn react" link that this app
  * has never contained, so the suite failed on a clean checkout.
  *
- * These cover the routing decision that is easy to break instead: `/` is the landing
- * page to a visitor and the dashboard to someone signed in.
+ * These cover the routing decision that is easy to break instead: `/` is the app, which
+ * sends a visitor with no session on to sign-in.
  */
 beforeEach(() => {
     localStorage.clear();
     window.history.pushState({}, '', '/');
 });
 
-test('shows the landing page to a visitor with no token', () => {
+test('sends a visitor at / to sign-in, since there is no landing page in the app any more', async () => {
     render(<App />);
 
-    expect(screen.getByText(en['landing.hero.titleAccent'])).toBeInTheDocument();
-    expect(screen.getByText(en['landing.features.title'])).toBeInTheDocument();
-    // The hero and the closing band share this label, so more than one is expected.
-    expect(screen.getAllByText(en['landing.hero.ctaPrimary']).length).toBeGreaterThan(0);
+    expect(await screen.findByText(en['login.title'])).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/login');
 });
 
 test('resolves the interface language from the browser', () => {

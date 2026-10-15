@@ -19,7 +19,6 @@ export const AppRoutes = {
     analytics: `${APP}/analytics`,
     banks: `${APP}/banks`,
     homeMoney: `${APP}/import/homemoney`,
-    premium: `${APP}/premium`,
     settings: `${APP}/settings`,
     onboarding: `${APP}/onboarding`,
 } as const;
@@ -56,7 +55,6 @@ const LEGACY: [pattern: string, to: (segments: string[], query: string) => strin
     ['subscriptions', () => AppRoutes.subscriptions],
     ['subscription/edit', (_, q) => `${APP}/subscriptions/edit${q}`],
     ['settings', () => AppRoutes.settings],
-    ['premium', () => AppRoutes.premium],
     ['currencies', () => AppRoutes.currencies],
     ['currency/edit', (_, q) => `${APP}/currencies/edit${q}`],
     ['banks', () => AppRoutes.banks],

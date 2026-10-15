@@ -439,16 +439,6 @@ export interface UserDto {
     baseCurrency?: CurrencyDto | null;
 }
 
-export interface BillingStatusDto {
-    premium?: boolean;
-    expiresAt?: string | null;
-    source?: string;
-    autoRenewing?: boolean;
-    productId?: string | null;
-    purchasesAccepted?: boolean;
-    products?: string[];
-}
-
 export interface JwtResponseDto {
     token: string;
     refreshToken: string;

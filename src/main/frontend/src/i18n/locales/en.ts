@@ -8,7 +8,7 @@ import { appEn } from './app.en';
  * Russian and Ukrainian add `_few` / `_many` on top of these.
  */
 export const en = {
-    // The app's strings, brought across from the Compose client. Landing keys follow and
+    // The app's strings, brought across from the Compose client. The sign-in pages' keys follow and
     // cannot clash: they are dotted, the app's are snake_case.
     ...appEn,
 
@@ -117,102 +117,6 @@ export const en = {
     'verify.failedBody': 'This link is not valid.',
     'verify.noToken': 'This link is missing its token.',
     'verify.failedNote': 'Confirmation links expire after 24 hours and work once. Sign in and ask for a new one.',
-
-    // ─── Landing ─────────────────────────────────────────────────────────
-    'landing.nav.features': 'Features',
-    'landing.nav.how': 'How it works',
-    'landing.nav.faq': 'FAQ',
-    'landing.nav.signIn': 'Sign in',
-    'landing.nav.openApp': 'Open app',
-    'landing.nav.getStarted': 'Get started',
-
-    'landing.hero.badge': 'Multi-currency budgeting',
-    // Split so the second half can carry the gradient without slicing a word out
-    // of a sentence - which does not survive translation.
-    'landing.hero.titleLead': 'Know where your money',
-    'landing.hero.titleAccent': 'actually goes',
-    'landing.hero.subtitle':
-        'PersonalMoney keeps your accounts, transactions and transfers in one place — across as many currencies as you hold — and turns them into a picture you can read in a glance.',
-    'landing.hero.ctaPrimary': 'Create a free account',
-    'landing.hero.ctaSecondary': 'I already have an account',
-    'landing.hero.note': 'No card required. Setting up takes a minute.',
-
-    'landing.preview.netWorth': 'Net worth',
-    'landing.preview.income': 'Income',
-    'landing.preview.expenses': 'Expenses',
-    'landing.preview.thisMonth': 'This month',
-    // Sample category names inside the mock dashboard.
-    'landing.preview.cat.groceries': 'Groceries',
-    'landing.preview.cat.rent': 'Rent',
-    'landing.preview.cat.transport': 'Transport',
-    'landing.preview.cat.other': 'Everything else',
-
-    'landing.features.title': 'Everything a household ledger needs',
-    'landing.features.subtitle': 'No feature bloat — just the pieces you reach for every week.',
-
-    'landing.features.accounts.title': 'Accounts in any currency',
-    'landing.features.accounts.body':
-        'Checking, savings, cash, credit and investment accounts, each in its own currency with its own precision — from yen with no decimals to bitcoin with eight.',
-
-    'landing.features.transactions.title': 'Transactions worth reviewing',
-    'landing.features.transactions.body':
-        'Record income and expenses, tag them with your own categories, then filter by account, type or date range to answer a specific question.',
-
-    'landing.features.transfers.title': 'Transfers that keep the rate',
-    'landing.features.transfers.body':
-        'Move money between accounts and both sides stay honest. Cross-currency transfers store the actual rate you got, not today’s.',
-
-    // Bank connections are deliberately not advertised here: the feature is
-    // experimental and currently reaches exactly one Ukrainian bank.
-    'landing.features.interface.title': 'Reads in your language',
-    'landing.features.interface.body':
-        'English, Russian and Ukrainian, picked up from your browser and switchable whenever you like — each with a light and a dark theme.',
-
-    'landing.features.csv.title': 'Import any statement',
-    'landing.features.csv.body':
-        'Every bank exports CSV. Column detection is a guess you can correct, duplicates are spotted, and categories are suggested from what you picked before.',
-
-    'landing.features.insights.title': 'A dashboard that answers',
-    'landing.features.insights.body':
-        'Net worth, income against expenses over six months, and this month’s spending split by category — all on one screen.',
-
-    'landing.how.title': 'Three steps to a real picture',
-    'landing.how.step1.title': 'Create your account',
-    'landing.how.step1.body': 'Sign up with an email address and confirm it. That is the whole setup.',
-    'landing.how.step2.title': 'Add your accounts',
-    'landing.how.step2.body': 'Enter each account with its currency and starting balance, and the categories you think in.',
-    'landing.how.step3.title': 'Import or record',
-    'landing.how.step3.body': 'Drop in a CSV statement or add transactions by hand — then read the dashboard.',
-
-    'landing.trust.title': 'Careful with your money, by design',
-    'landing.trust.body':
-        'The parts of a budgeting app that are easy to get quietly wrong — exchange rates, repeated imports, rounding — are the parts handled most deliberately here.',
-    'landing.trust.point1': 'Re-importing a period you have already loaded is safe: rows that are on file are recognised and left alone.',
-    'landing.trust.point2': 'Resetting your password signs you out everywhere, so a recovered account is genuinely recovered.',
-    'landing.trust.point3': 'Amounts are stored as exact decimals rather than floating point, so balances add up to the cent.',
-
-    'landing.faq.title': 'Questions worth asking first',
-    'landing.faq.q1': 'Does it handle more than one currency?',
-    'landing.faq.a1':
-        'That is the point of it. Every account has its own currency and decimal precision, transfers between currencies record the rate that was actually used, and the dashboard totals are shown per account so nothing is silently converted.',
-    'landing.faq.q2': 'Do I have to import files?',
-    'landing.faq.a2':
-        'No. CSV import is there for when a whole month is easier to bring in at once — you can run the entire thing by entering transactions yourself, and plenty of people do.',
-    'landing.faq.q3': 'What happens to duplicates when I import twice?',
-    'landing.faq.a3':
-        'Imported rows are matched against what is already there and shown as already imported, greyed out and excluded. Re-importing an overlapping date range is safe.',
-    'landing.faq.q4': 'Who does the app talk to?',
-    'landing.faq.a4':
-        'Its own backend. There is no ad tracking and no third-party analytics built into it, and asking for a password reset never reveals whether an address has an account here.',
-
-    'landing.cta.title': 'Start with this month',
-    'landing.cta.body': 'Add your accounts, import a statement, and see the month you just had.',
-    'landing.cta.button': 'Create a free account',
-
-    'landing.footer.tagline': 'Personal finance, clearly.',
-    'landing.footer.product': 'Product',
-    'landing.footer.account': 'Account',
-    'landing.footer.rights': '© {{year}} PersonalMoney',
 
     // ─── Dashboard ───────────────────────────────────────────────────────
     'dashboard.title': 'Dashboard',

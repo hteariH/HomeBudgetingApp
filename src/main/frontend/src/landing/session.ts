@@ -15,11 +15,6 @@ export function saveSession(res: AuthResponse): void {
     session.save(res);
 }
 
-/** Whether this browser already has an account signed in - the landing page asks. */
-export function hasSession(): boolean {
-    return session.get() !== null;
-}
-
 // The shape a path of this app can have. Anything else - another origin, a value carrying
 // its own `#`, a control character - is dropped rather than repaired.
 const APP_PATH_SHAPE = /^\/app(\/[A-Za-z0-9/?&=_.,:%-]*)?$/;

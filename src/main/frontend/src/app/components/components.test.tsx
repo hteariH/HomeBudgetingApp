@@ -84,12 +84,6 @@ describe('Dialog', () => {
 });
 
 describe('ErrorBanner', () => {
-    it("shows the server's sentence and offers Premium on a plan limit", () => {
-        wrap(<ErrorBanner error={new ApiError(402, 'The free plan covers 5 accounts.')} />);
-        expect(screen.getByText(/The free plan covers 5 accounts\./)).toBeInTheDocument();
-        expect(screen.getByRole('link')).toHaveAttribute('href', '/app/premium');
-    });
-
     it('falls back to a localised sentence when the server wrote none', () => {
         wrap(<ErrorBanner error={new ApiError(500, null)} />);
         expect(screen.getByRole('alert').textContent).toContain('Something went wrong');

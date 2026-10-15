@@ -37,9 +37,3 @@ it("a body that is not the server's error shape yields nothing", async () => {
 it('a non-HTTP failure has no server message', () => {
     expect(new ApiError(0, null).serverMessage).toBeNull();
 });
-
-it("the free plan's refusal is recognised as one, not just read", async () => {
-    const body = '{"status":402,"error":"Plan Limit Reached","message":"The free plan covers 5 accounts. Subscribe to add more."}';
-    expect((await apiErrorFrom(res(402, body))).isPlanLimit).toBe(true);
-    expect((await apiErrorFrom(res(404, body))).isPlanLimit).toBe(false);
-});

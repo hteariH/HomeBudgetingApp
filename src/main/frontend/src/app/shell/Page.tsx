@@ -49,7 +49,7 @@ export const BackButton: React.FC<{ fallback: string; label: string }> = ({ fall
     );
 };
 
-/** The spinner the landing page already uses, centred in the space a screen would take. */
+/** The spinner the sign-in pages already use, centred in the space a screen would take. */
 export const PageLoading: React.FC = () => (
     <div className="loading">
         <div className="spinner" />

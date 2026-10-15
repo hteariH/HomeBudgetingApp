@@ -25,7 +25,6 @@ const CurrencyEditPage = lazy(() => import('./features/currencies/CurrencyEditPa
 const AnalyticsPage = lazy(() => import('./features/analytics/AnalyticsPage'));
 const BanksPage = lazy(() => import('./features/banks/BanksPage'));
 const HomeMoneyPage = lazy(() => import('./features/homemoney/HomeMoneyPage'));
-const PremiumPage = lazy(() => import('./features/premium/PremiumPage'));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 const OnboardingPage = lazy(() => import('./features/onboarding/OnboardingPage'));
 
@@ -103,7 +102,6 @@ const Shell: React.FC = () => {
                             <Route path="analytics" element={<AnalyticsPage />} />
                             <Route path="banks" element={<BanksPage />} />
                             <Route path="import/homemoney" element={<HomeMoneyPage />} />
-                            <Route path="premium" element={<PremiumPage />} />
                             <Route path="settings" element={<SettingsPage />} />
                             <Route path="onboarding" element={<OnboardingPage />} />
                             <Route path="*" element={<Navigate to="/app" replace />} />
@@ -115,7 +113,7 @@ const Shell: React.FC = () => {
     );
 };
 
-/** Everything under /app: the signed-in application. Lazy-loaded, so the landing page never downloads it. */
+/** Everything under /app: the signed-in application. Lazy-loaded, so the sign-in pages load without it. */
 const AppRoot: React.FC = () => (
     <QueryClientProvider client={queryClient}>
         <AuthGuard>

@@ -3,7 +3,6 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import './index.css';
 import { I18nProvider } from './i18n';
 import { ThemeProvider } from './theme';
-import Landing from './landing/Landing';
 import VerifyEmail from './landing/VerifyEmail';
 import ForgotPassword from './landing/ForgotPassword';
 import ResetPassword from './landing/ResetPassword';
@@ -12,7 +11,7 @@ import Register from './landing/Register';
 import { AppRoutes } from './app/lib/routes';
 import { PageLoading } from './app/shell/Page';
 
-// Lazy, so a visitor to the landing page never downloads the application.
+// Lazy, so the sign-in pages load without the application.
 const AppRoot = lazy(() => import('./app/AppRoot'));
 
 /**
@@ -31,15 +30,15 @@ const LEGACY_ROUTES: Record<string, string> = {
 };
 
 /**
- * The public site. The root is the landing page to everyone - being signed in is not a
- * reason to be denied the page describing the product; it swaps "sign in" for a way into
- * the app. Anything unrecognised goes to the landing page rather than into the app.
+ * The address is the app. There is no marketing page in a self-hosted instance, so the root
+ * goes to the dashboard (and from there to sign-in when there is no session), and so does
+ * anything unrecognised.
  */
 const Root: React.FC = () => {
     const { pathname } = useLocation();
-    if (pathname === '/') return <Landing />;
+    if (pathname === '/') return <Navigate to={AppRoutes.dashboard} replace />;
     const target = LEGACY_ROUTES[pathname];
-    return <Navigate to={target ?? '/'} replace />;
+    return <Navigate to={target ?? AppRoutes.dashboard} replace />;
 };
 
 const App: React.FC = () => (

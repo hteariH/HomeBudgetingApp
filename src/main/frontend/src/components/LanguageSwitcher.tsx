@@ -3,7 +3,7 @@ import { Check, Globe } from 'lucide-react';
 import { Lang, LANGUAGES, useI18n } from '../i18n';
 
 /**
- * Language picker shared by the app header and the landing page.
+ * Language picker shared by the app header and the sign-in pages.
  *
  * A menu rather than a native <select> so the flag and the language's own name can
  * be shown together - a first-time visitor who cannot read the current interface

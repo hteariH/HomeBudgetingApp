@@ -22,7 +22,6 @@ export const qk = {
     transfers: ['transfers'] as const,
     subscriptions: ['subscriptions'] as const,
     me: ['me'] as const,
-    billing: ['billing'] as const,
     bank: ['bank'] as const,
     homeMoney: ['homemoney'] as const,
 };

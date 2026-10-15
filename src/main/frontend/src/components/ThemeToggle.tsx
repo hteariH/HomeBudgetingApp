@@ -3,7 +3,7 @@ import { Moon, Sun } from 'lucide-react';
 import { useT } from '../i18n';
 import { useTheme } from '../theme';
 
-/** Dark/light switch, shared by the app header and the landing page. */
+/** Dark/light switch, shared by the app header and the sign-in pages. */
 const ThemeToggle: React.FC = () => {
     const t = useT();
     const { theme, toggleTheme } = useTheme();
