@@ -9,4 +9,5 @@ interface HouseholdMemberRepository : JpaRepository<HouseholdMember, Long> {
     fun findFirstByUserId(userId: Long): HouseholdMember?
     fun countByHouseholdId(householdId: Long): Long
     fun findAllByHouseholdId(householdId: Long): List<HouseholdMember>
+    fun findAllByHouseholdIdOrderByJoinedAtAscIdAsc(householdId: Long): List<HouseholdMember>
 }

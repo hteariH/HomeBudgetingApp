@@ -320,5 +320,8 @@ data class UserResponse(
     val lastName: String,
     val role: Role,
     val emailVerified: Boolean,
-    val baseCurrency: CurrencyResponse?
+    val baseCurrency: CurrencyResponse?,
+    val householdId: Long,
+    val householdName: String,
+    val householdRole: HouseholdRole
 )

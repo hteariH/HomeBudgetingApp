@@ -99,6 +99,19 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 403, error = "Forbidden", message = "Not allowed")
         )
 
+    /** An invitation that existed and no longer works: expired, used, or withdrawn. */
+    @ExceptionHandler(com.homebudget.app.household.InviteGoneException::class)
+    fun handleInviteGone(ex: com.homebudget.app.household.InviteGoneException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.GONE).body(
+            ErrorResponse(status = 410, error = "Invitation Gone", message = ex.message)
+        )
+
+    @ExceptionHandler(com.homebudget.app.household.InviteLimitException::class)
+    fun handleInviteLimit(ex: com.homebudget.app.household.InviteLimitException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            ErrorResponse(status = 409, error = "Too Many Invitations", message = ex.message)
+        )
+
     /**
      * A failed sign-in is a 401, not a 500.
      *

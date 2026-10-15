@@ -68,8 +68,8 @@ fun Category.toResponse(baseDecimals: Int) = CategoryResponse(
     createdAt = createdAt
 )
 
-/** The household carries the base currency; the login does not. */
-fun User.toResponse(household: Household) = UserResponse(
+/** The household carries the base currency; the login does not. [householdRole] is this login's place in it. */
+fun User.toResponse(household: Household, householdRole: HouseholdRole) = UserResponse(
     id = id,
     uuid = uuid,
     email = email,
@@ -77,7 +77,10 @@ fun User.toResponse(household: Household) = UserResponse(
     lastName = lastName,
     role = role,
     emailVerified = emailVerified,
-    baseCurrency = household.baseCurrency?.toResponse()
+    baseCurrency = household.baseCurrency?.toResponse(),
+    householdId = household.id,
+    householdName = household.name,
+    householdRole = householdRole
 )
 
 // ───── Transaction Mappers ─────

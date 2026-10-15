@@ -48,6 +48,8 @@ class AuthRateLimitFilter(
 
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         val path = request.servletPath ?: return true
+        // Invitation tokens are guessable surface too.
+        if (path.startsWith("/api/invites/")) return false
         // The credential-guessing and mail-sending surface. Refresh and logout carry
         // an opaque secret, so they are not worth guessing at.
         return path !in setOf(

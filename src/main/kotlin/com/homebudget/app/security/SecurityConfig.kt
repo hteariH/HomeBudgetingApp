@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -60,6 +61,9 @@ class SecurityConfig(
                     // Read before anyone signs in: whether to show setup, register and
                     // "forgot password", and whether this is a PersonalMoney server at all.
                     .requestMatchers("/api/instance").permitAll()
+                    // The join page reads an invitation's household and inviter before
+                    // anyone has signed in; accepting it (a POST) still needs a session.
+                    .requestMatchers(HttpMethod.GET, "/api/invites/*").permitAll()
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
             }
