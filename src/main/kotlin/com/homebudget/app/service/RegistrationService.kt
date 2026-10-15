@@ -1,10 +1,15 @@
 package com.homebudget.app.service
 
+import com.homebudget.app.domain.HouseholdMember
+import com.homebudget.app.domain.HouseholdRole
 import com.homebudget.app.domain.InstanceSetting
 import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.User
 import com.homebudget.app.dto.RegisterRequest
+import com.homebudget.app.household.InviteService
 import com.homebudget.app.repository.CurrencyRepository
+import com.homebudget.app.repository.HouseholdMemberRepository
+import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.InstanceSettingRepository
 import com.homebudget.app.repository.UserRepository
 import org.slf4j.LoggerFactory
@@ -52,6 +57,9 @@ class RegistrationService(
     private val authFlow: AuthFlowService,
     private val mail: MailAvailability,
     private val passwordEncoder: PasswordEncoder,
+    private val invites: InviteService,
+    private val members: HouseholdMemberRepository,
+    private val householdRepo: HouseholdRepository,
     @Value("\${app.instance.registration:}") private val registrationEnv: String
 ) {
     companion object {
@@ -86,14 +94,18 @@ class RegistrationService(
     }
 
     /**
-     * Creates the login, its household and the default categories in one transaction.
+     * Creates the login, its household and the default categories in one transaction -
+     * or, with an invitation, the login and its place in the inviting household.
      *
      * The very first account is the instance's administrator: whoever installed it is the
-     * only person who can reach a fresh instance before the door closes behind them.
+     * only person who can reach a fresh instance before the door closes behind them. An
+     * invitation opens the door whatever the registration setting says: the household's
+     * owner has vouched for this person.
      */
     @Transactional
     fun register(req: RegisterRequest): User {
-        if (!registrationOpen()) throw RegistrationClosedException()
+        val invite = req.inviteToken?.let { invites.requireLive(it) }
+        if (invite == null && !registrationOpen()) throw RegistrationClosedException()
         require(!users.existsByEmail(req.email)) { "Email is already in use" }
         val first = setupRequired()
         val user = users.save(
@@ -107,9 +119,18 @@ class RegistrationService(
                 emailVerified = first || !mail.enabled
             )
         )
-        val baseCurrency = req.baseCurrencyId?.let { currencies.findById(it).orElse(null) }
-            ?: currencies.findByCode("USD")
-        categories.seedDefaultCategories(households.createFor(user, baseCurrency))
+        if (invite != null) {
+            // Joining a family: no household of their own, no default categories. Under the
+            // lock a join takes, so two forms submitting one token cannot both get in.
+            householdRepo.lockById(invite.household.id)
+            val live = invites.refreshLive(invite.id)
+            members.save(HouseholdMember(household = live.household, user = user, role = HouseholdRole.MEMBER))
+            invites.markUsed(live, user)
+        } else {
+            val baseCurrency = req.baseCurrencyId?.let { currencies.findById(it).orElse(null) }
+                ?: currencies.findByCode("USD")
+            categories.seedDefaultCategories(households.createFor(user, baseCurrency))
+        }
         if (mail.enabled && !user.emailVerified) authFlow.sendVerification(user)
         return user
     }

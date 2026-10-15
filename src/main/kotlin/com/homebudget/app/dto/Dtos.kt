@@ -282,7 +282,9 @@ data class RegisterRequest(
     @field:NotBlank @field:Size(min = 10, max = 128) val password: String,
     @field:NotBlank val firstName: String,
     @field:NotBlank val lastName: String,
-    val baseCurrencyId: Long? = null
+    val baseCurrencyId: Long? = null,
+    /** Joins the invitation's household instead of creating one; admits even when registration is closed. */
+    val inviteToken: String? = null
 )
 
 data class JwtResponse(

@@ -27,3 +27,5 @@ data class HouseholdResponse(
     val baseCurrency: CurrencyResponse?,
     val members: List<MemberResponse>
 )
+
+data class JoinedResponse(val householdId: Long, val householdName: String)

@@ -4,6 +4,7 @@ import com.homebudget.app.bank.QrCode
 import com.homebudget.app.domain.User
 import com.homebudget.app.repository.HouseholdMemberRepository
 import com.homebudget.app.security.SecurityUtils
+import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.security.MessageDigest
@@ -25,7 +26,8 @@ class InviteService(
     private val invites: HouseholdInviteRepository,
     private val members: HouseholdMemberRepository,
     private val securityUtils: SecurityUtils,
-    private val clock: Clock
+    private val clock: Clock,
+    private val em: EntityManager
 ) {
     companion object {
         val TTL: Duration = Duration.ofDays(7)
@@ -98,6 +100,18 @@ class InviteService(
             invite.usedAt != null -> throw InviteGoneException("This invitation has already been used")
             !invite.expiresAt.isAfter(now) -> throw InviteGoneException("This invitation has expired")
         }
+        return invite
+    }
+
+    /**
+     * The same invite re-read inside the caller's transaction, refused if it stopped being
+     * live. Callers hold its household's lock, so a concurrent use has committed by now;
+     * the refresh makes sure a copy this transaction loaded earlier does not hide it.
+     */
+    fun refreshLive(id: Long): HouseholdInvite {
+        val invite = invites.findById(id).orElseThrow { NoSuchElementException("This invitation link does not work") }
+        em.refresh(invite)
+        if (!invite.isLive(Instant.now(clock))) throw InviteGoneException("This invitation is no longer valid")
         return invite
     }
 

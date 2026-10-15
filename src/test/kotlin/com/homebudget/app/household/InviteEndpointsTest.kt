@@ -82,6 +82,23 @@ class InviteEndpointsTest {
     }
 
     @Test
+    fun `accepting needs a session, joins once, and refuses one's own household`() {
+        val owner = identity.newMember("anna")
+        val joiner = identity.newMember("boris")
+        val (_, token) = createInvite(owner)
+
+        mvc.perform(post("/api/invites/$token/accept")).andExpect { r ->
+            check(r.response.status == 401 || r.response.status == 403) { "got ${r.response.status}" }
+        }
+        mvc.perform(post("/api/invites/$token/accept").with(asUser(owner))).andExpect(status().isBadRequest)
+        mvc.perform(post("/api/invites/$token/accept").with(asUser(joiner)))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.householdId").value(owner.household.id))
+            .andExpect(jsonPath("$.householdName").value(owner.household.name))
+        mvc.perform(post("/api/invites/$token/accept").with(asUser(joiner))).andExpect(status().isGone)
+    }
+
+    @Test
     fun `the owner lists live invites and a revoked one drops out`() {
         val owner = identity.newMember("anna")
         val (id, _) = createInvite(owner)

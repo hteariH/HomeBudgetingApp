@@ -18,7 +18,7 @@ interface HouseholdRepository : JpaRepository<Household, Long> {
      * Takes the household's row lock for the rest of the transaction.
      *
      * Sync pushes into one household go one at a time behind it, so each stamps strictly
-     * after everything committed before it - see SyncService.nextStamp.
+     * after everything committed before it - see SyncClock.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT h FROM Household h WHERE h.id = :id")

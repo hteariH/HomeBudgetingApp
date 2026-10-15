@@ -7,7 +7,6 @@ import com.homebudget.app.security.SecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.Clock
 import java.time.Instant
 
 /**
@@ -39,10 +38,9 @@ class SyncService(
     private val transactionRepo: TransactionRepository,
     private val settingRepo: UserCurrencySettingRepository,
     private val currencyRepo: CurrencyRepository,
-    private val cursorRepo: SyncCursorRepository,
     private val householdRepo: HouseholdRepository,
     private val securityUtils: SecurityUtils,
-    private val clock: Clock
+    private val syncClock: SyncClock
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -81,7 +79,7 @@ class SyncService(
             .any { it.size >= capped }
 
         // The cursor is a timestamp that actually appears in the data, never `now`.
-        // Pushes stamp strictly-increasing times (see [nextStamp]), so any later write
+        // Pushes stamp strictly-increasing times (see [SyncClock]), so any later write
         // is guaranteed to sort after this cursor; handing back `now` instead would
         // skip a write that happened to land in the same millisecond as the pull.
         //
@@ -115,7 +113,7 @@ class SyncService(
         // fell between their commits would skip one of them for good.
         householdRepo.lockById(household.id)
 
-        val now = nextStamp(household)
+        val now = syncClock.next(household.id)
         val rejected = mutableListOf<SyncRejection>()
         var applied = 0
 
@@ -131,19 +129,6 @@ class SyncService(
             log.info("Sync push for household {}: {} applied, {} rejected", household.id, applied, rejected.size)
         }
         return SyncPushResponse(serverTime = now, applied = applied, rejected = rejected)
-    }
-
-    /**
-     * A stamp strictly later than anything this household already has.
-     *
-     * Millisecond collisions are not hypothetical - creating and deleting a row in
-     * quick succession lands both in the same millisecond, and `updated_at > cursor`
-     * then loses the second one permanently.
-     */
-    private fun nextStamp(household: Household): Instant {
-        val now = Instant.now(clock)
-        val latest = cursorRepo.latestUpdatedAt(household.id) ?: return now
-        return if (now.isAfter(latest)) now else latest.plusMillis(1)
     }
 
     /**

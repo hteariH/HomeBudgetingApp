@@ -8,7 +8,7 @@ import java.time.Instant
 /**
  * The newest `updated_at` a household has on any syncable table.
  *
- * Exists so that [com.homebudget.app.service.SyncService] can stamp each push strictly
+ * Exists so that [com.homebudget.app.service.SyncClock] can stamp each write strictly
  * later than everything already stored. Without that guarantee two writes can land in
  * the same millisecond, and a `updated_at > cursor` pull silently skips the second one
  * for good - a change that never reaches the other client and never comes back.
