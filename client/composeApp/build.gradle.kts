@@ -19,7 +19,7 @@ val keystoreProps = Properties().apply {
 val hasReleaseSigning = keystoreProps.getProperty("storeFile").orEmpty().isNotBlank()
 
 val privacyPolicyUrl = keystoreProps.getProperty("privacyPolicyUrl")
-    ?: "https://gist.github.com/hteariH/bfd7d6412cc41a227bcc53646655bfc2"
+    ?: "https://personalmoney.app/privacy.html"
 
 kotlin {
     androidTarget {

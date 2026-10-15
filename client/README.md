@@ -20,11 +20,6 @@
 - ✅ **Локализация** — `ru`, `en`, `uk`
 - ✅ **Тесты** — unit для Calculator, SubscriptionScheduler, FxSnapshot
 
-## Документы для Google Play
-
-- [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md) — шаблон Privacy Policy. Захостите на GitHub Pages или своём домене и обновите URL в `app/build.gradle.kts` (`PRIVACY_POLICY_URL`).
-- [`docs/DATA_SAFETY.md`](docs/DATA_SAFETY.md) — карта ответов на форму Data Safety в Play Console, отражающая реальное поведение приложения.
-
 ## Стек
 
 - Kotlin 2.1 + Jetpack Compose

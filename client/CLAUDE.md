@@ -8,8 +8,9 @@ Guidance for Claude Code when working in this repo. Keep this file current.
 HomeBudgeting server, which lives in the parent directory of this one: `client/` holds
 the Android client, the repository root holds the server. The web client is not here: it
 is the React app in `../src/main/frontend`, served by the same server at `/app`. Data lives in Room on-device and converges on the
-server through two-way sync, so the app keeps working with no network at all. Monetised with
-AdMob. Trilingual UI (en / ru / uk). The core value is fast, frictionless expense entry
+server through two-way sync, so the app keeps working with no network at all. No ads, no
+purchases: the app is a client of a self-hosted server whose address the user enters at
+sign-in. Trilingual UI (en / ru / uk). The core value is fast, frictionless expense entry
 (including a home-screen widget).
 
 Planning & backlog live in companion docs — read them before large changes:
@@ -20,13 +21,12 @@ Planning & backlog live in companion docs — read them before large changes:
 ## Stack
 
 Kotlin · Jetpack Compose · Material 3 · Hilt · Room · DataStore · WorkManager · Glance (widget) ·
-Retrofit + OkHttp (server API) · AdMob + UMP · Frankfurter FX API. Min SDK 26, Target SDK 35.
+Retrofit + OkHttp (server API) · Frankfurter FX API. Min SDK 26, Target SDK 35.
 Package `com.personalmoney` (debug app id `com.personalmoney.debug`).
 
 > Being migrated to Kotlin Multiplatform (Compose Multiplatform · Ktor · Room KMP · Koin)
 > so the same code serves Android, iOS and the web. Hilt→Koin and Retrofit→Ktor are
 > in flight; prefer the multiplatform-friendly option when touching `core/`.
-> Premium is sold through **Google Play Billing**, not RevenueCat — see Plans below.
 
 ## Build / test / run
 
