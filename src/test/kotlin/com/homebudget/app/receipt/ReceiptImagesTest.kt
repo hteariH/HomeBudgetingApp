@@ -81,6 +81,28 @@ class ReceiptImagesTest {
         assertFalse(dark(stored, 30, 30), "and no longer top-left")
     }
 
+    /** A real 1x1 PNG whose header claims [width] x [height]: a few bytes that would decode to gigabytes. */
+    private fun pngDeclaring(width: Int, height: Int): ByteArray {
+        val png = picture(1, 1, "png")
+        val buffer = java.nio.ByteBuffer.wrap(png)
+        // Signature (8), IHDR length (4), "IHDR" at 12, width at 16, height at 20, CRC at 29.
+        buffer.putInt(16, width)
+        buffer.putInt(20, height)
+        val crc = java.util.zip.CRC32().apply { update(png, 12, 17) }
+        buffer.putInt(29, crc.value.toInt())
+        return png
+    }
+
+    @Test
+    fun `a picture declaring huge dimensions is refused before it is decoded`() {
+        val images = ReceiptImages(dataDir.toString())
+        for ((w, h) in listOf(30_000 to 10, 10 to 20_001, 10_000 to 6_000)) {
+            val e = assertThrows<UnsupportedImageException> { images.store(pngDeclaring(w, h), "h", "r") }
+            assertEquals("The photo is too large to read", e.message, "${w}x$h")
+        }
+        assertFalse(Files.exists(dataDir.resolve("receipts")))
+    }
+
     private fun ByteArray.contains(text: String) = String(this, Charsets.ISO_8859_1).contains(text)
 
     @Test
@@ -97,6 +119,8 @@ class ReceiptImagesTest {
         assertEquals(1600, decoded.width)
         assertEquals(1200, decoded.height)
         assertArrayEquals(stored, images.read(relative))
+        // Written through a temporary file and moved into place; nothing else is left.
+        assertEquals(listOf("receipt-1.jpg"), Files.list(file.parent).use { s -> s.map { it.fileName.toString() }.toList() })
     }
 
     @Test

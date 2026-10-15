@@ -190,6 +190,42 @@ class ReceiptLinkTest {
     }
 
     @Test
+    fun `one push naming a receipt on two new transactions links the first and refuses the second`() {
+        val receipt = newReceipt()
+        val first = UUID.randomUUID().toString()
+        val second = UUID.randomUUID().toString()
+
+        val pushed = push(syncTx(first, receipt.uuid), syncTx(second, receipt.uuid))
+
+        assertEquals(1, pushed.applied)
+        val refused = pushed.rejected.single()
+        assertEquals(second, refused.uuid)
+        assertEquals(SyncRejectionReason.INVALID, refused.reason)
+        val pulled = syncService.pull(Instant.EPOCH, 500).changes.transactions
+        assertEquals(receipt.uuid, pulled.single { it.uuid == first }.receiptUuid)
+    }
+
+    @Test
+    fun `one push attaching a receipt to two existing transactions refuses the second`() {
+        val receipt = newReceipt()
+        val first = UUID.randomUUID().toString()
+        val second = UUID.randomUUID().toString()
+        val created = push(syncTx(first, null), syncTx(second, null))
+        assertTrue(created.rejected.isEmpty())
+
+        // The stored stamps, as a client would have them from its last pull.
+        val stored = syncService.pull(Instant.EPOCH, 500).changes.transactions.associate { it.uuid to it.updatedAt }
+        val pushed = push(
+            syncTx(first, receipt.uuid, base = stored[first]),
+            syncTx(second, receipt.uuid, base = stored[second])
+        )
+
+        assertEquals(1, pushed.applied, "rejections: ${pushed.rejected}")
+        assertEquals(second, pushed.rejected.single().uuid)
+        assertEquals(SyncRejectionReason.INVALID, pushed.rejected.single().reason)
+    }
+
+    @Test
     fun `sync refuses a foreign receipt and a receipt another transaction holds`() {
         val foreign = newReceipt(identity.newMember("neighbour"))
         identity.signIn(owner)

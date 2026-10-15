@@ -231,6 +231,15 @@ class ReceiptFlowTest {
     }
 
     @Test
+    fun `the multipart size limit answers 413 without naming a photo`() {
+        // The limit also guards the CSV import, so its message cannot talk about photos.
+        val answer = com.homebudget.app.controller.GlobalExceptionHandler()
+            .handleUploadTooLarge(org.springframework.web.multipart.MaxUploadSizeExceededException(16L * 1024 * 1024))
+        assertEquals(413, answer.statusCode.value())
+        assertEquals("The file is too large", answer.body!!.message)
+    }
+
+    @Test
     fun `too large and unreadable uploads are refused`() {
         upload(owner, ByteArray(16 * 1024 * 1024))
             .andExpect(status().isPayloadTooLarge)

@@ -126,14 +126,21 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 409, error = "Not Set Up", message = ex.message)
         )
 
-    /** A receipt photo over 15 MB: refused by the service, or earlier by the multipart limit. */
-    @ExceptionHandler(
-        com.homebudget.app.receipt.ReceiptTooLargeException::class,
-        org.springframework.web.multipart.MaxUploadSizeExceededException::class
-    )
-    fun handleTooLarge(ex: Exception): ResponseEntity<ErrorResponse> =
+    /** A receipt photo over 15 MB. */
+    @ExceptionHandler(com.homebudget.app.receipt.ReceiptTooLargeException::class)
+    fun handlePhotoTooLarge(ex: com.homebudget.app.receipt.ReceiptTooLargeException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(
-            ErrorResponse(status = 413, error = "Payload Too Large", message = "The photo is larger than 15 MB")
+            ErrorResponse(status = 413, error = "Payload Too Large", message = ex.message)
+        )
+
+    /**
+     * Any upload over the multipart limit (`spring.servlet.multipart`). Generic on purpose:
+     * the CSV import is a multipart endpoint too.
+     */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException::class)
+    fun handleUploadTooLarge(ex: org.springframework.web.multipart.MaxUploadSizeExceededException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(
+            ErrorResponse(status = 413, error = "Payload Too Large", message = "The file is too large")
         )
 
     /** Not a JPEG, PNG or WebP this server can read - HEIC included. */

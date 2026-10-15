@@ -7,6 +7,8 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.awt.Color
 import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
@@ -16,14 +18,20 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import javax.imageio.IIOImage
 import javax.imageio.ImageIO
 import javax.imageio.ImageWriteParam
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-/** The upload is not a photo this server can read (HEIC, GIF, PDF, a broken file...). */
-class UnsupportedImageException : RuntimeException("Send the photo as JPEG or PNG")
+/** The upload is not a photo this server can read (HEIC, GIF, PDF, a broken file, a pixel bomb...). */
+class UnsupportedImageException(message: String = WRONG_FORMAT) : RuntimeException(message) {
+    companion object {
+        const val WRONG_FORMAT = "Send the photo as JPEG or PNG"
+        const val TOO_LARGE = "The photo is too large to read"
+    }
+}
 
 /**
  * Turns an uploaded photo into the JPEG that is kept and sent to the model, and keeps
@@ -38,6 +46,13 @@ class ReceiptImages(@Value("\${app.data-dir:/data}") dataDir: String) {
     companion object {
         const val MAX_SIDE = 1600
         const val QUALITY = 0.85f
+
+        /**
+         * What a photo may declare before anything is decoded. A few hundred bytes of PNG can
+         * claim 100000 x 100000 pixels; no phone camera comes near these.
+         */
+        const val MAX_DECLARED_SIDE = 20_000
+        const val MAX_DECLARED_PIXELS = 50_000_000L
         private val ACCEPTED_FORMATS = setOf("jpeg", "jpg", "png", "webp")
     }
 
@@ -56,8 +71,26 @@ class ReceiptImages(@Value("\${app.data-dir:/data}") dataDir: String) {
         val relative = "receipts/$householdUuid/$receiptUuid.jpg"
         val file = resolve(relative)
         Files.createDirectories(file.parent)
-        Files.write(file, jpeg)
+        // Written beside its final place and moved in, so no reader ever sees half a file.
+        val partial = Files.createTempFile(file.parent, "$receiptUuid-", ".part")
+        try {
+            Files.write(partial, jpeg)
+            Files.move(partial, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            Files.deleteIfExists(partial)
+        }
         return relative
+    }
+
+    /** Deletes [relative] once the current transaction commits (at once outside one). */
+    fun deleteAfterCommit(relative: String) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            delete(relative)
+            return
+        }
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() = delete(relative)
+        })
     }
 
     fun read(relative: String): ByteArray? {
@@ -147,13 +180,25 @@ class ReceiptImages(@Value("\${app.data-dir:/data}") dataDir: String) {
                 ?: throw UnsupportedImageException()
             try {
                 reader.setInput(input, true, true)
-                val longest = max(reader.getWidth(0), reader.getHeight(0))
+                val declaredWidth = reader.getWidth(0)
+                val declaredHeight = reader.getHeight(0)
+                if (declaredWidth > MAX_DECLARED_SIDE || declaredHeight > MAX_DECLARED_SIDE ||
+                    declaredWidth.toLong() * declaredHeight > MAX_DECLARED_PIXELS
+                ) {
+                    throw UnsupportedImageException(UnsupportedImageException.TOO_LARGE)
+                }
+                val longest = max(declaredWidth, declaredHeight)
                 val param = reader.defaultReadParam
-                // A huge photo is decoded at a fraction of its size so memory stays bounded;
-                // it is scaled down to MAX_SIDE afterwards anyway.
-                val step = max(1, longest / (MAX_SIDE * 2))
+                // Decoded at no more than twice the size it is kept at, so the raster stays small
+                // whatever the camera's resolution, yet never below MAX_SIDE (a ceil here would
+                // turn a 4000 px photo into 1334 px).
+                val step = max(1, longest / MAX_SIDE)
                 if (step > 1) param.setSourceSubsampling(step, step, 0, 0)
-                val image = reader.read(0, param) ?: throw UnsupportedImageException()
+                val image = try {
+                    reader.read(0, param)
+                } catch (e: OutOfMemoryError) {
+                    throw UnsupportedImageException(UnsupportedImageException.TOO_LARGE)
+                } ?: throw UnsupportedImageException()
                 return image to reader.formatName.lowercase()
             } catch (e: IOException) {
                 throw UnsupportedImageException()

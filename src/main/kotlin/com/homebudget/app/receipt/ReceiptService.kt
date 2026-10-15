@@ -8,8 +8,8 @@ import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.security.SecurityUtils
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.support.TransactionSynchronization
-import org.springframework.transaction.support.TransactionSynchronizationManager
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.multipart.MultipartFile
 import java.time.Clock
 import java.time.Instant
@@ -32,14 +32,20 @@ class ReceiptService(
     private val categories: CategoryRepository,
     private val currencies: CurrencyRepository,
     private val securityUtils: SecurityUtils,
-    private val clock: Clock
+    private val clock: Clock,
+    transactionManager: PlatformTransactionManager
 ) {
     companion object {
         const val MAX_UPLOAD_BYTES = 15L * 1024 * 1024
     }
 
-    /** Keeps the photo and queues it for reading once the row is committed. */
-    @Transactional
+    private val tx = TransactionTemplate(transactionManager)
+
+    /**
+     * Keeps the photo and queues it for reading. Not one transaction: decoding and scaling
+     * take a while and hold no database connection; only saving the row is transactional,
+     * and the reader is handed the receipt once that row is committed.
+     */
     fun upload(image: MultipartFile): Receipt {
         val household = securityUtils.getCurrentHousehold()
         settings.resolveFor(household.id) ?: throw ReceiptScanUnavailableException()
@@ -49,22 +55,23 @@ class ReceiptService(
         val path = images.store(image.bytes, household.uuid, uuid)
         val now = Instant.now(clock)
         val receipt = try {
-            receipts.save(
-                Receipt(
-                    uuid = uuid,
-                    household = household,
-                    createdBy = securityUtils.getCurrentUser(),
-                    imagePath = path,
-                    createdAt = now,
-                    updatedAt = now
+            tx.execute {
+                receipts.save(
+                    Receipt(
+                        uuid = uuid,
+                        household = household,
+                        createdBy = securityUtils.getCurrentUser(),
+                        imagePath = path,
+                        createdAt = now,
+                        updatedAt = now
+                    )
                 )
-            )
+            }!!
         } catch (e: RuntimeException) {
             images.delete(path)
             throw e
         }
-        // After commit, so the worker finds the row; a rolled-back upload leaves no file.
-        whenFinished(onCommit = { reader.submit(receipt.id) }, onRollback = { images.delete(path) })
+        reader.submit(receipt.id)
         return receipt
     }
 
@@ -83,7 +90,11 @@ class ReceiptService(
     /** The household's receipt, or null - for sync, which reports rather than throws. */
     fun lookUp(uuid: String, householdId: Long): Receipt? = receipts.findByUuidAndHouseholdId(uuid, householdId)
 
-    /** True when a transaction other than [transactionUuid] (null: any) already holds [receipt]. */
+    /**
+     * True when a transaction other than [transactionUuid] (null: any) already holds [receipt].
+     * Sees links made earlier in the same transaction: a new transaction row is inserted on
+     * save (identity ids), and Hibernate flushes pending updates before a native query.
+     */
     fun isLinkedElsewhere(receipt: Receipt, transactionUuid: String?): Boolean =
         (if (transactionUuid == null) receipts.countLinks(receipt.id) else receipts.countLinksExcept(receipt.id, transactionUuid)) > 0
 
@@ -102,7 +113,7 @@ class ReceiptService(
     fun deleteWithPhoto(receipt: Receipt) {
         val path = receipt.imagePath
         receipts.delete(receipt)
-        whenFinished(onCommit = { images.delete(path) })
+        images.deleteAfterCommit(path)
     }
 
     private fun find(uuid: String, household: Household): Receipt =
@@ -132,18 +143,5 @@ class ReceiptService(
                 )
             }
         )
-    }
-
-    private fun whenFinished(onCommit: () -> Unit, onRollback: () -> Unit = {}) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            onCommit()
-            return
-        }
-        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
-            override fun afterCommit() = onCommit()
-            override fun afterCompletion(status: Int) {
-                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) onRollback()
-            }
-        })
     }
 }
