@@ -49,8 +49,10 @@ it('tells a member where photos go, without a form', async () => {
 it('shows the owner the form', async () => {
     stubServer('OWNER', instanceModel);
     renderPage();
-    expect(await screen.findByText(/Photos are sent to api\.openai\.com/)).toBeInTheDocument();
+    // Where photos go now, and - in the form's hint - where they would go with the form's settings.
+    expect(await screen.findByText(new RegExp(appEn.ai_source_instance))).toHaveTextContent('Photos are sent to api.openai.com');
     expect(await screen.findByLabelText(appEn.ai_model)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(appEn.ai_household_hint))).toBeInTheDocument();
 });
 
 it('tells a member to ask the owner when nothing is set up', async () => {

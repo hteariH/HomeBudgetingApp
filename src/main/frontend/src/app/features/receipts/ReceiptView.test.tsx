@@ -9,10 +9,11 @@ const receipt = {
     uuid: 'r1',
     status: 'READY',
     merchant: 'Corner Shop',
+    currency: 'EUR',
     totalMismatch: false,
     items: [
         { name: 'Milk', quantity: '2', price: '3.00' },
-        { name: 'Bread', price: '1.50' },
+        { name: 'Bread', price: '1.5' },
     ],
 };
 
@@ -50,4 +51,10 @@ it('lists the items, opens the photo full size and revokes the object URL', asyn
 
     unmount();
     await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:photo'));
+});
+
+it('shows item prices as money in the receipt currency', async () => {
+    renderView();
+    const price = await screen.findByText(/1\.50/);
+    expect(price.textContent).toMatch(/€|EUR/);
 });

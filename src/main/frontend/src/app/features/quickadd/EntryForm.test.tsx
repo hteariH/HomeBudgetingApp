@@ -115,3 +115,61 @@ it('offers no scan button when no model is set up', async () => {
     expect(screen.queryByText(appEn.quickadd_scan_receipt)).not.toBeInTheDocument();
     expect(screen.queryByTestId('receipt-file')).not.toBeInTheDocument();
 });
+
+const euro = { ...account, id: 2, uuid: 'b', name: 'Euro card', currency: currency('EUR') };
+const salary = { id: 8, uuid: 'd', name: 'Salary', type: 'INCOME', icon: 'work', color: '#10B981' };
+
+/** The receipt stays PENDING until [ready] is called; the next poll then finds it read. */
+function stubSlowServer(receipt: object = read()) {
+    let done = false;
+    const fetchMock = vi.fn(async (url: string, init?: Init) => {
+        if (url === '/api/accounts') return json([account, euro]);
+        if (url.startsWith('/api/categories')) return json([groceries, salary]);
+        if (url === '/api/household/ai-provider') return json({ source: 'HOUSEHOLD', hasKey: true });
+        if (url === '/api/receipts' && init?.method === 'POST') return json({ uuid: 'r1', status: 'PENDING' }, 202);
+        if (url === '/api/receipts/r1') return json(done ? receipt : { uuid: 'r1', status: 'PENDING', totalMismatch: false, items: [] });
+        if (url.startsWith('/api/transactions')) return json({ content: [] });
+        return json([]);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return { ready: () => (done = true) };
+}
+
+it('applies a read that arrives after the mode changed to the new mode', async () => {
+    const server = stubSlowServer();
+    renderForm();
+    await pickPhoto();
+    await screen.findByText(appEn.receipt_reading);
+
+    fireEvent.click(screen.getByRole('tab', { name: appEn.dashboard_add_income }));
+    server.ready();
+
+    await waitFor(() => expect(screen.getByDisplayValue('Corner Shop')).toBeInTheDocument(), { timeout: 5000 });
+    // Groceries is an expense category; the income form does not take it, so no category is
+    // chosen and the entry cannot be saved yet.
+    expect(screen.getByRole('combobox')).toHaveValue('');
+    expect(screen.getByDisplayValue('12.50')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: appEn.action_save })).toBeDisabled();
+});
+
+it('checks the currency against the account chosen while the receipt was being read', async () => {
+    const server = stubSlowServer();
+    renderForm();
+    await pickPhoto();
+    await screen.findByText(appEn.receipt_reading);
+
+    fireEvent.click(screen.getByText('Cash · USD'));
+    fireEvent.click(await screen.findByText('Euro card'));
+    server.ready();
+
+    expect(await screen.findByText(/USD, but this account is in EUR/, undefined, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('12.50')).not.toBeInTheDocument();
+});
+
+it('shows item prices as money in the receipt currency', async () => {
+    stubServer('HOUSEHOLD', read({ currency: 'EUR', items: [{ name: 'Milk', quantity: '2', price: '3' }] }));
+    renderForm();
+    await pickPhoto();
+    expect(await screen.findByText(/3\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/3\.00/).textContent).toMatch(/€|EUR/);
+});

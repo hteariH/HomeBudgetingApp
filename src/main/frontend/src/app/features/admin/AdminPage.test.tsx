@@ -14,8 +14,9 @@ const users = [
     { id: 2, email: 'kid@example.com', firstName: 'Kid', lastName: 'A', role: 'USER', createdAt: '2026-10-02T10:00:00', lastSignInAt: '2026-10-03T10:00:00Z', householdId: 2 },
 ];
 
-function stubServer(registration = { open: false, lockedByEnvironment: false }) {
+function stubServer(registration = { open: false, lockedByEnvironment: false }, aiProvider: object = { source: 'NONE', hasKey: false }) {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+        if (url.startsWith('/api/admin/ai-provider')) return Promise.resolve(json(aiProvider));
         if (url.startsWith('/api/admin/users/2/reset-link')) return Promise.resolve(json({ path: '/reset-password?token=abc', expiresAt: '2026-10-04T10:00:00Z' }));
         if (url.startsWith('/api/admin/users')) return Promise.resolve(json(users));
         if (url.startsWith('/api/admin/registration') && init?.method === 'PUT') return Promise.resolve(json({ open: true, lockedByEnvironment: false }));
@@ -80,4 +81,14 @@ it('does not offer the switch before it knows the state', async () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     renderPage();
     expect(await registrationSwitch()).toBeDisabled();
+});
+
+it('shows a provider the environment sets, with no form to change it', async () => {
+    stubServer(undefined, { source: 'ENVIRONMENT', type: 'GEMINI', model: 'gemini-env', hasKey: true, host: 'generativelanguage.googleapis.com' });
+    renderPage();
+    expect(await screen.findByText(appEn.ai_environment_set)).toBeInTheDocument();
+    expect(screen.getByText(appEn.ai_environment_hint)).toBeInTheDocument();
+    expect(screen.getByText('Photos are sent to generativelanguage.googleapis.com')).toBeInTheDocument();
+    expect(screen.queryByLabelText(appEn.ai_model)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: appEn.ai_test })).not.toBeInTheDocument();
 });

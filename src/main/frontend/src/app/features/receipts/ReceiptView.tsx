@@ -6,6 +6,7 @@ import { qk } from '../../api/queryClient';
 import { Dialog } from '../../components/Dialog';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { Card } from '../../components/forms';
+import { receiptPrice } from './receiptPrice';
 
 /** An object URL for a protected photo, revoked when the photo changes or the view goes away. */
 function useReceiptPhoto(uuid: string): string | null {
@@ -62,7 +63,7 @@ export const ReceiptView: React.FC<{ uuid: string }> = ({ uuid }) => {
                                                 {item.quantity ? `${item.quantity} × ` : ''}
                                                 {item.name}
                                             </span>
-                                            <span className="shrink-0 tabular-nums">{item.price}</span>
+                                            <span className="shrink-0 tabular-nums">{receiptPrice(item.price, receipt.currency)}</span>
                                         </li>
                                     ))}
                                 </ul>

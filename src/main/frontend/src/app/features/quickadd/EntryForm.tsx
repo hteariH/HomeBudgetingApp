@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowUpDown, ChevronDown } from 'lucide-react';
@@ -18,6 +18,7 @@ import { sanitizeExpression } from '../../lib/expressionInput';
 import { AppRoutes } from '../../lib/routes';
 import { prefs } from '../../prefs';
 import { splitAccounts } from '../accounts/accounts.logic';
+import { receiptPrice } from '../receipts/receiptPrice';
 import { ScanButton } from '../receipts/ScanButton';
 import { useReceiptScan } from '../receipts/useReceiptScan';
 import {
@@ -72,7 +73,7 @@ const ReceiptNotes: React.FC<{ receipt: ReceiptDto; accountCurrency?: string }> 
                                     {item.quantity ? `${item.quantity} × ` : ''}
                                     {item.name}
                                 </span>
-                                <span className="shrink-0 tabular-nums">{item.price}</span>
+                                <span className="shrink-0 tabular-nums">{receiptPrice(item.price, receipt.currency)}</span>
                             </li>
                         ))}
                     </ul>
@@ -162,15 +163,23 @@ export const EntryForm: React.FC<{
         if (!initialCategoryId) setCategoryId(null);
     };
 
+    // A read takes a while, and the person may change the mode or the account meanwhile: the
+    // result is applied to the form as it is when the answer arrives, not as it was at the click.
+    const latest = useRef({ mode, account, from, categories });
+    latest.current = { mode, account, from, categories };
+
     const scanFile = async (file: File) => {
         const read = await scan.start(file);
         if (!read) return;
+        const now = latest.current;
+        const target = now.mode === 'TRANSFER' ? now.from : now.account;
         setReceipt(read);
-        if (read.total && (!read.currency || read.currency === account?.currency.code)) setAmount(read.total);
+        if (read.total && (!read.currency || read.currency === target?.currency.code)) setAmount(read.total);
         if (read.date) setDay(read.date);
         if (read.merchant) setNote(read.merchant);
-        if (read.suggestedCategoryId != null && categories.some(c => c.id === read.suggestedCategoryId)) {
-            setCategoryId(read.suggestedCategoryId);
+        const suggested = read.suggestedCategoryId;
+        if (suggested != null && now.mode !== 'TRANSFER' && now.categories.some(c => c.id === suggested)) {
+            setCategoryId(suggested);
         }
     };
 
