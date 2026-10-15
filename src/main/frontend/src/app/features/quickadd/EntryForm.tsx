@@ -5,11 +5,11 @@ import { ArrowUpDown, ChevronDown } from 'lucide-react';
 import { useT } from '../../../i18n';
 import { endpoints } from '../../api/endpoints';
 import { useAccounts, useCategories, useFxSnapshot } from '../../api/hooks';
-import { invalidateLedger } from '../../api/queryClient';
-import type { RestAccount } from '../../api/types';
+import { invalidateLedger, qk } from '../../api/queryClient';
+import type { ReceiptDto, RestAccount } from '../../api/types';
 import { AccountPicker } from '../../components/AccountPicker';
 import { AmountField } from '../../components/AmountField';
-import { ErrorBanner } from '../../components/ErrorBanner';
+import { ErrorBanner, errorText } from '../../components/ErrorBanner';
 import { Field, Segmented } from '../../components/forms';
 import { IconCircle } from '../../components/IconCircle';
 import { CurrencyRegistry } from '../../lib/currencyRegistry';
@@ -18,6 +18,8 @@ import { sanitizeExpression } from '../../lib/expressionInput';
 import { AppRoutes } from '../../lib/routes';
 import { prefs } from '../../prefs';
 import { splitAccounts } from '../accounts/accounts.logic';
+import { ScanButton } from '../receipts/ScanButton';
+import { useReceiptScan } from '../receipts/useReceiptScan';
 import {
     mostUsed,
     occurredAtFor,
@@ -51,6 +53,35 @@ const AccountButton: React.FC<{ label: string; account?: RestAccount; onClick: (
     </button>
 );
 
+/** What the scan found that the fields do not show: a currency or total that does not fit, and the items. */
+const ReceiptNotes: React.FC<{ receipt: ReceiptDto; accountCurrency?: string }> = ({ receipt, accountCurrency }) => {
+    const t = useT();
+    return (
+        <>
+            {receipt.currency && accountCurrency && receipt.currency !== accountCurrency && (
+                <div className="text-xs text-warn">{t('receipt_currency_differs', { 0: receipt.currency, 1: accountCurrency })}</div>
+            )}
+            {receipt.totalMismatch && <div className="text-xs text-warn">{t('receipt_mismatch')}</div>}
+            {receipt.items.length > 0 && (
+                <details className="text-sm text-ink-soft">
+                    <summary className="cursor-pointer">{t('receipt_items')}</summary>
+                    <ul className="mt-1 flex flex-col gap-1">
+                        {receipt.items.map((item, i) => (
+                            <li key={i} className="flex justify-between gap-3">
+                                <span className="min-w-0 truncate">
+                                    {item.quantity ? `${item.quantity} × ` : ''}
+                                    {item.name}
+                                </span>
+                                <span className="shrink-0 tabular-nums">{item.price}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </details>
+            )}
+        </>
+    );
+};
+
 /**
  * Recording an expense, an income or a transfer. One form, two shapes: the full entry page
  * (the big amount, category chips) and the panel that sits beside the overview and the
@@ -81,6 +112,11 @@ export const EntryForm: React.FC<{
         staleTime: 60_000,
     });
     const fx = useFxSnapshot();
+    // Scanning needs a model to send the photo to; without one the button is not offered.
+    const { data: provider } = useQuery({ queryKey: qk.aiProvider, queryFn: endpoints.householdAiProvider });
+    const canScan = !!provider && provider.source !== 'NONE';
+    const scan = useReceiptScan();
+    const [receipt, setReceipt] = useState<ReceiptDto | null>(null);
 
     // ── ledger entry ────────────────────────────────────────────────────────
     const [accountId, setAccountId] = useState<number | null>(null);
@@ -121,7 +157,21 @@ export const EntryForm: React.FC<{
         setFee('');
         setShowFee(false);
         setTransferError(null);
+        setReceipt(null);
+        scan.reset();
         if (!initialCategoryId) setCategoryId(null);
+    };
+
+    const scanFile = async (file: File) => {
+        const read = await scan.start(file);
+        if (!read) return;
+        setReceipt(read);
+        if (read.total && (!read.currency || read.currency === account?.currency.code)) setAmount(read.total);
+        if (read.date) setDay(read.date);
+        if (read.merchant) setNote(read.merchant);
+        if (read.suggestedCategoryId != null && categories.some(c => c.id === read.suggestedCategoryId)) {
+            setCategoryId(read.suggestedCategoryId);
+        }
     };
 
     const afterSave = async () => {
@@ -141,6 +191,7 @@ export const EntryForm: React.FC<{
                 date: day,
                 occurredAt: occurredAtFor(day),
                 description: note.trim() || null,
+                receiptUuid: receipt?.uuid ?? null,
             });
             // The next entry opens on the account this one used.
             prefs.setDefaultAccountId(account!.id);
@@ -224,6 +275,20 @@ export const EntryForm: React.FC<{
                     { value: 'TRANSFER', label: t('transfer_mode') },
                 ]}
             />
+
+            {canScan && mode !== 'TRANSFER' && (
+                <div className="flex flex-col gap-2">
+                    <ScanButton reading={scan.phase === 'reading'} onFile={scanFile} onCancel={scan.cancel} />
+                    {scan.phase === 'failed' && (
+                        <div className="alert-error" role="alert">
+                            <div className="flex-1">
+                                {scan.failureReason ? `${t('quickadd_scan_failed')}: ${scan.failureReason}` : errorText(scan.error, t, 'quickadd_scan_failed')}
+                            </div>
+                        </div>
+                    )}
+                    {receipt && <ReceiptNotes receipt={receipt} accountCurrency={account?.currency.code} />}
+                </div>
+            )}
 
             {page ? (
                 <AmountField

@@ -1,4 +1,4 @@
-import { api } from './http';
+import { api, apiBlob } from './http';
 import type * as T from './types';
 
 /**
@@ -112,6 +112,17 @@ export const endpoints = {
     applyHomeMoney: (body: T.HomeMoneyApplyRequest) =>
         api<T.RestHomeMoneyStatus>('/import/homemoney/apply', { method: 'POST', json: body }),
     homeMoneyStatus: () => api<T.RestHomeMoneyStatus>('/import/homemoney/status'),
+
+    // ── receipts ────────────────────────────────────────────────────────────
+    uploadReceipt: (file: Blob, filename = 'receipt.jpg') => {
+        const form = new FormData();
+        // The browser writes the multipart boundary itself; a filename is what makes Spring
+        // treat the part as an uploaded file.
+        form.append('image', file, file instanceof File ? file.name : filename);
+        return api<T.ReceiptAccepted>('/receipts', { method: 'POST', form });
+    },
+    receipt: (uuid: string) => api<T.ReceiptDto>(`/receipts/${uuid}`),
+    receiptImage: (uuid: string) => apiBlob(`/receipts/${uuid}/image`),
 
     // ── fx ──────────────────────────────────────────────────────────────────
     fxRates: () => api<T.RestFxRate[]>('/fx/rates'),

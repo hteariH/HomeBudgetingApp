@@ -9,7 +9,7 @@ const TOKEN_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh'];
  * Statuses whose `message` the server writes for a person to read. 500 is left out on
  * purpose: its message is a raw exception, which belongs in a log, not on a screen.
  */
-const USER_FACING = new Set([400, 404, 409, 422, 502]);
+const USER_FACING = new Set([400, 404, 409, 413, 415, 422, 502]);
 
 export class ApiError extends Error {
     constructor(

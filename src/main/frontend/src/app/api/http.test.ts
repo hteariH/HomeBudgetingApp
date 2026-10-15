@@ -119,3 +119,23 @@ it('apiBlob throws an ApiError when the file is refused', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json(404, {})));
     await expect(apiBlob('/receipts/1/photo')).rejects.toMatchObject({ status: 404 });
 });
+
+it('sends a multipart body without a content type, so the browser adds the boundary', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(200, { uuid: 'r1', status: 'PENDING' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const form = new FormData();
+    form.append('image', new Blob(['x'], { type: 'image/jpeg' }), 'r.jpg');
+    await api('/receipts', { method: 'POST', form });
+    const init = fetchMock.mock.calls[0][1] as Init & { body: unknown };
+    expect(init.headers['Content-Type']).toBeUndefined();
+    expect(init.headers.Authorization).toBe('Bearer old');
+    expect(init.body).toBe(form);
+});
+
+it('carries the server message of a wrong-type upload', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json(415, { message: 'Send the photo as JPEG or PNG' })));
+    await expect(api('/receipts', { method: 'POST' })).rejects.toMatchObject({
+        status: 415,
+        serverMessage: 'Send the photo as JPEG or PNG',
+    });
+});
