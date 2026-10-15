@@ -90,8 +90,10 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
 /**
  * v4 → v5: a transaction remembers which household member wrote it.
  *
- * Nullable, so existing rows stay NULL ("unknown") until the next pull brings the
- * server's answer; nothing is guessed locally.
+ * Nullable, so existing rows start out NULL ("unknown"); nothing is guessed locally.
+ * The sync pull is incremental, so it will not resend rows the server has not changed:
+ * `SyncEngine` therefore drops the sync cursor once (after pushing pending edits) and
+ * re-reads everything, which is what fills the author in for rows synced before v5.
  */
 val MIGRATION_4_5 = object : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {

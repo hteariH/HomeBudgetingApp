@@ -49,6 +49,7 @@ class SyncEngine constructor(
             Log.d(TAG, "Not signed in; nothing to sync")
             return Result(0, 0, 0)
         }
+        backfillAuthorsOnce()
         val pulled = pull()
         // Signing in on a second device lands on an account that already has data.
         // Asking such a user to pick a base currency and create their first account
@@ -59,6 +60,39 @@ class SyncEngine constructor(
         // rather than leaving the screen showing an edit that did not stick.
         if (rejected > 0) pull()
         return Result(pulled, pushed, rejected)
+    }
+
+    /**
+     * Rows synced before schema v5 have no author, and the incremental pull will never
+     * send them again because the server has not changed them. So, once, the cursor is
+     * dropped and the next pull reads everything from the start.
+     *
+     * Pending local changes are pushed first, and that is required rather than tidy:
+     * [merge] replaces a local row with the server's version unconditionally and marks it
+     * synced, it does not look at `pendingSync`. An incremental pull only reaches rows the
+     * server changed, but a full one reaches all of them and would silently discard every
+     * unsynced edit.
+     *
+     * A phone that has never synced has a blank cursor, so its first pull is already a
+     * full one; the flag is just recorded so it is never asked for again.
+     */
+    private suspend fun backfillAuthorsOnce() {
+        if (prefs.authorBackfillDone.first()) return
+        if (prefs.syncCursor.first().isNotBlank()) {
+            pushEverythingPending()
+            prefs.setSyncCursor("")
+        }
+        prefs.setAuthorBackfillDone(true)
+    }
+
+    private suspend fun pushEverythingPending() {
+        var guard = 0
+        while (guard++ < MAX_PAGES) {
+            val (pushed, rejected) = push()
+            // A rejected row stays pending and would be sent again for ever; the full
+            // pull that follows takes the server's version of it, as a rejection always does.
+            if (pushed == 0 || rejected > 0) break
+        }
     }
 
     private suspend fun markOnboardedIfDataArrived() {

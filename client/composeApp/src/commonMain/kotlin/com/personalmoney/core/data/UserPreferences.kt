@@ -52,6 +52,14 @@ class UserPreferences(private val store: KeyValueStore) {
     val syncCursor: Flow<String> = store.observeString(Keys.SYNC_CURSOR).map { it ?: "" }
     val syncLastOkMs: Flow<Long> = store.observeLong(Keys.SYNC_LAST_OK_MS).map { it ?: 0L }
 
+    /**
+     * Whether the one-off full re-pull that fills in transaction authors (schema v5) has
+     * been dealt with. Account-scoped: a wipe resets the cursor, so the next sync is a
+     * full pull anyway and just has to record that.
+     */
+    val authorBackfillDone: Flow<Boolean> =
+        store.observeBoolean(Keys.AUTHOR_BACKFILL_DONE).map { it ?: false }
+
     suspend fun setBaseCurrency(code: String) = store.putString(Keys.BASE_CURRENCY, code)
 
     suspend fun setThemeMode(mode: ThemeMode) = store.putString(Keys.THEME, mode.name)
@@ -80,6 +88,8 @@ class UserPreferences(private val store: KeyValueStore) {
 
     suspend fun setSyncLastOkMs(ms: Long) = store.putLong(Keys.SYNC_LAST_OK_MS, ms)
 
+    suspend fun setAuthorBackfillDone(value: Boolean) = store.putBoolean(Keys.AUTHOR_BACKFILL_DONE, value)
+
     /**
      * Drops every preference that belongs to the account rather than to the device, so the
      * next sign-in on this phone starts clean.
@@ -95,6 +105,7 @@ class UserPreferences(private val store: KeyValueStore) {
     suspend fun clearAccountScoped() = store.remove(
         Keys.SYNC_CURSOR,
         Keys.SYNC_LAST_OK_MS,
+        Keys.AUTHOR_BACKFILL_DONE,
         Keys.DEFAULT_ACCOUNT,
         Keys.BASE_CURRENCY,
         Keys.HOMEMONEY_AUTH_STATE,
@@ -126,4 +137,8 @@ internal object PreferenceKeys {
     // can shift it and skip changes.
     const val SYNC_CURSOR = "sync_cursor"
     const val SYNC_LAST_OK_MS = "sync_last_ok_ms"
+
+    // Set once the full re-pull that gave pre-v5 transactions their author has been
+    // started (or was unnecessary because the phone had never synced).
+    const val AUTHOR_BACKFILL_DONE = "author_backfill_done"
 }
