@@ -79,6 +79,8 @@ export interface RestTransaction {
     description?: string | null;
     transferGroupId?: string | null;
     subscriptionId?: number | null;
+    /** The household member who recorded it; null for rows that predate shared households. */
+    createdByUserId?: number | null;
 }
 
 export interface RestSubscription {

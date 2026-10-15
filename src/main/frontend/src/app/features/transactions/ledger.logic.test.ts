@@ -106,3 +106,17 @@ describe('fetchLedger', () => {
         expect(fetchMock).toHaveBeenCalledTimes(3);
     });
 });
+
+describe('fetchLedger author filter', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('sends createdBy to the server, and nothing when there is none', async () => {
+        const empty = () => new Response(JSON.stringify({ content: [], page: 0, size: 500, totalElements: 0, totalPages: 1 }), { status: 200 });
+        const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(empty()));
+        vi.stubGlobal('fetch', fetchMock);
+        await fetchLedger({ createdBy: 7 });
+        expect(fetchMock.mock.calls[0][0]).toContain('createdBy=7');
+        await fetchLedger({});
+        expect(fetchMock.mock.calls[1][0]).not.toContain('createdBy');
+    });
+});

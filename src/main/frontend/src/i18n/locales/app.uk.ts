@@ -244,6 +244,7 @@ export const appUk = {
     filter_account: "Рахунок",
     filter_period: "Період",
     filter_type: "Тип",
+    filter_who: "Хто",
     freq_daily: "Щодня",
     freq_interval_prefix: "кожні {{0}} ",
     freq_monthly: "Щомісяця",

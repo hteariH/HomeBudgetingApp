@@ -10,6 +10,8 @@ export interface LedgerFilter {
     accountId?: number;
     categoryId?: number;
     type?: TransactionType;
+    /** Only what this household member recorded. */
+    createdBy?: number;
     query: string;
 }
 
@@ -50,6 +52,7 @@ export async function fetchLedger(q: {
     accountId?: number;
     categoryId?: number;
     type?: TransactionType;
+    createdBy?: number;
 }): Promise<RestTransaction[]> {
     const rows: RestTransaction[] = [];
     let page = 0;
@@ -59,6 +62,7 @@ export async function fetchLedger(q: {
             accountId: q.accountId,
             categoryId: q.categoryId,
             type: q.type,
+            createdBy: q.createdBy,
             dateFrom: q.from ? isoDate(q.from) : undefined,
             dateTo: q.to ? apiDateTo(q.to) : undefined,
             page,

@@ -22,7 +22,11 @@ export const TransactionRow: React.FC<{
     tx: RestTransaction;
     counterpart?: RestTransaction;
     trailing?: React.ReactNode;
-}> = ({ tx, counterpart, trailing }) => {
+    /** Initials of whoever recorded it; given only when the household has more than one member. */
+    author?: string;
+    /** The author's full name, for the badge's tooltip. */
+    authorName?: string;
+}> = ({ tx, counterpart, trailing, author, authorName }) => {
     const t = useT();
     const isTransfer = tx.type === 'TRANSFER';
     const amount = money(tx.accountAmount, tx.account.currency.code);
@@ -48,6 +52,14 @@ export const TransactionRow: React.FC<{
                 color={isTransfer ? NEUTRAL_COLOR : tx.category?.color ?? NEUTRAL_COLOR}
                 size={36}
             />
+            {author && (
+                <span
+                    title={authorName}
+                    className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-raised px-1 text-[10px] font-semibold text-ink-soft"
+                >
+                    {author}
+                </span>
+            )}
             <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium text-ink">{title}</span>
                 <span className="block truncate text-xs text-ink-soft">{subtitle}</span>

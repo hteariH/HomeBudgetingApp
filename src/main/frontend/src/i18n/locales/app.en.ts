@@ -236,6 +236,7 @@ export const appEn = {
     filter_account: "Account",
     filter_period: "Period",
     filter_type: "Type",
+    filter_who: "Who",
     freq_daily: "Daily",
     freq_interval_prefix: "every {{0}} ",
     freq_monthly: "Monthly",

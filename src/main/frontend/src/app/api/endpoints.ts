@@ -27,6 +27,7 @@ export const endpoints = {
         accountId?: number;
         categoryId?: number;
         type?: T.TransactionType;
+        createdBy?: number;
         dateFrom?: string;
         dateTo?: string;
         page?: number;

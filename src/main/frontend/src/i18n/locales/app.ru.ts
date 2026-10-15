@@ -244,6 +244,7 @@ export const appRu = {
     filter_account: "Счёт",
     filter_period: "Период",
     filter_type: "Тип",
+    filter_who: "Кто",
     freq_daily: "Ежедневно",
     freq_interval_prefix: "каждые {{0}} ",
     freq_monthly: "Ежемесячно",

@@ -22,6 +22,7 @@ export function useLedgerFilter(): [LedgerFilter, (patch: Partial<LedgerFilter>)
         accountId: num('accountId'),
         categoryId: num('categoryId'),
         type: type && TYPES.includes(type) ? type : undefined,
+        createdBy: num('who'),
         query: params.get('q') ?? '',
     };
 
@@ -32,6 +33,7 @@ export function useLedgerFilter(): [LedgerFilter, (patch: Partial<LedgerFilter>)
         if (next.accountId) out.set('accountId', String(next.accountId));
         if (next.categoryId) out.set('categoryId', String(next.categoryId));
         if (next.type) out.set('type', next.type);
+        if (next.createdBy) out.set('who', String(next.createdBy));
         if (next.query) out.set('q', next.query);
         setParams(out, { replace: true });
     };
@@ -43,6 +45,6 @@ export function useLedger(filter: Omit<LedgerFilter, 'query'>) {
     const range = periodRange(filter.period);
     return useQuery({
         queryKey: qk.transactions({ ...filter, day: new Date().toDateString() }),
-        queryFn: () => fetchLedger({ ...range, accountId: filter.accountId, categoryId: filter.categoryId, type: filter.type }),
+        queryFn: () => fetchLedger({ ...range, accountId: filter.accountId, categoryId: filter.categoryId, type: filter.type, createdBy: filter.createdBy }),
     });
 }

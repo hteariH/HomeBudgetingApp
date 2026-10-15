@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { FilterX, ReceiptText, Search } from 'lucide-react';
 import { useT } from '../../../i18n';
 import { endpoints } from '../../api/endpoints';
-import { useAccounts } from '../../api/hooks';
+import { useAccounts, useHousehold } from '../../api/hooks';
 import { invalidateLedger } from '../../api/queryClient';
 import type { RestTransaction, TransactionType } from '../../api/types';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
@@ -15,8 +15,9 @@ import { isoDate } from '../../lib/dates';
 import { formatMediumDate } from '../../lib/format';
 import { Page, PageLoading } from '../../shell/Page';
 import { BREAKPOINTS, useMinWidth } from '../../shell/useMediaQuery';
+import { initialsOf } from '../household/initials';
 import { QuickEntryPanel } from '../quickadd/QuickEntryPanel';
-import { collapseTransfers, counterparts, groupByDay, matchesQuery, type Period } from './ledger.logic';
+import { collapseTransfers, counterparts, groupByDay, isDebitLeg, matchesQuery, type Period } from './ledger.logic';
 import { TransactionRow } from './TransactionRow';
 import { useLedger, useLedgerFilter } from './useLedger';
 
@@ -43,6 +44,9 @@ const TransactionsPage: React.FC = () => {
     const [filter, setFilter, clearFilters] = useLedgerFilter();
     const { data: rows = [], isLoading, error } = useLedger(filter);
     const { data: accounts = [] } = useAccounts();
+    const members = useHousehold().data?.members ?? [];
+    // Who wrote a row only means something once the books are shared.
+    const shared = members.length > 1;
     const inlineEntry = useMinWidth(BREAKPOINTS.inlineEntry);
     const [deleteTarget, setDeleteTarget] = useState<RestTransaction | null>(null);
 
@@ -81,7 +85,15 @@ const TransactionsPage: React.FC = () => {
     const yesterday = isoDate(new Date(Date.now() - 86_400_000));
     const dayTitle = (day: string) =>
         day === today ? t('transactions_today') : day === yesterday ? t('transactions_yesterday') : formatMediumDate(day);
-    const filtered = filter.period !== 'ALL' || !!filter.accountId || !!filter.type || !!filter.categoryId || !!filter.query;
+    const filtered =
+        filter.period !== 'ALL' || !!filter.accountId || !!filter.type || !!filter.categoryId || !!filter.createdBy || !!filter.query;
+    // A transfer is two rows; it belongs to whoever recorded the leg the money left from.
+    const authorProps = (tx: RestTransaction) => {
+        const other = others.get(tx.id);
+        const leg = tx.type === 'TRANSFER' && other && isDebitLeg(other) && !isDebitLeg(tx) ? other : tx;
+        const author = shared ? members.find(m => m.userId === leg.createdByUserId) : undefined;
+        return author && { author: initialsOf(author.firstName, author.lastName), authorName: `${author.firstName} ${author.lastName}`.trim() };
+    };
 
     return (
         <Page
@@ -143,6 +155,21 @@ const TransactionsPage: React.FC = () => {
                                 </option>
                             ))}
                         </Select>
+                        {shared && (
+                            <Select
+                                label={t('filter_who')}
+                                value={String(filter.createdBy ?? '')}
+                                active={!!filter.createdBy}
+                                onChange={v => setFilter({ createdBy: Number(v) || undefined })}
+                            >
+                                <option value="">{t('filter_who')}</option>
+                                {members.map(m => (
+                                    <option key={m.userId} value={m.userId}>
+                                        {`${m.firstName} ${m.lastName}`.trim() || m.email}
+                                    </option>
+                                ))}
+                            </Select>
+                        )}
                     </div>
                     <ErrorBanner error={error ?? remove.error ?? duplicate.error} fallbackKey="common_load_failed" className="mb-4" />
                     {isLoading ? (
@@ -161,6 +188,7 @@ const TransactionsPage: React.FC = () => {
                                             key={tx.id}
                                             tx={tx}
                                             counterpart={others.get(tx.id)}
+                                            {...authorProps(tx)}
                                             trailing={
                                                 <RowMenu
                                                     label={t('common_actions')}
