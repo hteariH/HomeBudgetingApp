@@ -280,6 +280,34 @@ open class JoinHouseholdTest {
     }
 
     @Test
+    fun `a member moving alone takes their bank connections and the family keeps the account unlinked`() {
+        val anna = identity.newMember("anna")
+        val boris = identity.newMember("boris")
+        val card = uuid()
+        push(boris, SyncPayload(accounts = listOf(SyncAccount(uuid = card, name = "Boris card", currencyCode = "USD"))))
+        val clara = identity.joinAs("clara", boris.household)
+        fun connect(who: UserPrincipal): Long {
+            jdbc.update(
+                "INSERT INTO bank_connections (household_id, connected_by_user_id, provider, credentials) VALUES (?, ?, 'monobank', 'x')",
+                boris.household.id, who.user.id
+            )
+            return jdbc.queryForObject("SELECT MAX(id) FROM bank_connections WHERE connected_by_user_id = ?", Long::class.java, who.user.id)!!
+        }
+        val borisConnection = connect(boris)
+        val claraConnection = connect(clara)
+        jdbc.update("UPDATE accounts SET bank_connection_id = ? WHERE uuid = ?", claraConnection, card)
+
+        join(clara, inviteFrom(anna))
+
+        fun exists(id: Long) = jdbc.queryForObject("SELECT COUNT(*) FROM bank_connections WHERE id = ?", Long::class.java, id) == 1L
+        assertFalse(exists(claraConnection), "the mover's connection holds their credentials")
+        assertTrue(exists(borisConnection), "another member's connection is untouched")
+        val linked = jdbc.queryForList("SELECT household_id, bank_connection_id FROM accounts WHERE uuid = ?", card).single()
+        assertEquals(boris.household.id, (linked["household_id"] as Number).toLong(), "the account stays with the family")
+        assertEquals(null, linked["bank_connection_id"])
+    }
+
+    @Test
     fun `an invite cannot be used into one's own household`() {
         val anna = identity.newMember("anna")
         val token = inviteFrom(anna)

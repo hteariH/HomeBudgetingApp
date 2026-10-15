@@ -4,6 +4,7 @@ import com.homebudget.app.domain.Household
 import com.homebudget.app.domain.HouseholdMember
 import com.homebudget.app.domain.HouseholdRole
 import com.homebudget.app.domain.User
+import com.homebudget.app.repository.BankConnectionRepository
 import com.homebudget.app.repository.HouseholdMemberRepository
 import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.security.SecurityUtils
@@ -25,6 +26,7 @@ import java.time.Instant
 class MembershipService(
     private val members: HouseholdMemberRepository,
     private val households: HouseholdRepository,
+    private val bankConnections: BankConnectionRepository,
     private val householdService: HouseholdService,
     private val categories: CategoryService,
     private val securityUtils: SecurityUtils,
@@ -88,11 +90,14 @@ class MembershipService(
 
     /**
      * Gives [membership]'s user a household of their own, as at registration. Their
-     * transactions stay where they were written, with their name as the author.
+     * transactions stay where they were written, with their name as the author. The bank
+     * connections they made go: they hold the person's own credentials. The family's
+     * accounts linked to them are unlinked and keep their history.
      */
     private fun detach(membership: HouseholdMember) {
         val user: User = membership.user
         val baseCurrency = membership.household.baseCurrency
+        bankConnections.deleteMadeBy(membership.household.id, user.id)
         members.delete(membership)
         members.flush()
         categories.seedDefaultCategories(householdService.createFor(user, baseCurrency))

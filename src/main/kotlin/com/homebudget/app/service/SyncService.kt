@@ -2,6 +2,7 @@ package com.homebudget.app.service
 
 import com.homebudget.app.domain.*
 import com.homebudget.app.dto.*
+import com.homebudget.app.household.HouseholdChangedException
 import com.homebudget.app.repository.*
 import com.homebudget.app.security.SecurityUtils
 import org.slf4j.LoggerFactory
@@ -39,6 +40,7 @@ class SyncService(
     private val settingRepo: UserCurrencySettingRepository,
     private val currencyRepo: CurrencyRepository,
     private val householdRepo: HouseholdRepository,
+    private val memberRepo: HouseholdMemberRepository,
     private val securityUtils: SecurityUtils,
     private val syncClock: SyncClock
 ) {
@@ -112,6 +114,12 @@ class SyncService(
         // read the same latest stamp and write the same instant, and a pull whose cursor
         // fell between their commits would skip one of them for good.
         householdRepo.lockById(household.id)
+        // The request was authenticated against the household the caller belonged to
+        // then; a join, leave or removal may have moved them since. Writing on would put
+        // their rows into a household they are no longer in.
+        if (memberRepo.currentHouseholdIdOf(actor.id) != listOf(household.id)) {
+            throw HouseholdChangedException()
+        }
 
         val now = syncClock.next(household.id)
         val rejected = mutableListOf<SyncRejection>()

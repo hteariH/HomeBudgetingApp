@@ -31,7 +31,8 @@ class HouseholdMergeService(
      * - A sole member brings their books: every row their household holds moves into the
      *   family, and the emptied household is deleted.
      * - A `MEMBER` of a household shared with others moves alone: the books stay with that
-     *   family, as they would if the user had left it.
+     *   family, as they would if the user had left it, and the bank connections the user
+     *   made there are deleted (the family's accounts linked to them are unlinked).
      * - The `OWNER` of a household shared with others is refused (400): ownership has to be
      *   handed over or the members removed first.
      */
@@ -55,6 +56,8 @@ class HouseholdMergeService(
         em.flush()
 
         if (!sharedWithOthers) moveBooks(fromId, toId)
+        else exec("DELETE FROM bank_connections WHERE household_id = :from AND connected_by_user_id = :user",
+            "from" to fromId, "user" to user.id)
         exec("DELETE FROM household_members WHERE user_id = :user", "user" to user.id)
         if (!sharedWithOthers) exec("DELETE FROM households WHERE id = :from", "from" to fromId)
         em.clear()

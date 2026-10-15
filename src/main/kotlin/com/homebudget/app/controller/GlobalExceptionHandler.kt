@@ -112,6 +112,13 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 409, error = "Too Many Invitations", message = ex.message)
         )
 
+    /** The caller's membership moved after the request was authenticated; they sync again. */
+    @ExceptionHandler(com.homebudget.app.household.HouseholdChangedException::class)
+    fun handleHouseholdChanged(ex: com.homebudget.app.household.HouseholdChangedException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            ErrorResponse(status = 409, error = "Household Changed", message = ex.message)
+        )
+
     /**
      * A failed sign-in is a 401, not a 500.
      *

@@ -1,6 +1,7 @@
 package com.homebudget.app.household
 
 import com.homebudget.app.TestIdentity
+import com.homebudget.app.controller.GlobalExceptionHandler
 import com.homebudget.app.domain.CategoryType
 import com.homebudget.app.domain.HouseholdRole
 import com.homebudget.app.domain.TransactionType
@@ -11,6 +12,7 @@ import com.homebudget.app.service.SyncService
 import com.homebudget.app.service.UserService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -52,6 +54,35 @@ class MembershipTest {
 
     private fun count(sql: String, id: Long) = jdbc.queryForObject(sql, Long::class.java, id)
 
+    /** A bank connection [who] made in [household]; the row as the bank flow would write it. */
+    private fun connect(who: UserPrincipal, household: Long): Long {
+        jdbc.update(
+            "INSERT INTO bank_connections (household_id, connected_by_user_id, provider, credentials) VALUES (?, ?, 'monobank', 'x')",
+            household, who.user.id
+        )
+        return jdbc.queryForObject(
+            "SELECT MAX(id) FROM bank_connections WHERE connected_by_user_id = ?", Long::class.java, who.user.id
+        )!!
+    }
+
+    private fun connectionExists(id: Long) = count("SELECT COUNT(*) FROM bank_connections WHERE id = ?", id) == 1L
+
+    /** The family's account linked to [connection]; returns the account's uuid. */
+    private fun linkedAccount(who: UserPrincipal, connection: Long): String {
+        val account = uuid()
+        identity.signIn(who)
+        val pushed = syncService.push(SyncPushRequest(SyncPayload(
+            accounts = listOf(SyncAccount(uuid = account, name = "Card", currencyCode = "USD"))
+        )))
+        assertTrue(pushed.rejected.isEmpty(), "setup push was rejected: ${pushed.rejected}")
+        jdbc.update("UPDATE accounts SET bank_connection_id = ? WHERE uuid = ?", connection, account)
+        return account
+    }
+
+    private fun accountConnection(uuid: String): Long? = jdbc.queryForList(
+        "SELECT bank_connection_id FROM accounts WHERE uuid = ?", uuid
+    ).single()["bank_connection_id"]?.let { (it as Number).toLong() }
+
     @Test
     fun `a member who leaves gets an empty household of their own and their transactions stay`() {
         val anna = identity.newMember("anna", "EUR")
@@ -85,6 +116,57 @@ class MembershipTest {
         val kept = transactionRepository.findByUuidAndHousehold(tx, anna.household)!!
         assertEquals(boris.user.id, kept.createdBy?.id)
         assertEquals(1L, householdMemberRepository.countByHouseholdId(anna.household.id))
+    }
+
+    @Test
+    fun `a member who leaves takes their bank connections and the family keeps the account unlinked`() {
+        val anna = identity.newMember("anna")
+        val boris = identity.joinAs("boris", anna.household)
+        val annaConnection = connect(anna, anna.household.id)
+        val borisConnection = connect(boris, anna.household.id)
+        val account = linkedAccount(anna, borisConnection)
+
+        identity.signIn(boris)
+        membershipService.leave()
+
+        assertFalse(connectionExists(borisConnection), "the leaver's connection holds their credentials")
+        assertTrue(connectionExists(annaConnection), "another member's connection is untouched")
+        assertEquals(null, accountConnection(account), "the family's account stays, unlinked")
+    }
+
+    @Test
+    fun `a removed member's bank connections go with them`() {
+        val anna = identity.newMember("anna")
+        val boris = identity.joinAs("boris", anna.household)
+        val annaConnection = connect(anna, anna.household.id)
+        val borisConnection = connect(boris, anna.household.id)
+        val account = linkedAccount(anna, borisConnection)
+
+        identity.signIn(anna)
+        membershipService.remove(boris.user.id)
+
+        assertFalse(connectionExists(borisConnection))
+        assertTrue(connectionExists(annaConnection))
+        assertEquals(null, accountConnection(account))
+    }
+
+    @Test
+    fun `a push from a session whose membership has moved is refused and writes nothing`() {
+        val anna = identity.newMember("anna")
+        val boris = identity.joinAs("boris", anna.household)
+        identity.signIn(boris)
+        membershipService.leave()
+
+        // `boris` still names anna's household, as a request authenticated before the
+        // leave would.
+        identity.signIn(boris)
+        val refused = assertThrows<HouseholdChangedException> {
+            syncService.push(SyncPushRequest(SyncPayload(
+                accounts = listOf(SyncAccount(uuid = uuid(), name = "Stray", currencyCode = "USD"))
+            )))
+        }
+        assertEquals(409, GlobalExceptionHandler().handleHouseholdChanged(refused).statusCode.value())
+        assertEquals(0L, count("SELECT COUNT(*) FROM accounts WHERE household_id = ?", anna.household.id))
     }
 
     @Test

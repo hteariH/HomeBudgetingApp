@@ -107,6 +107,9 @@ Register-with-invite skips the move: the new user has no books.
 - Leaving or being removed creates a new household for the user (named after them, the
   family's base currency, default categories) and moves their membership there. Their
   transactions stay with the family and keep `created_by_user_id`.
+- Bank connections the person made are deleted (they hold the person's own credentials);
+  the family's accounts linked to them are unlinked and keep their history. The same holds
+  for a member of a shared household who joins another household and moves alone.
 - Deleting a user (self or administrator) who is the owner of a household with other
   members hands ownership to the longest-standing remaining member first. This closes the
   baseline's "ownerless household" gap.
