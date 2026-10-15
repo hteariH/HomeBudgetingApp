@@ -4,6 +4,8 @@ import com.homebudget.app.TestIdentity
 import com.homebudget.app.domain.Role
 import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.UserPrincipal
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -101,6 +103,80 @@ class AiProviderEndpointsTest {
         mvc.perform(get("/api/instance")).andExpect(jsonPath("$.receiptScan").value(true))
         mvc.perform(delete("/api/admin/ai-provider").with(asUser(admin))).andExpect(status().isNoContent)
         mvc.perform(get("/api/instance")).andExpect(jsonPath("$.receiptScan").value(false))
+    }
+
+    private fun openAiReply(text: String) =
+        """{"choices":[{"message":{"role":"assistant","content":${com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(text)}}}]}"""
+
+    @Test
+    fun `the administrator tests unsaved settings with the sample receipt`() {
+        val admin = admin()
+        FakeModelServer().use { server ->
+            server.reply(200, openAiReply("""{"merchant":"SHOP","date":"2026-10-14","total":"2.00","items":[{"name":"Milk","price":"1.20"}]}"""))
+            mvc.perform(
+                post("/api/admin/ai-provider/test").with(asUser(admin)).contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"type":"OPENAI_COMPATIBLE","baseUrl":"${server.base}/v1","model":"llava","apiKey":"sk-t"}""")
+            ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.ok").value(true))
+                .andExpect(jsonPath("$.receipt.merchant").value("SHOP"))
+                .andExpect(jsonPath("$.receipt.date").value("2026-10-14"))
+                .andExpect(jsonPath("$.receipt.items[0].name").value("Milk"))
+                .andExpect(jsonPath("$.reason").doesNotExist())
+
+            val sent = server.requests.single()
+            assertEquals("Bearer sk-t", sent.headers["authorization"])
+            val sample = javaClass.getResourceAsStream("/ai/sample-receipt.jpg")!!.readBytes()
+            assertTrue(sent.body.contains(java.util.Base64.getEncoder().encodeToString(sample)), "the sample image is sent")
+
+            server.reply(400, """{"error":"model does not support image input"}""")
+            mvc.perform(
+                post("/api/admin/ai-provider/test").with(asUser(admin)).contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"type":"OPENAI_COMPATIBLE","baseUrl":"${server.base}/v1","model":"text-only"}""")
+            ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.ok").value(false))
+                .andExpect(jsonPath("$.reason").value("This model cannot read images"))
+                .andExpect(jsonPath("$.receipt").doesNotExist())
+        }
+        // Testing saves nothing.
+        mvc.perform(get("/api/admin/ai-provider").with(asUser(admin))).andExpect(jsonPath("$.source").value("NONE"))
+    }
+
+    @Test
+    fun `an empty test request tests the saved provider`() {
+        val admin = admin()
+        mvc.perform(post("/api/admin/ai-provider/test").with(asUser(admin)))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.ok").value(false))
+            .andExpect(jsonPath("$.reason").value("No model is set up to read receipts"))
+
+        FakeModelServer().use { server ->
+            mvc.perform(
+                put("/api/admin/ai-provider").with(asUser(admin)).contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"type":"OPENAI_COMPATIBLE","baseUrl":"${server.base}/v1","model":"llava","apiKey":"sk-saved"}""")
+            ).andExpect(status().isOk)
+            try {
+                server.reply(200, openAiReply("""{"merchant":"SHOP","items":[]}"""))
+                mvc.perform(post("/api/admin/ai-provider/test").with(asUser(admin)))
+                    .andExpect(status().isOk).andExpect(jsonPath("$.ok").value(true))
+                assertEquals("Bearer sk-saved", server.requests.single().headers["authorization"])
+            } finally {
+                mvc.perform(delete("/api/admin/ai-provider").with(asUser(admin)))
+            }
+        }
+    }
+
+    @Test
+    fun `household tests follow the household rules`() {
+        val owner = identity.newMember("tester")
+        val member = identity.joinAs("member", owner.household)
+        mvc.perform(post("/api/household/ai-provider/test").with(asUser(member))).andExpect(status().isForbidden)
+        mvc.perform(post("/api/admin/ai-provider/test").with(asUser(owner))).andExpect(status().isForbidden)
+        mvc.perform(
+            post("/api/household/ai-provider/test").with(asUser(owner)).contentType(MediaType.APPLICATION_JSON)
+                .content("""{"type":"OPENAI_COMPATIBLE","baseUrl":"http://10.0.0.5/v1","model":"m"}""")
+        ).andExpect(status().isBadRequest)
+        mvc.perform(post("/api/household/ai-provider/test").with(asUser(owner)))
+            .andExpect(status().isOk).andExpect(jsonPath("$.ok").value(false))
     }
 }
 

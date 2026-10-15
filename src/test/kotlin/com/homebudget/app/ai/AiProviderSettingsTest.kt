@@ -127,6 +127,82 @@ class AiProviderSettingsTest {
     }
 
     @Test
+    fun `the model name, key and address are checked before they are stored`() {
+        val household = identity.newMember("limits").household
+        for (bad in listOf("gpt 4o", "a?b", "x#y", "m\tx", "é", "a".repeat(201))) {
+            assertThrows<IllegalArgumentException>(bad) { settings.saveHousehold(household.id, openai.copy(model = bad)) }
+        }
+        settings.saveHousehold(household.id, openai.copy(model = "openai/gpt-4o-mini:free@v1.2_x"))
+        settings.saveHousehold(household.id, openai.copy(model = "m".repeat(200)))
+
+        assertThrows<IllegalArgumentException> {
+            settings.saveHousehold(household.id, openai.copy(apiKey = "k".repeat(AiProviderSettings.MAX_KEY_LENGTH + 1)))
+        }
+        // The longest key allowed must still fit the column once encrypted.
+        settings.saveHousehold(household.id, openai.copy(apiKey = "k".repeat(AiProviderSettings.MAX_KEY_LENGTH)))
+        assertEquals(AiProviderSettings.MAX_KEY_LENGTH, settings.resolveFor(household.id)!!.apiKey!!.length)
+
+        try {
+            assertThrows<IllegalArgumentException> {
+                settings.saveInstance(ProviderRequest(AiProviderType.OPENAI_COMPATIBLE, "http://h/" + "p".repeat(500), "m", null))
+            }
+        } finally {
+            settings.deleteInstance()
+        }
+    }
+
+    @Test
+    fun `a key is not carried to a new address`() {
+        try {
+            settings.saveInstance(ProviderRequest(AiProviderType.OPENAI_COMPATIBLE, "https://llm.example.com/v1", "m", "sk-a"))
+            // Same address, written differently: the key stays.
+            settings.saveInstance(ProviderRequest(AiProviderType.OPENAI_COMPATIBLE, " https://llm.example.com/v1/ ", "m2", null))
+            assertEquals("sk-a", settings.instanceProvider()!!.apiKey)
+
+            settings.saveInstance(ProviderRequest(AiProviderType.OPENAI_COMPATIBLE, "https://other.example.com/v1", "m2", null))
+            assertNull(settings.instanceProvider()!!.apiKey)
+        } finally {
+            settings.deleteInstance()
+        }
+
+        val household = identity.newMember("move").household
+        settings.saveHousehold(household.id, openai)
+        settings.saveHousehold(household.id, openai.copy(baseUrl = "https://openrouter.ai/api/v1", apiKey = null))
+        assertNull(settings.resolveFor(household.id)!!.apiKey)
+    }
+
+    @Test
+    fun `unsaved settings resolve with the stored key only for the same address`() {
+        val household = identity.newMember("unsaved").household
+        settings.saveHousehold(household.id, openai)
+
+        val same = settings.unsavedHousehold(household.id, openai.copy(model = "gpt-4o-mini", apiKey = null))
+        assertEquals("sk-household", same.apiKey)
+        assertEquals("gpt-4o-mini", same.model)
+        assertEquals(AiProviderSource.HOUSEHOLD, same.source)
+
+        assertNull(settings.unsavedHousehold(household.id, openai.copy(baseUrl = "https://openrouter.ai/api/v1", apiKey = null)).apiKey)
+        assertNull(settings.unsavedHousehold(household.id, ProviderRequest(AiProviderType.ANTHROPIC, null, "c", null)).apiKey)
+        assertEquals("new", settings.unsavedHousehold(household.id, openai.copy(apiKey = "new")).apiKey)
+        assertThrows<IllegalArgumentException> {
+            settings.unsavedHousehold(household.id, openai.copy(baseUrl = "http://10.0.0.5/v1"))
+        }
+        // Nothing was saved by asking.
+        assertEquals("gpt-4o", settings.resolveFor(household.id)!!.model)
+
+        val gemini = settings.unsavedInstance(ProviderRequest(AiProviderType.GEMINI, null, "gemini-x", "g"))
+        assertEquals(AiProviderSettings.GEMINI_URL, gemini.baseUrl)
+        assertNull(settings.instanceProvider())
+    }
+
+    @Test
+    fun `a provider request never prints its key`() {
+        val text = openai.toString()
+        assertFalse(text.contains("sk-household"), text)
+        assertTrue(text.contains("gpt-4o"), text)
+    }
+
+    @Test
     fun `timeout and concurrency have defaults`() {
         assertEquals(Duration.ofMinutes(5), settings.timeout)
         assertEquals(2, settings.concurrency)
@@ -171,5 +247,8 @@ class AiProviderSettingsEnvironmentTest {
             settings.saveInstance(ProviderRequest(AiProviderType.GEMINI, null, "g", null))
         }
         assertThrows<AiProviderLockedException> { settings.deleteInstance() }
+        assertThrows<AiProviderLockedException> {
+            settings.unsavedInstance(ProviderRequest(AiProviderType.GEMINI, null, "g", null))
+        }
     }
 }

@@ -1,5 +1,7 @@
 package com.homebudget.app.ai
 
+import com.fasterxml.jackson.annotation.JsonInclude
+
 /** What a client sees of a provider. The key itself never leaves the server. */
 data class ProviderView(
     val source: AiProviderSource,
@@ -20,4 +22,16 @@ data class ProviderRequest(
     val baseUrl: String? = null,
     val model: String,
     val apiKey: String? = null
+) {
+    // The key must not reach a log line through a stray toString.
+    override fun toString() =
+        "ProviderRequest(type=$type, baseUrl=$baseUrl, model=$model, apiKey=${if (apiKey == null) "null" else "[redacted]"})"
+}
+
+/** What the Test button gets back: the receipt the model read from the sample, or why it could not. */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class ProviderTestResult(
+    val ok: Boolean,
+    val receipt: ExtractedReceipt? = null,
+    val reason: String? = null
 )

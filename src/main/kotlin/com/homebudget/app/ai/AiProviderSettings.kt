@@ -45,6 +45,18 @@ class AiProviderSettings(
 
         /** The OpenAI-compatible endpoints a household may choose; anything else is the administrator's call. */
         val HOUSEHOLD_PRESETS = setOf(OPENAI_URL, "https://openrouter.ai/api/v1")
+
+        /** Model names as providers write them (`llava:13b`, `openai/gpt-4o`, `claude-x@2025`); the column holds 200. */
+        private val MODEL_NAME = Regex("[A-Za-z0-9._:/@-]{1,200}")
+
+        /**
+         * The longest key accepted. The column holds 2048 characters of *ciphertext*
+         * (`base64(iv):base64(sealed key)`), so a 2048-character key would not fit:
+         * 1500 encrypts to 2024. Real keys are a few hundred characters at most.
+         */
+        const val MAX_KEY_LENGTH = 1500
+
+        const val MAX_BASE_URL_LENGTH = 500
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -125,25 +137,65 @@ class AiProviderSettings(
         providers.findFirstByScope(AiProviderScope.INSTANCE)?.let(providers::delete)
     }
 
+    /**
+     * The settings in [req] as they would be used, without saving them - for the Test button.
+     * A household may only test what it may save.
+     */
+    @Transactional(readOnly = true)
+    fun unsavedHousehold(householdId: Long, req: ProviderRequest): ResolvedProvider {
+        validate(req, administrator = false)
+        return unsaved(req, providers.findByHouseholdId(householdId), AiProviderSource.HOUSEHOLD)
+    }
+
+    /** The administrator's unsaved settings; refused like a save when the environment sets the provider. */
+    @Transactional(readOnly = true)
+    fun unsavedInstance(req: ProviderRequest): ResolvedProvider {
+        if (lockedByEnvironment) throw AiProviderLockedException()
+        validate(req, administrator = true)
+        return unsaved(req, providers.findFirstByScope(AiProviderScope.INSTANCE), AiProviderSource.INSTANCE)
+    }
+
+    private fun unsaved(req: ProviderRequest, stored: AiProviderEntity?, source: AiProviderSource) = ResolvedProvider(
+        type = req.type,
+        baseUrl = endpointFor(req.type, normalisedBaseUrl(req)),
+        model = req.model.trim(),
+        apiKey = keyFor(stored, req),
+        source = source
+    )
+
     private fun apply(row: AiProviderEntity, req: ProviderRequest) {
-        val typeChanged = row.type != req.type
+        row.apiKey = keyFor(row, req)
         row.type = req.type
         row.model = req.model.trim()
-        row.baseUrl = if (req.type == AiProviderType.OPENAI_COMPATIBLE) req.baseUrl!!.trim().trimEnd('/') else null
-        // A key belongs to the provider it was issued for; switching type without a new one must not carry it over.
-        row.apiKey = when {
-            req.apiKey == null -> if (typeChanged) null else row.apiKey
-            req.apiKey.isEmpty() -> null
-            else -> req.apiKey
-        }
+        row.baseUrl = normalisedBaseUrl(req)
         row.updatedAt = Instant.now()
+    }
+
+    private fun normalisedBaseUrl(req: ProviderRequest): String? =
+        if (req.type == AiProviderType.OPENAI_COMPATIBLE) req.baseUrl!!.trim().trimEnd('/') else null
+
+    /**
+     * The key [req] would use: its own, none for an empty string, and for null the stored
+     * one - but only while type and address stay the same. A key belongs to the host it was
+     * entered for and must never be sent anywhere else.
+     */
+    private fun keyFor(stored: AiProviderEntity?, req: ProviderRequest): String? = when {
+        req.apiKey == null ->
+            stored?.takeIf { it.type == req.type && it.baseUrl == normalisedBaseUrl(req) }?.apiKey
+        req.apiKey.isEmpty() -> null
+        else -> req.apiKey
     }
 
     private fun validate(req: ProviderRequest, administrator: Boolean) {
         require(req.model.isNotBlank()) { "Choose a model" }
+        require(MODEL_NAME.matches(req.model.trim())) {
+            "A model name is up to 200 letters, digits and . _ : / @ -"
+        }
+        require(req.apiKey == null || req.apiKey.length <= MAX_KEY_LENGTH) { "The key is too long" }
         if (req.type != AiProviderType.OPENAI_COMPATIBLE) return
         val url = req.baseUrl?.trim()?.trimEnd('/')
         require(!url.isNullOrBlank()) { "Enter the address of the model's API" }
+        require(url.length <= MAX_BASE_URL_LENGTH) { "The address is too long" }
         if (administrator) {
             val uri = runCatching { URI(url) }.getOrNull()
             require(uri != null && uri.scheme in setOf("http", "https") && !uri.host.isNullOrBlank()) {
@@ -156,13 +208,15 @@ class AiProviderSettings(
         }
     }
 
+    private fun endpointFor(type: AiProviderType, baseUrl: String?) = when (type) {
+        AiProviderType.OPENAI_COMPATIBLE -> baseUrl ?: OPENAI_URL
+        AiProviderType.ANTHROPIC -> ANTHROPIC_URL
+        AiProviderType.GEMINI -> GEMINI_URL
+    }
+
     private fun resolved(row: AiProviderEntity, source: AiProviderSource) = ResolvedProvider(
         type = row.type,
-        baseUrl = when (row.type) {
-            AiProviderType.OPENAI_COMPATIBLE -> row.baseUrl ?: OPENAI_URL
-            AiProviderType.ANTHROPIC -> ANTHROPIC_URL
-            AiProviderType.GEMINI -> GEMINI_URL
-        },
+        baseUrl = endpointFor(row.type, row.baseUrl),
         model = row.model,
         apiKey = row.apiKey,
         source = source
