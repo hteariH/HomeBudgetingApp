@@ -145,7 +145,13 @@ fun QuickAddScreen(
         when (notice) {
             // Opened rather than left folded away: a note the user cannot see is a note they
             // cannot correct, and the shop name is the field a model gets wrong most.
-            is ScanNotice.Filled -> if (notice.withMerchant) showNoteInput = true
+            is ScanNotice.Filled -> {
+                if (notice.withMerchant) showNoteInput = true
+                notice.currencyDiffers?.let {
+                    snackbarHostState.showSnackbar(getString(Res.string.receipt_currency_differs, it.receipt, it.account))
+                }
+                if (notice.totalMismatch) snackbarHostState.showSnackbar(getString(Res.string.receipt_mismatch))
+            }
             is ScanNotice.Failed -> snackbarHostState.showSnackbar(
                 notice.reason ?: getString(Res.string.quickadd_scan_failed)
             )

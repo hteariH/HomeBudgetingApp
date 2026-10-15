@@ -58,7 +58,7 @@ class ReceiptScannerTest {
                 respond(
                     """
                     {"uuid":"r-1","status":"READY","merchant":"Silpo","date":"2026-10-14",
-                     "currency":"UAH","total":"249.90","totalMismatch":false,
+                     "currency":"UAH","total":"249.90","totalMismatch":true,
                      "suggestedCategoryId":12,"suggestedCategoryUuid":"cat-food",
                      "items":[{"name":"Milk","quantity":"2","price":"80.00"}]}
                     """.trimIndent(),
@@ -78,6 +78,8 @@ class ReceiptScannerTest {
                     date = LocalDate(2026, 10, 14),
                     merchant = "Silpo",
                     suggestedCategoryUuid = "cat-food",
+                    currency = "UAH",
+                    totalMismatch = true,
                 )
             ),
             outcome,

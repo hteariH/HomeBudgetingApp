@@ -7,9 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
@@ -53,7 +53,9 @@ actual fun rememberReceiptCamera(
     val captured by rememberUpdatedState(onCaptured)
     val failed by rememberUpdatedState(onFailed)
 
-    var pendingCapture by remember { mutableStateOf<Uri?>(null) }
+    // Saveable: the camera app can take long enough for this activity to be recreated (or
+    // the process killed), and the result must still find the file it was written to.
+    var pendingCapture by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()

@@ -29,6 +29,10 @@ data class ReceiptDraft(
     val date: LocalDate? = null,
     val merchant: String? = null,
     val suggestedCategoryUuid: String? = null,
+    /** The receipt's currency; the amount is only filled when it is the account's. */
+    val currency: String? = null,
+    /** The items do not add up to [total]; the person should check the amount. */
+    val totalMismatch: Boolean = false,
 )
 
 /** Whether the household's receipts can be read, as far as the server says. */
@@ -127,6 +131,8 @@ private fun ReceiptDto.toDraft() = ReceiptDraft(
     date = date?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
     merchant = merchant?.takeIf { it.isNotBlank() },
     suggestedCategoryUuid = suggestedCategoryUuid,
+    currency = currency?.trim()?.uppercase()?.takeIf { it.isNotEmpty() },
+    totalMismatch = totalMismatch,
 )
 
 /** Consecutive polls that may fail to reach the server before the scan counts as offline. */

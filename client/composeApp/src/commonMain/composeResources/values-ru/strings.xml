@@ -59,6 +59,8 @@
     <string name="receipt_reading">Читаем чек…</string>
     <string name="receipt_offline">Для сканирования нужно подключение к вашему серверу</string>
     <string name="receipt_title">Чек</string>
+    <string name="receipt_currency_differs">Чек в валюте %1$s, а счёт в %2$s. Введите сумму сами.</string>
+    <string name="receipt_mismatch">Позиции не сходятся с итогом — проверьте сумму</string>
     <string name="receipt_items">Позиции</string>
     <string name="receipt_setup_on_web">Настройте распознавание чеков в веб-приложении</string>
     <string name="receipt_unavailable">Не удалось загрузить чек. Нужно подключение к вашему серверу.</string>

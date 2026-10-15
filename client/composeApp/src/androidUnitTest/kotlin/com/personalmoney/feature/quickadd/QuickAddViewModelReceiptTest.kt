@@ -155,4 +155,54 @@ class QuickAddViewModelReceiptTest {
         coVerify(exactly = 1) { transactionRepository.insert(match { it.receiptUuid == "r-1" }) }
         coVerify(exactly = 1) { transactionRepository.insert(match { it.receiptUuid == null && it.amountMinor == 500L }) }
     }
+
+    @Test
+    fun `a receipt in the account's currency fills the amount`() = runTest {
+        coEvery { scanner.canScan() } returns true
+        coEvery { scanner.scan(any()) } returns ScanOutcome.Ready(
+            ReceiptDraft(receiptUuid = "r-1", total = "249.90", currency = "UAH")
+        )
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.scanReceipt(byteArrayOf(1))
+
+        assertEquals("249.90", vm.uiState.value.expression)
+        assertEquals(ScanNotice.Filled(withMerchant = false), vm.scan.value.notice)
+    }
+
+    @Test
+    fun `a receipt in another currency leaves the amount alone and says so`() = runTest {
+        coEvery { scanner.canScan() } returns true
+        coEvery { scanner.scan(any()) } returns ScanOutcome.Ready(
+            ReceiptDraft(receiptUuid = "r-1", total = "12.50", merchant = "Lidl", currency = "EUR")
+        )
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.setAmountText("7")
+
+        vm.scanReceipt(byteArrayOf(1))
+
+        assertEquals("7", vm.uiState.value.expression)
+        assertEquals("Lidl", vm.uiState.value.note)
+        assertEquals(
+            ScanNotice.Filled(withMerchant = true, currencyDiffers = CurrencyDiffers(receipt = "EUR", account = "UAH")),
+            vm.scan.value.notice,
+        )
+    }
+
+    @Test
+    fun `items that do not add up to the total are pointed out`() = runTest {
+        coEvery { scanner.canScan() } returns true
+        coEvery { scanner.scan(any()) } returns ScanOutcome.Ready(
+            ReceiptDraft(receiptUuid = "r-1", total = "10.00", totalMismatch = true)
+        )
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.scanReceipt(byteArrayOf(1))
+
+        assertEquals("10.00", vm.uiState.value.expression)
+        assertEquals(ScanNotice.Filled(withMerchant = false, totalMismatch = true), vm.scan.value.notice)
+    }
 }

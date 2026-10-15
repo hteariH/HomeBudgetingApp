@@ -63,6 +63,8 @@
     <string name="receipt_reading">Reading the receipt…</string>
     <string name="receipt_offline">Scanning needs a connection to your server</string>
     <string name="receipt_title">Receipt</string>
+    <string name="receipt_currency_differs">The receipt is in %1$s, but this account is in %2$s. Enter the amount yourself.</string>
+    <string name="receipt_mismatch">The items don\'t add up to the total — check the amount</string>
     <string name="receipt_items">Items</string>
     <string name="receipt_setup_on_web">Set up receipt recognition in the web app</string>
     <string name="receipt_unavailable">Could not load the receipt. It needs a connection to your server.</string>

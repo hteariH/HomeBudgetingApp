@@ -60,9 +60,20 @@ data class QuickAddUiState(
 }
 
 /** Something a scan has to tell the user, once. */
+/** A receipt in [receipt] currency, read into a form on an account in [account] currency. */
+data class CurrencyDiffers(val receipt: String, val account: String)
+
 sealed interface ScanNotice {
-    /** The form was filled. [withMerchant]: the note was too, so the screen shows it. */
-    data class Filled(val withMerchant: Boolean) : ScanNotice
+    /**
+     * The form was filled. [withMerchant]: the note was too, so the screen shows it.
+     * [currencyDiffers]: the amount was left alone, because the receipt is in another
+     * currency. [totalMismatch]: the items do not add up to the total.
+     */
+    data class Filled(
+        val withMerchant: Boolean,
+        val currencyDiffers: CurrencyDiffers? = null,
+        val totalMismatch: Boolean = false,
+    ) : ScanNotice
 
     /** [reason] is the server's own sentence, or null for "it did not work". */
     data class Failed(val reason: String?) : ScanNotice
@@ -264,10 +275,11 @@ class QuickAddViewModel constructor(
         _scan.update { it.copy(reading = true, notice = null) }
         viewModelScope.launch {
             val notice = when (val outcome = receiptScanner.scan(jpeg)) {
-                is ScanOutcome.Ready -> {
-                    apply(outcome.draft)
-                    ScanNotice.Filled(withMerchant = outcome.draft.merchant != null)
-                }
+                is ScanOutcome.Ready -> ScanNotice.Filled(
+                    withMerchant = outcome.draft.merchant != null,
+                    currencyDiffers = apply(outcome.draft),
+                    totalMismatch = outcome.draft.totalMismatch,
+                )
                 is ScanOutcome.Failed -> ScanNotice.Failed(outcome.reason)
                 ScanOutcome.Offline -> ScanNotice.Offline
             }
@@ -282,9 +294,19 @@ class QuickAddViewModel constructor(
     /**
      * Fills what the receipt says, and only that: a field it did not read keeps whatever the
      * user had typed. Everything stays editable - the scan fills the form and stops.
+     *
+     * The total goes into the amount only when the receipt is in the selected account's
+     * currency (or does not say); otherwise the amount is left alone and the currencies are
+     * returned, for the screen to explain.
      */
-    private suspend fun apply(draft: ReceiptDraft) {
-        draft.total?.let(::setAmountText)
+    private suspend fun apply(draft: ReceiptDraft): CurrencyDiffers? {
+        // The same account the form shows: the chosen one, else the first.
+        val accounts = accountRepository.observeActive().first()
+        val account = accounts.firstOrNull { it.id == selectedAccountIdFlow.value } ?: accounts.firstOrNull()
+        val differs = draft.currency
+            ?.takeIf { account != null && !it.equals(account.currencyCode, ignoreCase = true) }
+            ?.let { CurrencyDiffers(receipt = it, account = account!!.currencyCode) }
+        if (differs == null) draft.total?.let(::setAmountText)
         draft.date?.let(::setDate)
         draft.merchant?.let(::setNote)
         // Only a category this phone has: the server suggests from the household's list,
@@ -293,6 +315,7 @@ class QuickAddViewModel constructor(
             categoriesFlow.first().firstOrNull { it.uuid == uuid }?.let(::selectCategory)
         }
         receiptUuid = draft.receiptUuid
+        return differs
     }
 
     private fun save() {
