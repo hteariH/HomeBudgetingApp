@@ -57,7 +57,7 @@ Tests: JUnit + MockK + Turbine, with a `MainDispatcherRule` (UnconfinedTestDispa
 ## Architecture & conventions
 
 - Unidirectional flow: `ViewModel(StateFlow)` → Compose. Hilt for DI. Room + Flow for reactive reads.
-- Layout: `core/{database,domain,data,ui,currency}` + `feature/<name>` + `widget/` + `ads/`.
+- Layout: `core/{database,domain,data,ui,currency}` + `feature/<name>` + `widget/`.
   Nav in `navigation/Routes.kt` + `PersonalMoneyNavHost.kt`.
 - **Web leftovers.** There used to be a wasmJs target serving the web app; it was replaced
   by React and removed. Code in commonMain written for the browser - the web chrome below,
@@ -122,37 +122,9 @@ Tests: JUnit + MockK + Turbine, with a `MainDispatcherRule` (UnconfinedTestDispa
   buttons to a pill regardless of `MaterialTheme.shapes`, so a button that should match the
   web app passes `shape = PmButtonShape`. Material You is off by default: it repaints the
   app from the wallpaper, which is the opposite of one product on two platforms.
-- **Plans:** the free plan caps accounts at `PlanLimits.FREE_ACCOUNTS` (5) on the *server*,
-  on both the REST and the sync path - a client is never asked whether it has paid. The
-  server answers **402** with a sentence meant for the user; `PaymentRequired` is in
-  `core/network/ApiErrors.kt`'s `USER_FACING` set so `serverMessage()` surfaces it, and
-  `isPlanLimit()` next to it is what lets a screen offer the paywall alongside that
-  sentence (see `AccountEditScreen`). Whether an account is premium is
-  `User.isPremium(now)` on the server, which reads the expiry rather than trusting the
-  stored value. `GET /api/users/me` carries `entitlement` for display only.
-- **Buying premium** (`core/billing`, `feature/premium`): **Google Play Billing only, and
-  therefore phone only.** Not a preference - Stripe does not accept merchants in Ukraine,
-  which rules out every provider built on it including RevenueCat Web Billing, so there is
-  no rail to sell on the web. `StoreBilling` is an interface with `PlayStoreBilling`
-  (androidMain, `billing-ktx`) and `UnavailableStoreBilling` (web) behind it, bound in
-  Koin like `KeyValueStore`. The flow: the store returns a **purchase token**,
-  `EntitlementRepository.submit` posts it to `POST /api/billing/play/purchase`, and the
-  server asks Google what it bought - **the client's opinion of its own subscription is
-  never used**, and `UserPreferences.premium` is a display cache, never a decision.
-  `syncOwnedPurchases()` runs on launch from `PersonalMoneyApplication` and is what makes
-  a reinstall or a second device work with nothing to press.
-  **Premium removes the ads**, and the check lives in one place: `ads/BannerAd` in
-  commonMain wraps the platform's `PlatformBannerAd` and hides it for a subscriber, so a
-  screen that forgot to ask cannot sell a paying user to an advertiser. `MainActivity`
-  additionally skips the UMP consent form, `MobileAds.initialize` and the interstitial
-  preload outright - a subscriber is served nothing, so there is nothing to consent to or
-  fetch. `EntitlementRepository.premium` is `Flow<Boolean?>` for exactly this: **null means
-  not known yet**, and the banner draws nothing until the answer arrives, because guessing
-  `false` for the few hundred milliseconds DataStore takes is a flash of advertising in
-  front of somebody who paid it away. The paywall renders on both
-  platforms; in the browser it says where to buy instead. Premium can also be granted by
-  hand - `POST /api/admin/entitlements/users/{id}`, ADMIN only. The whole arrangement is
-  written up in `../docs/PREMIUM.md`.
+- **No plans, ads or purchases:** every account is the same, and there is no billing or
+  advertising code. Do not add a dependency that phones home (ads, analytics, crash
+  reporting) - people run their own server precisely so that nothing else sees their data.
 - **Importing from HomeMoney** (`feature/homemoney`, web only like Banks - see
   `navigation/homeMoneyImportAvailable`): the server owns it end to end
   (`com.homebudget.app.importer.homemoney`), because homemoney.ua sends no CORS headers and
@@ -180,7 +152,7 @@ Tests: JUnit + MockK + Turbine, with a `MainDispatcherRule` (UnconfinedTestDispa
   `ActivityResultContracts.TakePicture` (full resolution - the preview contract's thumbnail is
   unreadable), then **Tesseract** on-device (`ukr+rus+eng`), then `ReceiptParser` in
   `commonMain`. No `CAMERA` permission (ACTION_IMAGE_CAPTURE is served by the camera app) and
-  the capture is deleted from the cache once read, so Play's Data safety answers do not change.
+  the capture is deleted from the cache once read, so nothing of it stays on the device.
   **Tesseract and not ML Kit because Google ships no Cyrillic model for ML Kit at all** - it
   read `СУМА` as `CYMA` and the merchant name as noise, which is the wrong engine for this
   market. Cost: ~11 MB of `*.traineddata` in `androidMain/assets/tessdata/`, extracted to

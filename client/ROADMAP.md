@@ -8,6 +8,12 @@ _Generated 2026-06-11 from a full multi-agent audit of the codebase (11 domain a
 - **Evidence**: `file:line` or concrete observation backing the item
 - Findings were reality-checked against the code; corrections from that pass are noted inline.
 
+> **Historical.** This audit predates the move to a self-hosted, open-source app. There are no
+> ads, no purchases and no Play Store listing any more, and the Play-era documents it cites
+> (`PRIVACY_POLICY.md`, `STORE_LISTING.md`) are gone: the privacy page is `site/public/privacy.html`
+> and releases follow `docs/RELEASE_CHECKLIST.md`. Rows about ads, consent or the store are
+> marked obsolete below; `file:line` evidence elsewhere may have drifted.
+
 ---
 
 ## ✅ Status (updated 2026-06-11)
@@ -48,7 +54,7 @@ Test count now ~140 unit + 1 instrumented. Every change gated on testDebugUnitTe
 
 | # | Item | Impact | Effort | Why |
 |---|------|--------|--------|-----|
-| 1 | Replace placeholder privacy URL + fill privacy policy template | high | S | Hard Play Store launch blocker, essentially free to fix (`build.gradle.kts:30`, `PRIVACY_POLICY.md:7`). Nothing ships until done. |
+| 1 | Replace placeholder privacy URL + fill privacy policy template | high | S | Done; the policy now lives at `site/public/privacy.html` (the Play-era `PRIVACY_POLICY.md` is gone). |
 | 2 | Fix the silent-money correctness trio: FX ÷0, `Money` overflow, date-converter crash | high | S | Three tiny, code-confirmed fixes that prevent corrupted totals, flipped-sign amounts, and read-time crashes — the core trust of a finance app. |
 | 3 | Category budgets with progress + overspend alerts | high | M | The single most-requested missing feature (all 4 product lenses ranked it #1 vs every competitor). Biggest growth lever; builds on existing category/monthly queries. |
 | 4 | Make backup import safe (clear-or-merge, non-ABORT, confirm/preview) | high | M | Re-importing today fails cryptically or silently duplicates everything (`BackupManager.kt:46-53`). Backup/restore is the only safety net for a local-first app. |
@@ -158,17 +164,18 @@ _Ships ru/en/uk but several user-facing strings bypass resources. Each fix is sm
 ---
 
 ## Theme 7 — Release & monetization readiness
-_A small set of near-free fixes block Play launch outright or waste resources / risk compliance._
+_Written for a Play Store launch with ads. Obsolete except the versioning and About rows: the app
+is now distributed as an APK on GitHub Releases, with no ads and no store listing._
 
 | Item | Impact | Effort | Evidence |
 |------|--------|--------|----------|
-| **Replace placeholder privacy URL + fill policy template** — release falls back to `example.com/...`; `PRIVACY_POLICY.md` has unfilled legal-name/contact placeholders. Play Console rejects this. | high | S | `build.gradle.kts:30`; `PRIVACY_POLICY.md:7,112,114` |
-| **Fix UMP consent race** — both success and error callbacks call `onComplete()`, so on failure/timeout ads can init before consent (EEA/UK risk). Gate on `canRequestAds`; handle error path. _✅ Confirmed: error path at `:30` calls `onComplete()`._ | high | M | `AdsConsentManager.kt:25-31` |
-| **Use the preloaded interstitial or remove it** — `preload()` runs at startup but `showIfReady()` is never called → wasted bandwidth/battery, lost revenue. | medium | S | `MainActivity.kt:42` |
+| ~~**Replace placeholder privacy URL + fill policy template**~~ — obsolete: the privacy page is `site/public/privacy.html`. | — | — | — |
+| ~~**Fix UMP consent race**~~ _(obsolete: ads removed)_ — both success and error callbacks call `onComplete()`, so on failure/timeout ads can init before consent (EEA/UK risk). Gate on `canRequestAds`; handle error path. _✅ Confirmed: error path at `:30` calls `onComplete()`._ | high | M | `AdsConsentManager.kt:25-31` |
+| ~~**Use the preloaded interstitial or remove it**~~ _(obsolete: ads removed)_ — `preload()` runs at startup but `showIfReady()` is never called → wasted bandwidth/battery, lost revenue. | medium | S | `MainActivity.kt:42` |
 | **Use `BuildConfig.VERSION_NAME`; reserve a versionCode range** — Settings hardcodes "0.1.0"; `versionCode = 1` leaves no buffer. | medium | S | `SettingsScreen.kt:265`; `build.gradle.kts:40` |
-| **Add "Manage ad consent" in Settings** — `reset()` exists but is never exposed; policy references an in-app option that doesn't exist. | medium | M | `AdsConsentManager.kt:34-36` |
-| **Fix BannerAd lifecycle** — `AdView` created in `remember{}`, never destroyed, reparented across recompositions → leak. Add `DisposableEffect { destroy() }`. | medium | M | `BannerAd.kt:26-45` |
-| **Prepare store assets** — production icon (512²), feature graphic (1024×500), phone screenshots. | medium | M | `STORE_LISTING.md` template |
+| ~~**Add "Manage ad consent" in Settings**~~ _(obsolete: ads removed)_ — `reset()` exists but is never exposed; policy references an in-app option that doesn't exist. | medium | M | `AdsConsentManager.kt:34-36` |
+| ~~**Fix BannerAd lifecycle**~~ _(obsolete: ads removed)_ — `AdView` created in `remember{}`, never destroyed, reparented across recompositions → leak. Add `DisposableEffect { destroy() }`. | medium | M | `BannerAd.kt:26-45` |
+| ~~**Prepare store assets**~~ _(obsolete: no store listing)_ — production icon (512²), feature graphic (1024×500), phone screenshots. | medium | M | — |
 | **Implement or remove empty About handler** — `onClick = { }` + hardcoded version. | medium | S | `SettingsScreen.kt:264-266` |
 
 ---
@@ -235,7 +242,7 @@ _(surfaced by the adversarial verification step)_
 ---
 
 ## Suggested sequencing
-1. **Ship-blockers & trust (week 1, mostly S):** Top-10 items #1, #2, #5 + the privacy/consent release fixes (Theme 7) and language NPE (Theme 8).
+1. **Ship-blockers & trust (week 1, mostly S):** Top-10 items #1, #2, #5 + the versioning and About fixes (Theme 7) and language NPE (Theme 8).
 2. **Backup safety (Theme 1):** import safety + confirm/preview — the safety net must be reliable before users accumulate data.
 3. **First headline feature:** Category budgets (#3), then Net worth card (#6) — the two biggest growth levers, both reusing existing infra.
 4. **Daily-use polish:** search expansion (#8), quick-repeat (#10), localization sweep (#9).

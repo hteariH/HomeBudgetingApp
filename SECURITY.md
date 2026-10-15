@@ -27,4 +27,5 @@ In scope:
 
 Out of scope: problems in how a particular instance is operated (weak passwords, an exposed
 port, a missing reverse proxy), vulnerabilities in Docker, Postgres or Android themselves, and
-the project page at personalmoney.app, which is static and collects nothing.
+the project page at personalmoney.app, which is static and has no accounts or forms. (It and
+the web app load their typeface from Google Fonts; see the privacy page.)

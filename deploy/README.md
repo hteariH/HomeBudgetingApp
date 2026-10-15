@@ -52,10 +52,15 @@ final `mysqldump` before removing the volume; otherwise remove it with
 The site workflow (`.github/workflows/site.yml`) builds `site/` (`npm test`, `npm run build`)
 and, on the VPS:
 
-- copies `site/dist/` to `/opt/personalmoney-site/dist`;
-- copies `deploy/docker-compose.site.yml` to `/opt/personalmoney-site/docker-compose.yml`;
+- copies `site/dist/` and `deploy/docker-compose.site.yml` into `/opt/personalmoney-site`
+  (they land as `site/dist/` and `deploy/docker-compose.site.yml` there);
+- replaces the contents of `/opt/personalmoney-site/dist` with the new build in place (nginx
+  bind-mounts that directory, so the directory itself is never swapped) and removes the
+  copied `site/`;
 - copies `deploy/personalmoney.caddy` to `/opt/edge/conf.d/`;
-- runs `docker compose up -d` in `/opt/personalmoney-site` and reloads the shared Caddy.
+- runs `docker compose -f deploy/docker-compose.site.yml --project-directory . up -d` in
+  `/opt/personalmoney-site`, so `./dist` in the compose file means
+  `/opt/personalmoney-site/dist`, and reloads the shared Caddy.
 
 The container is `personalmoney-site`, reachable on the `edge` network by that alias from
 `deploy/personalmoney.caddy`.

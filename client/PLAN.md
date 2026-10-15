@@ -1,3 +1,8 @@
+> **Historical plan.** This is the original 2026 plan for a local-only app paid for by AdMob
+> ads. PersonalMoney has since become a self-hosted, open-source client of its own server, with
+> no ads and no purchases; the AdMob, UMP consent and Play Store items below no longer apply.
+> The current state is described in [CLAUDE.md](CLAUDE.md).
+
 # План: Android-приложение «PersonalMoney» — учёт личных финансов
 
 ## Контекст
