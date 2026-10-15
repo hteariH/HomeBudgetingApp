@@ -12,10 +12,10 @@ enum class RateSource {
 /**
  * One currency pair on one day.
  *
- * [user] is null for rates fetched globally from Frankfurter, and set when a user has
- * overridden that pair by hand. Fetching centrally rather than from each device means
- * one request per day for the whole install instead of one per phone, and every client
- * converting with the same numbers.
+ * [household] is null for rates fetched globally from Frankfurter, and set when a
+ * household has overridden that pair by hand. Fetching centrally rather than from each
+ * device means one request per day for the whole install instead of one per phone, and
+ * every client converting with the same numbers.
  */
 @Entity
 @Table(name = "exchange_rates")
@@ -40,9 +40,10 @@ data class ExchangeRate(
     @Column(nullable = false, length = 20)
     var source: RateSource = RateSource.FRANKFURTER,
 
+    /** Null for a fetched rate; a household's own override otherwise. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    var user: User? = null,
+    @JoinColumn(name = "household_id")
+    var household: Household? = null,
 
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now()

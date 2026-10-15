@@ -48,7 +48,7 @@ fun Account.toResponse(balanceMinor: Long) = AccountResponse(
 // ───── Category Mappers ─────
 
 /**
- * @param baseDecimals scale of the user's base currency, which is what a budget limit
+ * @param baseDecimals scale of the household's base currency, which is what a budget limit
  *   is denominated in.
  */
 fun Category.toResponse(baseDecimals: Int) = CategoryResponse(
@@ -68,7 +68,8 @@ fun Category.toResponse(baseDecimals: Int) = CategoryResponse(
     createdAt = createdAt
 )
 
-fun User.toResponse() = UserResponse(
+/** The household carries the base currency; the login does not. */
+fun User.toResponse(household: Household) = UserResponse(
     id = id,
     uuid = uuid,
     email = email,
@@ -76,7 +77,7 @@ fun User.toResponse() = UserResponse(
     lastName = lastName,
     role = role,
     emailVerified = emailVerified,
-    baseCurrency = baseCurrency?.toResponse()
+    baseCurrency = household.baseCurrency?.toResponse()
 )
 
 // ───── Transaction Mappers ─────
@@ -152,5 +153,5 @@ fun Subscription.toResponse(balanceMinor: Long, baseDecimals: Int, decimals: Int
     updatedAt = updatedAt
 )
 
-/** Fallback scale when a user has not picked a base currency yet. */
+/** Fallback scale when a household has not picked a base currency yet. */
 const val DEFAULT_DECIMALS: Int = 2

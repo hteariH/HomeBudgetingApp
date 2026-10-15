@@ -1,12 +1,9 @@
 package com.homebudget.app.service
 
+import com.homebudget.app.TestIdentity
 import com.homebudget.app.domain.CategoryType
-import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.TransactionType
-import com.homebudget.app.domain.User
 import com.homebudget.app.dto.*
-import com.homebudget.app.repository.CurrencyRepository
-import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.UserPrincipal
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,7 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.context.annotation.Import
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.ActiveProfiles
 import java.math.BigDecimal
@@ -27,45 +24,29 @@ import java.util.UUID
 /**
  * The sync protocol's load-bearing behaviours: uuid-keyed graphs written in one push,
  * tombstones that replicate, conflicts decided by version, and - most importantly -
- * references that cannot reach across users.
+ * references that cannot reach across households.
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestIdentity::class)
 class SyncServiceTest {
 
     @Autowired private lateinit var syncService: SyncService
     @Autowired private lateinit var accountService: AccountService
-    @Autowired private lateinit var userRepository: UserRepository
-    @Autowired private lateinit var currencyRepository: CurrencyRepository
+    @Autowired private lateinit var identity: TestIdentity
 
-    private lateinit var alice: User
-    private lateinit var bob: User
+    private lateinit var alice: UserPrincipal
+    private lateinit var bob: UserPrincipal
 
     @BeforeEach
     fun setUp() {
-        alice = newUser("alice")
-        bob = newUser("bob")
-        signIn(alice)
+        alice = identity.newMember("alice")
+        bob = identity.newMember("bob")
+        identity.signIn(alice)
     }
 
     @AfterEach
     fun tearDown() = SecurityContextHolder.clearContext()
-
-    private fun newUser(prefix: String) = userRepository.save(
-        User(
-            email = "$prefix-${UUID.randomUUID()}@example.com",
-            passwordHash = "x",
-            firstName = prefix,
-            lastName = "Test",
-            role = Role.USER,
-            baseCurrency = currencyRepository.findByCode("USD")
-        )
-    )
-
-    private fun signIn(user: User) {
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(UserPrincipal(user), null, emptyList())
-    }
 
     private fun uuid() = UUID.randomUUID().toString()
 
@@ -204,7 +185,7 @@ class SyncServiceTest {
     }
 
     @Test
-    fun `one user cannot write against another user's uuid`() {
+    fun `one household cannot write against another household's uuid`() {
         // The attack this closes: a uuid in a push body is a pointer, and an unchecked
         // pointer writes into somebody else's ledger.
         val aliceAccountUuid = uuid()
@@ -214,7 +195,7 @@ class SyncServiceTest {
             )))
         )
 
-        signIn(bob)
+        identity.signIn(bob)
         val response = syncService.push(
             SyncPushRequest(SyncPayload(transactions = listOf(
                 SyncTransaction(
@@ -234,14 +215,14 @@ class SyncServiceTest {
     }
 
     @Test
-    fun `a pull never leaks another user's rows`() {
+    fun `a pull never leaks another household's rows`() {
         syncService.push(
             SyncPushRequest(SyncPayload(accounts = listOf(
                 SyncAccount(uuid = uuid(), name = "Alice cash", currencyCode = "USD")
             )))
         )
 
-        signIn(bob)
+        identity.signIn(bob)
         val bobsView = syncService.pull(Instant.EPOCH, 500)
         assertTrue(bobsView.changes.accounts.isEmpty(), "Bob can see Alice's accounts")
     }

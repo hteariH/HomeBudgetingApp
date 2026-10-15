@@ -1,10 +1,7 @@
 package com.homebudget.app.service
 
-import com.homebudget.app.domain.Role
-import com.homebudget.app.domain.User
-import com.homebudget.app.repository.CurrencyRepository
+import com.homebudget.app.TestIdentity
 import com.homebudget.app.repository.RefreshTokenRepository
-import com.homebudget.app.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -12,29 +9,20 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import java.security.MessageDigest
-import java.util.UUID
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestIdentity::class)
 class RefreshTokenServiceTest {
 
     @Autowired private lateinit var service: RefreshTokenService
     @Autowired private lateinit var repo: RefreshTokenRepository
-    @Autowired private lateinit var userRepository: UserRepository
-    @Autowired private lateinit var currencyRepository: CurrencyRepository
+    @Autowired private lateinit var identity: TestIdentity
 
-    private fun newUser() = userRepository.save(
-        User(
-            email = "refresh-${UUID.randomUUID()}@example.com",
-            passwordHash = "x",
-            firstName = "Test",
-            lastName = "User",
-            role = Role.USER,
-            baseCurrency = currencyRepository.findByCode("USD")
-        )
-    )
+    private fun newUser() = identity.newMember("refresh").user
 
     private fun sha256(s: String) =
         MessageDigest.getInstance("SHA-256").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }

@@ -2,7 +2,6 @@ package com.homebudget.app.service
 
 import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.User
-import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -32,7 +31,6 @@ class AuthFlowServiceTest {
 
     @Autowired private lateinit var service: AuthFlowService
     @Autowired private lateinit var userRepository: UserRepository
-    @Autowired private lateinit var currencyRepository: CurrencyRepository
     @Autowired private lateinit var refreshTokenService: RefreshTokenService
     @Autowired private lateinit var passwordEncoder: PasswordEncoder
 
@@ -61,8 +59,7 @@ class AuthFlowServiceTest {
             passwordHash = passwordEncoder.encode("originalpassword"),
             firstName = "Flow",
             lastName = "Test",
-            role = Role.USER,
-            baseCurrency = currencyRepository.findByCode("USD")
+            role = Role.USER
         )
     )
 

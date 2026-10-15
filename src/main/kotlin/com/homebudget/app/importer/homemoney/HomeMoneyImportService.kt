@@ -4,6 +4,7 @@ import com.homebudget.app.domain.Account
 import com.homebudget.app.domain.AccountType
 import com.homebudget.app.domain.Category
 import com.homebudget.app.domain.CategoryType
+import com.homebudget.app.domain.Household
 import com.homebudget.app.domain.MinorUnits
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
@@ -13,6 +14,7 @@ import com.homebudget.app.repository.CategoryRepository
 import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.repository.UserRepository
+import com.homebudget.app.service.HouseholdService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -38,13 +40,15 @@ import java.util.UUID
  * "is this HomeMoney account the same thing as that account I already have".
  *
  * Nothing here reads the security context. The work runs on a background thread where
- * there is none, so the user is always a parameter.
+ * there is none, so the user is always a parameter; the ledger it writes into is that
+ * user's household.
  */
 @Service
 class HomeMoneyImportService(
     private val api: HomeMoneyApi,
     private val connections: HomeMoneyConnectionService,
     private val userRepo: UserRepository,
+    private val householdService: HouseholdService,
     private val accountRepo: AccountRepository,
     private val categoryRepo: CategoryRepository,
     private val transactionRepo: TransactionRepository,
@@ -65,8 +69,8 @@ class HomeMoneyImportService(
      * worse trade than a dozen extra HTTP calls on a one-time migration.
      */
     fun plan(userId: Long): HomeMoneyPlan {
-        val user = requireUser(userId)
-        val connection = connections.requireFor(user)
+        val household = householdService.householdOf(requireUser(userId))
+        val connection = connections.requireFor(household)
 
         val (accounts, categories, history) = connections.withToken(connection) { token ->
             Triple(
@@ -85,12 +89,12 @@ class HomeMoneyImportService(
         val plannedAccounts = HomeMoneyMapper.untickUnusedCurrencySlots(
             HomeMoneyMapper.plannedAccounts(accounts) { label ->
                 HomeMoneyCurrencyLabels.toIsoCode(label)?.takeIf { currencyRepo.findByCode(it) != null }
-            }.map { it.copy(targetAccountId = matchAccount(user, it)?.id) },
+            }.map { it.copy(targetAccountId = matchAccount(household, it)?.id) },
             rows
         )
 
         val plannedCategories = HomeMoneyMapper.plannedCategories(categories)
-            .map { it.copy(targetCategoryId = matchCategory(user, it)?.id) }
+            .map { it.copy(targetCategoryId = matchCategory(household, it)?.id) }
 
         return HomeMoneyPlan(
             accounts = plannedAccounts,
@@ -103,8 +107,8 @@ class HomeMoneyImportService(
     }
 
     /** Same name and same currency. Anything looser would silently merge two real accounts. */
-    private fun matchAccount(user: User, planned: PlannedAccount): Account? {
-        val existing = accountRepo.findAllByUser(user)
+    private fun matchAccount(household: Household, planned: PlannedAccount): Account? {
+        val existing = accountRepo.findAllByHousehold(household)
         existing.firstOrNull { it.externalAccountId == planned.externalId }?.let { return it }
         val code = planned.currencyCode ?: return null
         return existing.firstOrNull {
@@ -113,8 +117,8 @@ class HomeMoneyImportService(
     }
 
     /** Same name and same direction; a "Salary" expense category is not the income one. */
-    private fun matchCategory(user: User, planned: PlannedCategory): Category? {
-        val existing = categoryRepo.findAllByUser(user)
+    private fun matchCategory(household: Household, planned: PlannedCategory): Category? {
+        val existing = categoryRepo.findAllByHousehold(household)
         existing.firstOrNull { it.externalId == planned.externalId }?.let { return it }
         return existing.firstOrNull {
             it.type == planned.type && it.name.equals(planned.name, ignoreCase = true)
@@ -141,7 +145,7 @@ class HomeMoneyImportService(
      */
     @Transactional
     fun prepare(userId: Long, plan: HomeMoneyPlan): Targets {
-        val user = requireUser(userId)
+        val household = householdService.householdOf(requireUser(userId))
         val included = plan.accounts.filter { it.included }
         plan.blockedReason?.let { throw IllegalStateException(it) }
 
@@ -151,7 +155,7 @@ class HomeMoneyImportService(
 
         for (planned in included) {
             val existing = planned.targetAccountId?.let {
-                accountRepo.findByIdAndUser(it, user)
+                accountRepo.findByIdAndHousehold(it, household)
                     ?: throw NoSuchElementException("Account not found: $it")
             }
             if (existing != null) {
@@ -174,7 +178,7 @@ class HomeMoneyImportService(
                     type = AccountType.CHECKING,
                     // Set once the ledger is in; see reconcileOpeningBalances.
                     initialBalanceMinor = 0,
-                    user = user,
+                    household = household,
                     currency = currency,
                     externalAccountId = planned.externalId,
                     sortOrder = accountIds.size
@@ -189,7 +193,7 @@ class HomeMoneyImportService(
         var categoriesCreated = 0
         for (planned in HomeMoneyMapper.parentsFirst(plan.categories)) {
             val existing = planned.targetCategoryId?.let {
-                categoryRepo.findByIdAndUser(it, user)
+                categoryRepo.findByIdAndHousehold(it, household)
                     ?: throw NoSuchElementException("Category not found: $it")
             }
             if (existing != null) {
@@ -198,14 +202,14 @@ class HomeMoneyImportService(
             }
             val parent = planned.parentExternalId
                 ?.let { categoryIds[it] }
-                ?.let { categoryRepo.findByIdAndUser(it, user) }
+                ?.let { categoryRepo.findByIdAndHousehold(it, household) }
                 // A parent of the wrong direction cannot hold this child; CategoryService
                 // rejects that, and so does the schema's own rule.
                 ?.takeIf { it.type == planned.type }
             val created = categoryRepo.save(
                 Category(
                     name = planned.name,
-                    user = user,
+                    household = household,
                     type = planned.type,
                     parent = parent,
                     archived = planned.archived,
@@ -232,7 +236,8 @@ class HomeMoneyImportService(
     @Transactional
     fun importChunk(userId: Long, targets: Targets, operations: List<HomeMoneyTransaction>): ChunkResult {
         val user = requireUser(userId)
-        val accounts = targets.accounts.mapValues { (_, id) -> accountRepo.findByIdAndUser(id, user) }
+        val household = householdService.householdOf(user)
+        val accounts = targets.accounts.mapValues { (_, id) -> accountRepo.findByIdAndHousehold(id, household) }
         var imported = 0
         var skipped = 0
 
@@ -265,12 +270,13 @@ class HomeMoneyImportService(
                     }
                     val category = row.categoryExternalId
                         ?.let { targets.categories[it] }
-                        ?.let { categoryRepo.findByIdAndUser(it, user) }
+                        ?.let { categoryRepo.findByIdAndHousehold(it, household) }
                         ?.takeIf { it.type == if (row.income) CategoryType.INCOME else CategoryType.EXPENSE }
                     val minor = MinorUnits.toMinor(row.amount, account.currency.decimals)
                     transactionRepo.save(
                         Transaction(
-                            user = user,
+                            household = household,
+                            createdBy = user,
                             account = account,
                             category = category,
                             amountMinor = minor,
@@ -309,7 +315,8 @@ class HomeMoneyImportService(
                     transactionRepo.saveAll(
                         listOf(
                             Transaction(
-                                user = user,
+                                household = household,
+                                createdBy = user,
                                 account = from,
                                 category = null,
                                 // Signed: the balance query adds TRANSFER rows as-is.
@@ -325,7 +332,8 @@ class HomeMoneyImportService(
                                 externalId = row.externalId
                             ),
                             Transaction(
-                                user = user,
+                                household = household,
+                                createdBy = user,
                                 account = to,
                                 category = null,
                                 amountMinor = toMinor,
@@ -362,10 +370,10 @@ class HomeMoneyImportService(
     @Transactional
     fun reconcileOpeningBalances(userId: Long, targets: Targets) {
         if (targets.openingTargets.isEmpty()) return
-        val user = requireUser(userId)
-        val balances = accountRepo.balancesOf(user).associate { it.accountId to it.balanceMinor }
+        val household = householdService.householdOf(requireUser(userId))
+        val balances = accountRepo.balancesOf(household).associate { it.accountId to it.balanceMinor }
         for ((accountId, target) in targets.openingTargets) {
-            val account = accountRepo.findByIdAndUser(accountId, user) ?: continue
+            val account = accountRepo.findByIdAndHousehold(accountId, household) ?: continue
             val ledger = (balances[accountId] ?: 0L) - account.initialBalanceMinor
             account.initialBalanceMinor =
                 MinorUnits.toMinor(target, account.currency.decimals) - ledger

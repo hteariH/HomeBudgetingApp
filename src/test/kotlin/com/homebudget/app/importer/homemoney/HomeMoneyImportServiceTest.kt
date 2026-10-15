@@ -1,14 +1,13 @@
 package com.homebudget.app.importer.homemoney
 
+import com.homebudget.app.TestIdentity
 import com.homebudget.app.domain.CategoryType
-import com.homebudget.app.domain.Role
+import com.homebudget.app.domain.Household
 import com.homebudget.app.domain.TransactionType
-import com.homebudget.app.domain.User
 import com.homebudget.app.repository.AccountRepository
 import com.homebudget.app.repository.CategoryRepository
 import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.TransactionRepository
-import com.homebudget.app.repository.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -32,32 +32,27 @@ import java.math.BigDecimal
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(TestIdentity::class)
 class HomeMoneyImportServiceTest {
 
     @Autowired private lateinit var service: HomeMoneyImportService
-    @Autowired private lateinit var userRepo: UserRepository
+    @Autowired private lateinit var identity: TestIdentity
     @Autowired private lateinit var accountRepo: AccountRepository
     @Autowired private lateinit var categoryRepo: CategoryRepository
     @Autowired private lateinit var transactionRepo: TransactionRepository
     @Autowired private lateinit var currencyRepo: CurrencyRepository
 
     private var userId: Long = 0
+    private lateinit var household: Household
 
     private val uahAccount = "homemoney:1:980"
     private val usdAccount = "homemoney:2:840"
 
     @BeforeEach
     fun createUser() {
-        userId = userRepo.save(
-            User(
-                email = "homemoney-${System.nanoTime()}@example.com",
-                passwordHash = "x",
-                firstName = "Test",
-                lastName = "User",
-                role = Role.USER,
-                baseCurrency = currencyRepo.findByCode("UAH")
-            )
-        ).id
+        val member = identity.newMember("homemoney", baseCurrency = "UAH")
+        userId = member.user.id
+        household = member.household
     }
 
     // ── Fixtures ────────────────────────────────────────────────────────────
@@ -134,7 +129,7 @@ class HomeMoneyImportServiceTest {
         assertEquals(2, targets.categoriesCreated)
         assertEquals(setOf(uahAccount, usdAccount), targets.accounts.keys)
 
-        val created = accountRepo.findAllByUser(user()).associateBy { it.externalAccountId }
+        val created = accountRepo.findAllByHousehold(household).associateBy { it.externalAccountId }
         assertEquals("UAH", created[uahAccount]!!.currency.code)
         assertEquals("USD", created[usdAccount]!!.currency.code)
         // The opening figure is not known yet - it falls out of the ledger afterwards.
@@ -178,8 +173,8 @@ class HomeMoneyImportServiceTest {
 
         service.reconcileOpeningBalances(userId, targets)
 
-        val balances = accountRepo.balancesOf(user()).associate { it.accountId to it.balanceMinor }
-        val byExternal = accountRepo.findAllByUser(user()).associateBy { it.externalAccountId }
+        val balances = accountRepo.balancesOf(household).associate { it.accountId to it.balanceMinor }
+        val byExternal = accountRepo.findAllByHousehold(household).associateBy { it.externalAccountId }
         // This is the "import the state" half of the feature: our balance is derived, so
         // the opening figure is the only lever, and it is set to whatever the imported
         // history does not already account for.
@@ -206,7 +201,7 @@ class HomeMoneyImportServiceTest {
         val existing = accountRepo.save(
             com.homebudget.app.domain.Account(
                 name = "My own wallet",
-                user = user(),
+                household = household,
                 currency = currencyRepo.findByCode("UAH")!!,
                 initialBalanceMinor = 999_99L
             )
@@ -220,7 +215,7 @@ class HomeMoneyImportServiceTest {
         service.reconcileOpeningBalances(userId, targets)
 
         // Rewriting this would silently overwrite a figure the user typed themselves.
-        assertEquals(999_99L, accountRepo.findByIdAndUser(existing, user())!!.initialBalanceMinor)
+        assertEquals(999_99L, accountRepo.findByIdAndHousehold(existing, household)!!.initialBalanceMinor)
     }
 
     @Test
@@ -278,14 +273,12 @@ class HomeMoneyImportServiceTest {
 
         service.prepare(userId, nested)
 
-        val byExternal = categoryRepo.findAllByUser(user()).associateBy { it.externalId }
+        val byExternal = categoryRepo.findAllByHousehold(household).associateBy { it.externalId }
         assertEquals("Car", byExternal["homemoney:2"]!!.parent!!.name)
         assertEquals("Fuel", byExternal["homemoney:3"]!!.parent!!.name)
         assertNull(byExternal["homemoney:1"]!!.parent)
     }
 
-    private fun user(): User = userRepo.findById(userId).orElseThrow()
-
-    /** Everything this user has in the ledger; the repository has no all-by-user finder. */
-    private fun ledger() = transactionRepo.findAll().filter { it.user.id == userId }
+    /** Everything this household has in the ledger; the repository has no all-by-household finder. */
+    private fun ledger() = transactionRepo.findAll().filter { it.household.id == household.id }
 }

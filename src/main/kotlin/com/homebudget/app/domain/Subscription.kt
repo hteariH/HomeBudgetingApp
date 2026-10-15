@@ -31,8 +31,8 @@ data class Subscription(
     override val uuid: String = Syncable.newUuid(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    var user: User,
+    @JoinColumn(name = "household_id", nullable = false)
+    var household: Household,
 
     @Column(nullable = false)
     var name: String,

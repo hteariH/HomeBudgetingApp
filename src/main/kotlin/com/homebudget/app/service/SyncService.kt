@@ -28,8 +28,8 @@ import java.time.Instant
  *    is optimistic concurrency, and unlike last-write-wins-by-timestamp it cannot be
  *    defeated by a device with a wrong clock.
  *
- * Every reference is re-checked against the calling user. A uuid in a push body is a
- * pointer, and an unchecked pointer is how one account writes into another's data.
+ * Every reference is re-checked against the caller's household. A uuid in a push body
+ * is a pointer, and an unchecked pointer is how one household writes into another's data.
  */
 @Service
 class SyncService(
@@ -55,15 +55,15 @@ class SyncService(
 
     @Transactional(readOnly = true)
     fun pull(since: Instant, limit: Int): SyncPullResponse {
-        val user = securityUtils.getCurrentUser()
+        val household = securityUtils.getCurrentHousehold()
         val capped = limit.coerceIn(1, MAX_PAGE)
-        val baseDecimals = user.baseCurrency?.decimals ?: DEFAULT_DECIMALS
+        val baseDecimals = household.baseCurrency?.decimals ?: DEFAULT_DECIMALS
 
-        val settings = settingRepo.findChangedSince(user.id, since, capped)
-        val accounts = accountRepo.findChangedSince(user.id, since, capped)
-        val categories = categoryRepo.findChangedSince(user.id, since, capped)
-        val subscriptions = subscriptionRepo.findChangedSince(user.id, since, capped)
-        val transactions = transactionRepo.findChangedSince(user.id, since, capped)
+        val settings = settingRepo.findChangedSince(household.id, since, capped)
+        val accounts = accountRepo.findChangedSince(household.id, since, capped)
+        val categories = categoryRepo.findChangedSince(household.id, since, capped)
+        val subscriptions = subscriptionRepo.findChangedSince(household.id, since, capped)
+        val transactions = transactionRepo.findChangedSince(household.id, since, capped)
 
         val payload = SyncPayload(
             currencySettings = settings.map { it.toSync() },
@@ -73,7 +73,7 @@ class SyncService(
             // Transfer legs point at their counterpart by id in the database; the wire
             // format speaks uuids, so the whole account list is indexed once here
             // rather than looked up per row.
-            transactions = transactions.map { it.toSync(accountUuidsById(user)) }
+            transactions = transactions.map { it.toSync(accountUuidsById(household)) }
         )
 
         val hasMore = listOf(settings, accounts, categories, subscriptions, transactions)
@@ -102,40 +102,41 @@ class SyncService(
 
     @Transactional
     fun push(request: SyncPushRequest): SyncPushResponse {
-        val user = securityUtils.getCurrentUser()
+        val household = securityUtils.getCurrentHousehold()
+        val actor = securityUtils.getCurrentUser()
         val changes = request.changes
         require(changes.size() <= MAX_PUSH) {
             "Push of ${changes.size()} records exceeds the limit of $MAX_PUSH; split it"
         }
 
-        val now = nextStamp(user)
+        val now = nextStamp(household)
         val rejected = mutableListOf<SyncRejection>()
         var applied = 0
 
         // Parents before children: a transaction cannot resolve an account uuid that
         // has not been written yet in this same request.
-        applied += applyCurrencySettings(user, changes.currencySettings, now, rejected)
-        applied += applyAccounts(user, changes.accounts, now, rejected)
-        applied += applyCategories(user, changes.categories, now, rejected)
-        applied += applySubscriptions(user, changes.subscriptions, now, rejected)
-        applied += applyTransactions(user, changes.transactions, now, rejected)
+        applied += applyCurrencySettings(household, changes.currencySettings, now, rejected)
+        applied += applyAccounts(household, changes.accounts, now, rejected)
+        applied += applyCategories(household, changes.categories, now, rejected)
+        applied += applySubscriptions(household, changes.subscriptions, now, rejected)
+        applied += applyTransactions(household, actor, changes.transactions, now, rejected)
 
         if (rejected.isNotEmpty()) {
-            log.info("Sync push for user {}: {} applied, {} rejected", user.id, applied, rejected.size)
+            log.info("Sync push for household {}: {} applied, {} rejected", household.id, applied, rejected.size)
         }
         return SyncPushResponse(serverTime = now, applied = applied, rejected = rejected)
     }
 
     /**
-     * A stamp strictly later than anything this user already has.
+     * A stamp strictly later than anything this household already has.
      *
      * Millisecond collisions are not hypothetical - creating and deleting a row in
      * quick succession lands both in the same millisecond, and `updated_at > cursor`
      * then loses the second one permanently.
      */
-    private fun nextStamp(user: User): Instant {
+    private fun nextStamp(household: Household): Instant {
         val now = Instant.now(clock)
-        val latest = cursorRepo.latestUpdatedAt(user.id) ?: return now
+        val latest = cursorRepo.latestUpdatedAt(household.id) ?: return now
         return if (now.isAfter(latest)) now else latest.plusMillis(1)
     }
 
@@ -160,14 +161,14 @@ class SyncService(
     }
 
     private fun applyCurrencySettings(
-        user: User,
+        household: Household,
         records: List<SyncCurrencySetting>,
         now: Instant,
         rejected: MutableList<SyncRejection>
     ): Int {
         var applied = 0
         for (record in records) {
-            val existing = settingRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+            val existing = settingRepo.findByUuidIncludingDeleted(record.uuid, household.id)
             if (isStale(existing, record)) {
                 reject(rejected, record, "currencySetting", SyncRejectionReason.STALE, "server copy is newer")
                 continue
@@ -178,7 +179,7 @@ class SyncService(
                     "unknown currency ${record.currencyCode}")
                 continue
             }
-            val entity = existing ?: UserCurrencySetting(uuid = record.uuid, user = user, currency = currency)
+            val entity = existing ?: UserCurrencySetting(uuid = record.uuid, household = household, currency = currency)
             entity.currency = currency
             entity.active = record.active
             entity.sortOrder = record.sortOrder
@@ -191,14 +192,14 @@ class SyncService(
     }
 
     private fun applyAccounts(
-        user: User,
+        household: Household,
         records: List<SyncAccount>,
         now: Instant,
         rejected: MutableList<SyncRejection>
     ): Int {
         var applied = 0
         for (record in records) {
-            val existing = accountRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+            val existing = accountRepo.findByUuidIncludingDeleted(record.uuid, household.id)
             if (isStale(existing, record)) {
                 reject(rejected, record, "account", SyncRejectionReason.STALE, "server copy is newer")
                 continue
@@ -210,7 +211,7 @@ class SyncService(
                 continue
             }
             val entity = existing ?: Account(
-                uuid = record.uuid, name = record.name, user = user, currency = currency
+                uuid = record.uuid, name = record.name, household = household, currency = currency
             )
             entity.name = record.name
             entity.type = record.type
@@ -231,30 +232,30 @@ class SyncService(
     }
 
     private fun applyCategories(
-        user: User,
+        household: Household,
         records: List<SyncCategory>,
         now: Instant,
         rejected: MutableList<SyncRejection>
     ): Int {
-        val baseDecimals = user.baseCurrency?.decimals ?: DEFAULT_DECIMALS
+        val baseDecimals = household.baseCurrency?.decimals ?: DEFAULT_DECIMALS
         var applied = 0
         // Parents first, so a child in the same batch resolves. Categories are one
         // level deep in practice, so a single ordering pass is enough.
         val ordered = records.sortedBy { it.parentUuid != null }
         for (record in ordered) {
-            val existing = categoryRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+            val existing = categoryRepo.findByUuidIncludingDeleted(record.uuid, household.id)
             if (isStale(existing, record)) {
                 reject(rejected, record, "category", SyncRejectionReason.STALE, "server copy is newer")
                 continue
             }
-            val parent = record.parentUuid?.let { categoryRepo.findByUuidIncludingDeleted(it, user.id) }
+            val parent = record.parentUuid?.let { categoryRepo.findByUuidIncludingDeleted(it, household.id) }
             if (record.parentUuid != null && parent == null) {
                 reject(rejected, record, "category", SyncRejectionReason.UNKNOWN_REFERENCE,
                     "unknown parent ${record.parentUuid}")
                 continue
             }
             val entity = existing ?: Category(
-                uuid = record.uuid, name = record.name, user = user, type = record.type
+                uuid = record.uuid, name = record.name, household = household, type = record.type
             )
             entity.name = record.name
             entity.type = record.type
@@ -275,25 +276,25 @@ class SyncService(
     }
 
     private fun applySubscriptions(
-        user: User,
+        household: Household,
         records: List<SyncSubscription>,
         now: Instant,
         rejected: MutableList<SyncRejection>
     ): Int {
         var applied = 0
         for (record in records) {
-            val existing = subscriptionRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+            val existing = subscriptionRepo.findByUuidIncludingDeleted(record.uuid, household.id)
             if (isStale(existing, record)) {
                 reject(rejected, record, "subscription", SyncRejectionReason.STALE, "server copy is newer")
                 continue
             }
-            val account = accountRepo.findByUuidIncludingDeleted(record.accountUuid, user.id)
+            val account = accountRepo.findByUuidIncludingDeleted(record.accountUuid, household.id)
             if (account == null) {
                 reject(rejected, record, "subscription", SyncRejectionReason.UNKNOWN_REFERENCE,
                     "unknown account ${record.accountUuid}")
                 continue
             }
-            val category = record.categoryUuid?.let { categoryRepo.findByUuidIncludingDeleted(it, user.id) }
+            val category = record.categoryUuid?.let { categoryRepo.findByUuidIncludingDeleted(it, household.id) }
             if (record.categoryUuid != null && category == null) {
                 reject(rejected, record, "subscription", SyncRejectionReason.UNKNOWN_REFERENCE,
                     "unknown category ${record.categoryUuid}")
@@ -301,7 +302,7 @@ class SyncService(
             }
             val entity = existing ?: Subscription(
                 uuid = record.uuid,
-                user = user,
+                household = household,
                 name = record.name,
                 account = account,
                 amountMinor = 0,
@@ -334,35 +335,36 @@ class SyncService(
     }
 
     private fun applyTransactions(
-        user: User,
+        household: Household,
+        actor: User,
         records: List<SyncTransaction>,
         now: Instant,
         rejected: MutableList<SyncRejection>
     ): Int {
         var applied = 0
         for (record in records) {
-            val existing = transactionRepo.findByUuidIncludingDeleted(record.uuid, user.id)
+            val existing = transactionRepo.findByUuidIncludingDeleted(record.uuid, household.id)
             if (isStale(existing, record)) {
                 reject(rejected, record, "transaction", SyncRejectionReason.STALE, "server copy is newer")
                 continue
             }
-            val account = accountRepo.findByUuidIncludingDeleted(record.accountUuid, user.id)
+            val account = accountRepo.findByUuidIncludingDeleted(record.accountUuid, household.id)
             if (account == null) {
                 reject(rejected, record, "transaction", SyncRejectionReason.UNKNOWN_REFERENCE,
                     "unknown account ${record.accountUuid}")
                 continue
             }
-            val category = record.categoryUuid?.let { categoryRepo.findByUuidIncludingDeleted(it, user.id) }
+            val category = record.categoryUuid?.let { categoryRepo.findByUuidIncludingDeleted(it, household.id) }
             if (record.categoryUuid != null && category == null) {
                 reject(rejected, record, "transaction", SyncRejectionReason.UNKNOWN_REFERENCE,
                     "unknown category ${record.categoryUuid}")
                 continue
             }
             val subscription = record.subscriptionUuid?.let {
-                subscriptionRepo.findByUuidIncludingDeleted(it, user.id)
+                subscriptionRepo.findByUuidIncludingDeleted(it, household.id)
             }
             val counterpart = record.transferCounterpartAccountUuid?.let {
-                accountRepo.findByUuidIncludingDeleted(it, user.id)
+                accountRepo.findByUuidIncludingDeleted(it, household.id)
             }
             if (record.transferCounterpartAccountUuid != null && counterpart == null) {
                 reject(rejected, record, "transaction", SyncRejectionReason.UNKNOWN_REFERENCE,
@@ -371,9 +373,11 @@ class SyncService(
             }
 
             val decimals = account.currency.decimals
+            // The author is whoever first pushed the row; later edits do not rewrite it.
             val entity = existing ?: Transaction(
                 uuid = record.uuid,
-                user = user,
+                household = household,
+                createdBy = actor,
                 account = account,
                 amountMinor = 0,
                 currencyCode = record.currencyCode,
@@ -429,8 +433,8 @@ class SyncService(
         includeInTotal = includeInTotal
     )
 
-    private fun accountUuidsById(user: User): Map<Long, String> =
-        accountRepo.findAllByUser(user).associate { it.id to it.uuid }
+    private fun accountUuidsById(household: Household): Map<Long, String> =
+        accountRepo.findAllByHousehold(household).associate { it.id to it.uuid }
 
     private fun Category.toSync(baseDecimals: Int) = SyncCategory(
         uuid = uuid,

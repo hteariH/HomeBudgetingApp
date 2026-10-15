@@ -32,7 +32,7 @@ class TransactionService(
         dateTo: LocalDate?,
         pageable: Pageable
     ): Page<Transaction> = transactionRepo.findFiltered(
-        user = securityUtils.getCurrentUser(),
+        household = securityUtils.getCurrentHousehold(),
         accountId = accountId,
         categoryId = categoryId,
         type = type,
@@ -43,7 +43,7 @@ class TransactionService(
         pageable = pageable
     )
 
-    fun findById(id: Long): Transaction = transactionRepo.findByIdAndUser(id, securityUtils.getCurrentUser())
+    fun findById(id: Long): Transaction = transactionRepo.findByIdAndHousehold(id, securityUtils.getCurrentHousehold())
         ?: throw NoSuchElementException("Transaction not found: $id")
 
     fun create(req: CreateTransactionRequest): Transaction {
@@ -69,7 +69,8 @@ class TransactionService(
         // rows, so inserting the row *is* the balance update.
         return transactionRepo.save(
             Transaction(
-                user = user,
+                household = securityUtils.getCurrentHousehold(),
+                createdBy = user,
                 account = account,
                 category = category,
                 amountMinor = amountMinor,
@@ -108,7 +109,7 @@ class TransactionService(
             // Removing one leg would leave the other stranded and both balances wrong.
             val groupId = transaction.transferGroupId
                 ?: throw IllegalStateException("Transfer row ${transaction.id} has no group id")
-            tombstoneAll(transactionRepo.findAllByTransferGroupIdAndUser(groupId, securityUtils.getCurrentUser()))
+            tombstoneAll(transactionRepo.findAllByTransferGroupIdAndHousehold(groupId, securityUtils.getCurrentHousehold()))
             return
         }
         tombstoneAll(listOf(transaction))

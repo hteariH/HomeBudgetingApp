@@ -1,9 +1,6 @@
 package com.homebudget.app.importer.homemoney
 
-import com.homebudget.app.domain.Role
-import com.homebudget.app.domain.User
-import com.homebudget.app.repository.CurrencyRepository
-import com.homebudget.app.repository.UserRepository
+import com.homebudget.app.TestIdentity
 import com.homebudget.app.security.UserPrincipal
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNull
@@ -12,7 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.context.annotation.Import
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
@@ -35,30 +32,18 @@ import org.springframework.transaction.annotation.Transactional
 @ActiveProfiles("test")
 @TestPropertySource(properties = ["app.homemoney.base-url=http://127.0.0.1:1"])
 @Transactional
+@Import(TestIdentity::class)
 class HomeMoneyConnectionServiceTest {
 
     @Autowired private lateinit var connections: HomeMoneyConnectionService
-    @Autowired private lateinit var userRepo: UserRepository
-    @Autowired private lateinit var currencyRepo: CurrencyRepository
+    @Autowired private lateinit var identity: TestIdentity
 
     @AfterEach
     fun clearContext() = SecurityContextHolder.clearContext()
 
-    private fun newUser(): User = userRepo.save(
-        User(
-            email = "homemoney-conn-${System.nanoTime()}@example.com",
-            passwordHash = "x",
-            firstName = "Test",
-            lastName = "User",
-            role = Role.USER,
-            baseCurrency = currencyRepo.findByCode("UAH")
-        )
-    )
+    private fun newUser(): UserPrincipal = identity.newMember("homemoney-conn", baseCurrency = "UAH")
 
-    private fun signIn(user: User) {
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(UserPrincipal(user), null, emptyList())
-    }
+    private fun signIn(principal: UserPrincipal) = identity.signIn(principal)
 
     @Test
     fun `the authorisation hands the state back, because homemoney does not return it`() {
@@ -85,7 +70,7 @@ class HomeMoneyConnectionServiceTest {
         assertThrows<HomeMoneyAuthException> {
             connections.completeAuthorization("any-code", issuedToSomebodyElse)
         }
-        assertNull(connections.findFor(victim))
+        assertNull(connections.findFor(victim.household))
     }
 
     @Test
@@ -94,6 +79,6 @@ class HomeMoneyConnectionServiceTest {
         signIn(user)
 
         assertThrows<HomeMoneyAuthException> { connections.completeAuthorization("any-code", "not-a-jwt") }
-        assertNull(connections.findFor(user))
+        assertNull(connections.findFor(user.household))
     }
 }

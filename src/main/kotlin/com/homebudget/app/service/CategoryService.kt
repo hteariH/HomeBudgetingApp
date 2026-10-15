@@ -3,7 +3,7 @@ package com.homebudget.app.service
 import com.homebudget.app.domain.Category
 import com.homebudget.app.domain.CategoryType
 import com.homebudget.app.domain.MinorUnits
-import com.homebudget.app.domain.User
+import com.homebudget.app.domain.Household
 import com.homebudget.app.dto.CreateCategoryRequest
 import com.homebudget.app.dto.UpdateCategoryRequest
 import com.homebudget.app.repository.CategoryRepository
@@ -24,34 +24,34 @@ class CategoryService(
 ) {
 
     fun findAll(type: CategoryType? = null, includeArchived: Boolean = true): List<Category> {
-        val user = securityUtils.getCurrentUser()
-        val all = if (type != null) repo.findByUserAndType(user, type) else repo.findAllByUser(user)
+        val household = securityUtils.getCurrentHousehold()
+        val all = if (type != null) repo.findByHouseholdAndType(household, type) else repo.findAllByHousehold(household)
         return if (includeArchived) all else all.filter { !it.archived }
     }
 
-    fun findById(id: Long): Category = repo.findByIdAndUser(id, securityUtils.getCurrentUser())
+    fun findById(id: Long): Category = repo.findByIdAndHousehold(id, securityUtils.getCurrentHousehold())
         ?: throw NoSuchElementException("Category not found: $id")
 
-    /** Scale of the user's base currency - budget limits are denominated in it. */
+    /** Scale of the household's base currency - budget limits are denominated in it. */
     fun baseDecimals(): Int =
-        securityUtils.getCurrentUser().baseCurrency?.decimals ?: DEFAULT_DECIMALS
+        securityUtils.getCurrentHousehold().baseCurrency?.decimals ?: DEFAULT_DECIMALS
 
     fun create(req: CreateCategoryRequest): Category {
-        val user = securityUtils.getCurrentUser()
+        val household = securityUtils.getCurrentHousehold()
         val parent = req.parentId?.let { findById(it) }
         require(parent == null || parent.type == req.type) {
             "A ${req.type} category cannot sit under a ${parent?.type} parent"
         }
         // The database no longer enforces this, because sub-categories under different
         // parents may legitimately share a name. Siblings still may not.
-        val duplicate = repo.findByUserAndType(user, req.type)
+        val duplicate = repo.findByHouseholdAndType(household, req.type)
             .any { it.name.equals(req.name, ignoreCase = true) && it.parent?.id == req.parentId }
         require(!duplicate) { "Category '${req.name}' already exists here" }
 
         return repo.save(
             Category(
                 name = req.name,
-                user = user,
+                household = household,
                 type = req.type,
                 icon = req.icon,
                 color = req.color,
@@ -111,7 +111,7 @@ class CategoryService(
         repo.save(category)
     }
 
-    fun seedDefaultCategories(user: User) {
+    fun seedDefaultCategories(household: Household) {
         val defaults = listOf(
             Triple("Salary", CategoryType.INCOME, "briefcase") to "#10B981",
             Triple("Freelance", CategoryType.INCOME, "laptop") to "#3B82F6",
@@ -130,7 +130,7 @@ class CategoryService(
                     type = type,
                     icon = icon,
                     color = color,
-                    user = user,
+                    household = household,
                     isDefault = true,
                     sortOrder = index
                 )

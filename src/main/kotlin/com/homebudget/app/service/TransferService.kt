@@ -38,10 +38,10 @@ class TransferService(
 
     /** The debit leg of each transfer, newest first. */
     fun findAll(pageable: Pageable): Page<Transaction> =
-        transactionRepo.findTransferDebitLegs(securityUtils.getCurrentUser(), pageable)
+        transactionRepo.findTransferDebitLegs(securityUtils.getCurrentHousehold(), pageable)
 
     fun findById(id: Long): Transaction {
-        val leg = transactionRepo.findByIdAndUser(id, securityUtils.getCurrentUser())
+        val leg = transactionRepo.findByIdAndHousehold(id, securityUtils.getCurrentHousehold())
             ?: throw NoSuchElementException("Transfer not found: $id")
         require(leg.type == TransactionType.TRANSFER) { "Transaction $id is not a transfer" }
         return leg
@@ -51,12 +51,13 @@ class TransferService(
     fun creditLegOf(debitLeg: Transaction): Transaction {
         val groupId = debitLeg.transferGroupId
             ?: throw IllegalStateException("Transfer row ${debitLeg.id} has no group id")
-        return transactionRepo.findAllByTransferGroupIdAndUser(groupId, debitLeg.user)
+        return transactionRepo.findAllByTransferGroupIdAndHousehold(groupId, debitLeg.household)
             .firstOrNull { it.id != debitLeg.id }
             ?: throw IllegalStateException("Transfer group $groupId is missing its credit leg")
     }
 
     fun create(req: CreateTransferRequest): Transaction {
+        val household = securityUtils.getCurrentHousehold()
         val user = securityUtils.getCurrentUser()
         val fromAccount = accountService.findById(req.fromAccountId)
         val toAccount = accountService.findById(req.toAccountId)
@@ -76,7 +77,8 @@ class TransferService(
         val occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant()
 
         val debit = Transaction(
-            user = user,
+            household = household,
+            createdBy = user,
             account = fromAccount,
             category = null,
             // Signed: the balance query adds TRANSFER rows as-is.
@@ -93,7 +95,8 @@ class TransferService(
         )
 
         val credit = Transaction(
-            user = user,
+            household = household,
+            createdBy = user,
             account = toAccount,
             category = null,
             amountMinor = toMinor,
@@ -117,7 +120,7 @@ class TransferService(
         val groupId = leg.transferGroupId
             ?: throw IllegalStateException("Transfer row ${leg.id} has no group id")
         val now = Instant.now()
-        val legs = transactionRepo.findAllByTransferGroupIdAndUser(groupId, securityUtils.getCurrentUser())
+        val legs = transactionRepo.findAllByTransferGroupIdAndHousehold(groupId, securityUtils.getCurrentHousehold())
         legs.forEach {
             it.deleted = true
             it.updatedAt = now

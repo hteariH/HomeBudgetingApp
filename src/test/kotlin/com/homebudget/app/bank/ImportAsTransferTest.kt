@@ -1,16 +1,13 @@
 package com.homebudget.app.bank
 
+import com.homebudget.app.TestIdentity
 import com.homebudget.app.domain.ExchangeRate
 import com.homebudget.app.domain.RateSource
-import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.TransactionType
-import com.homebudget.app.domain.User
 import com.homebudget.app.dto.CreateAccountRequest
 import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.ExchangeRateRepository
 import com.homebudget.app.repository.TransactionRepository
-import com.homebudget.app.repository.UserRepository
-import com.homebudget.app.security.UserPrincipal
 import com.homebudget.app.service.AccountService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.context.annotation.Import
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
@@ -38,12 +35,13 @@ import java.time.LocalDate
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(TestIdentity::class)
 class ImportAsTransferTest {
 
     @Autowired private lateinit var importService: BankConnectionService
     @Autowired private lateinit var accountService: AccountService
     @Autowired private lateinit var transactionRepo: TransactionRepository
-    @Autowired private lateinit var userRepository: UserRepository
+    @Autowired private lateinit var identity: TestIdentity
     @Autowired private lateinit var currencyRepository: CurrencyRepository
     @Autowired private lateinit var rateRepository: ExchangeRateRepository
 
@@ -52,18 +50,7 @@ class ImportAsTransferTest {
 
     @BeforeEach
     fun signIn() {
-        val user = userRepository.save(
-            User(
-                email = "import-transfer-${System.nanoTime()}@example.com",
-                passwordHash = "x",
-                firstName = "Test",
-                lastName = "User",
-                role = Role.USER,
-                baseCurrency = currencyRepository.findByCode("USD")
-            )
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(UserPrincipal(user), null, emptyList())
+        identity.signIn(identity.newMember("import-transfer"))
 
         usdId = currencyRepository.findByCode("USD")!!.id
         jpyId = currencyRepository.findByCode("JPY")!!.id

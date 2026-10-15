@@ -10,6 +10,7 @@ import com.homebudget.app.security.SecurityUtils
 import com.homebudget.app.security.UserPrincipal
 import com.homebudget.app.service.CategoryService
 import com.homebudget.app.service.AuthFlowService
+import com.homebudget.app.service.HouseholdService
 import com.homebudget.app.service.RefreshTokenService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -18,6 +19,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.*
+import java.time.Instant
 
 @RestController
 @RequestMapping("/api/auth")
@@ -26,6 +28,7 @@ class AuthController(
     private val userRepository: UserRepository,
     private val currencyRepository: CurrencyRepository,
     private val categoryService: CategoryService,
+    private val householdService: HouseholdService,
     private val refreshTokenService: RefreshTokenService,
     private val authFlowService: AuthFlowService,
     private val passwordEncoder: PasswordEncoder,
@@ -41,6 +44,7 @@ class AuthController(
 
         SecurityContextHolder.getContext().authentication = authentication
         val userPrincipal = authentication.principal as UserPrincipal
+        userRepository.save(userPrincipal.user.apply { lastSignInAt = Instant.now() })
         val jwt = jwtUtils.generateToken(userPrincipal)
 
         return ResponseEntity.ok(
@@ -66,7 +70,7 @@ class AuthController(
         val (user, newRefresh) = refreshTokenService.rotate(request.refreshToken)
         return ResponseEntity.ok(
             JwtResponse(
-                token = jwtUtils.generateToken(UserPrincipal(user)),
+                token = jwtUtils.generateToken(UserPrincipal(user, householdService.householdOf(user))),
                 refreshToken = newRefresh,
                 email = user.email,
                 firstName = user.firstName,
@@ -135,12 +139,12 @@ class AuthController(
             passwordHash = passwordEncoder.encode(registerRequest.password),
             firstName = registerRequest.firstName,
             lastName = registerRequest.lastName,
-            role = Role.USER,
-            baseCurrency = baseCurrency
+            role = Role.USER
         )
 
         val savedUser = userRepository.save(user)
-        categoryService.seedDefaultCategories(savedUser)
+        val household = householdService.createFor(savedUser, baseCurrency)
+        categoryService.seedDefaultCategories(household)
         // Sent asynchronously; a mail failure must not fail the registration, and the
         // user can ask for another link.
         authFlowService.sendVerification(savedUser)

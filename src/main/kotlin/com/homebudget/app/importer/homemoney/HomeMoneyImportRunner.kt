@@ -1,6 +1,7 @@
 package com.homebudget.app.importer.homemoney
 
 import com.homebudget.app.service.FxService
+import com.homebudget.app.service.HouseholdService
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -72,7 +73,8 @@ class HomeMoneyImportRunner(
     private val service: HomeMoneyImportService,
     private val connections: HomeMoneyConnectionService,
     private val statuses: HomeMoneyImportStatuses,
-    private val fxService: FxService
+    private val fxService: FxService,
+    private val householdService: HouseholdService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -113,7 +115,7 @@ class HomeMoneyImportRunner(
     private fun import(userId: Long, plan: HomeMoneyPlan) {
         try {
             val user = service.requireUser(userId)
-            val connection = connections.requireFor(user)
+            val connection = connections.requireFor(householdService.householdOf(user))
 
             val targets = service.prepare(userId, plan)
             statuses.update(userId) {

@@ -12,7 +12,7 @@ enum class BankConnectionStatus {
 }
 
 /**
- * One set of credentials for one bank, belonging to one user.
+ * One set of credentials for one bank, belonging to one household.
  *
  * Credentials live here rather than on the account because a single set usually covers
  * several accounts - one Monobank token sees every card and jar. Keeping a copy per
@@ -29,8 +29,13 @@ data class BankConnection(
     val id: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    var user: User,
+    @JoinColumn(name = "household_id", nullable = false)
+    var household: Household,
+
+    /** Who connected it. Any member may import from it or remove it. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "connected_by_user_id")
+    var connectedBy: User? = null,
 
     /** Selects the [com.homebudget.app.bank.BankProvider] implementation. */
     @Column(nullable = false, length = 30)

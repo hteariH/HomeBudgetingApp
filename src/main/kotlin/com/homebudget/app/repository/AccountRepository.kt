@@ -1,7 +1,7 @@
 package com.homebudget.app.repository
 
 import com.homebudget.app.domain.Account
-import com.homebudget.app.domain.User
+import com.homebudget.app.domain.Household
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -16,23 +16,23 @@ data class AccountBalanceRow(
 
 @Repository
 interface AccountRepository : JpaRepository<Account, Long> {
-    fun findAllByUser(user: User): List<Account>
+    fun findAllByHousehold(household: Household): List<Account>
 
-    fun findByIdAndUser(id: Long, user: User): Account?
-    fun findByUuidAndUser(uuid: String, user: User): Account?
+    fun findByIdAndHousehold(id: Long, household: Household): Account?
+    fun findByUuidAndHousehold(uuid: String, household: Household): Account?
 
     /**
      * Every currency somebody actually holds money in.
      *
      * The FX job quotes these: an account is the reason a rate is ever needed, and on the
-     * web nothing else says which currencies a user has - the catalogue is global and
-     * `user_currency_settings` is written by the phone alone.
+     * web nothing else says which currencies a household has - the catalogue is global and
+     * `household_currency_settings` is written by the phone alone.
      */
     @Query("SELECT DISTINCT a.currency.code FROM Account a")
     fun currencyCodesInUse(): List<String>
 
     /** Accounts a previous import created, keyed by the source's own id. */
-    fun findAllByUserAndExternalAccountIdIsNotNull(user: User): List<Account>
+    fun findAllByHouseholdAndExternalAccountIdIsNotNull(household: Household): List<Account>
 
     /** Detaches accounts from a connection being deleted; history is untouched. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -61,10 +61,10 @@ interface AccountRepository : JpaRepository<Account, Long> {
             ), 0L)
         )
         FROM Account a
-        WHERE a.user = :user
+        WHERE a.household = :household
         """
     )
-    fun balancesOf(user: User): List<AccountBalanceRow>
+    fun balancesOf(household: Household): List<AccountBalanceRow>
 
     // ── Sync access ─────────────────────────────────────────────────────────
     // Native SQL on purpose: @SQLRestriction hides tombstones from every JPQL query,
@@ -72,11 +72,11 @@ interface AccountRepository : JpaRepository<Account, Long> {
     // learns about would be pushed straight back.
 
     @Query(
-        value = "SELECT * FROM accounts WHERE user_id = :userId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
+        value = "SELECT * FROM accounts WHERE household_id = :householdId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
         nativeQuery = true
     )
-    fun findChangedSince(userId: Long, since: Instant, limit: Int): List<Account>
+    fun findChangedSince(householdId: Long, since: Instant, limit: Int): List<Account>
 
-    @Query(value = "SELECT * FROM accounts WHERE uuid = :uuid AND user_id = :userId", nativeQuery = true)
-    fun findByUuidIncludingDeleted(uuid: String, userId: Long): Account?
+    @Query(value = "SELECT * FROM accounts WHERE uuid = :uuid AND household_id = :householdId", nativeQuery = true)
+    fun findByUuidIncludingDeleted(uuid: String, householdId: Long): Account?
 }

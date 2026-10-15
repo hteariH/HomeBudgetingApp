@@ -1,6 +1,7 @@
 package com.homebudget.app.domain
 
 import jakarta.persistence.*
+import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -46,9 +47,9 @@ data class User(
     @Column(name = "email_verified", nullable = false)
     var emailVerified: Boolean = false,
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "base_currency_id")
-    var baseCurrency: Currency? = null,
+    /** Shown to the administrator. */
+    @Column(name = "last_sign_in_at")
+    var lastSignInAt: Instant? = null,
 
     @Column(nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),

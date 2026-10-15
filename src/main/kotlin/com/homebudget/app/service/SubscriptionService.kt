@@ -30,13 +30,13 @@ class SubscriptionService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun findAll(): List<Subscription> = repo.findAllByUser(securityUtils.getCurrentUser())
+    fun findAll(): List<Subscription> = repo.findAllByHousehold(securityUtils.getCurrentHousehold())
 
-    fun findById(id: Long): Subscription = repo.findByIdAndUser(id, securityUtils.getCurrentUser())
+    fun findById(id: Long): Subscription = repo.findByIdAndHousehold(id, securityUtils.getCurrentHousehold())
         ?: throw NoSuchElementException("Subscription not found: $id")
 
     fun create(req: CreateSubscriptionRequest): Subscription {
-        val user = securityUtils.getCurrentUser()
+        val household = securityUtils.getCurrentHousehold()
         val account = accountService.findById(req.accountId)
         val category = req.categoryId?.let { categoryService.findById(it) }
         require(req.endDate == null || !req.endDate.isBefore(req.startDate)) {
@@ -44,7 +44,7 @@ class SubscriptionService(
         }
         return repo.save(
             Subscription(
-                user = user,
+                household = household,
                 name = req.name,
                 account = account,
                 category = category,
@@ -89,7 +89,7 @@ class SubscriptionService(
     }
 
     /**
-     * Writes a transaction for every charge that has come due, across all users.
+     * Writes a transaction for every charge that has come due, across all households.
      *
      * This runs on the server rather than in each client so that a phone left closed
      * for a month does not hold its charges back, and so both clients see the same
@@ -113,7 +113,9 @@ class SubscriptionService(
             for (date in catchUp.dueDates) {
                 transactionRepo.save(
                     Transaction(
-                        user = sub.user,
+                        household = sub.household,
+                        // Written by the server, not by a person.
+                        createdBy = null,
                         account = sub.account,
                         category = sub.category,
                         amountMinor = sub.amountMinor,

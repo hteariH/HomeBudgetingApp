@@ -1,6 +1,6 @@
 package com.homebudget.app.repository
 
-import com.homebudget.app.domain.User
+import com.homebudget.app.domain.Household
 import com.homebudget.app.domain.UserCurrencySetting
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -10,8 +10,8 @@ import java.time.Instant
 @Repository
 interface UserCurrencySettingRepository : JpaRepository<UserCurrencySetting, Long> {
 
-    fun findAllByUser(user: User): List<UserCurrencySetting>
-    fun findByUserAndCurrencyId(user: User, currencyId: Long): UserCurrencySetting?
+    fun findAllByHousehold(household: Household): List<UserCurrencySetting>
+    fun findByHouseholdAndCurrencyId(household: Household, currencyId: Long): UserCurrencySetting?
 
     /** Every code switched on by anyone - the set the FX job needs to refresh. */
     @Query(
@@ -28,11 +28,11 @@ interface UserCurrencySettingRepository : JpaRepository<UserCurrencySetting, Lon
     // learns about would be pushed straight back.
 
     @Query(
-        value = "SELECT * FROM user_currency_settings WHERE user_id = :userId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
+        value = "SELECT * FROM household_currency_settings WHERE household_id = :householdId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
         nativeQuery = true
     )
-    fun findChangedSince(userId: Long, since: Instant, limit: Int): List<UserCurrencySetting>
+    fun findChangedSince(householdId: Long, since: Instant, limit: Int): List<UserCurrencySetting>
 
-    @Query(value = "SELECT * FROM user_currency_settings WHERE uuid = :uuid AND user_id = :userId", nativeQuery = true)
-    fun findByUuidIncludingDeleted(uuid: String, userId: Long): UserCurrencySetting?
+    @Query(value = "SELECT * FROM household_currency_settings WHERE uuid = :uuid AND household_id = :householdId", nativeQuery = true)
+    fun findByUuidIncludingDeleted(uuid: String, householdId: Long): UserCurrencySetting?
 }

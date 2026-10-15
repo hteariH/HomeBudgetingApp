@@ -1,17 +1,14 @@
 package com.homebudget.app.service
 
+import com.homebudget.app.TestIdentity
 import com.homebudget.app.domain.CategoryType
-import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.TransactionType
-import com.homebudget.app.domain.User
 import com.homebudget.app.dto.CreateAccountRequest
 import com.homebudget.app.dto.CreateCategoryRequest
 import com.homebudget.app.dto.CreateTransactionRequest
 import com.homebudget.app.dto.CreateTransferRequest
 import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.TransactionRepository
-import com.homebudget.app.repository.UserRepository
-import com.homebudget.app.security.UserPrincipal
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -20,7 +17,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.context.annotation.Import
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
@@ -34,6 +31,7 @@ import java.time.LocalDate
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(TestIdentity::class)
 class LedgerBalanceTest {
 
     @Autowired private lateinit var accountService: AccountService
@@ -41,7 +39,7 @@ class LedgerBalanceTest {
     @Autowired private lateinit var transactionService: TransactionService
     @Autowired private lateinit var transferService: TransferService
     @Autowired private lateinit var transactionRepo: TransactionRepository
-    @Autowired private lateinit var userRepository: UserRepository
+    @Autowired private lateinit var identity: TestIdentity
     @Autowired private lateinit var currencyRepository: CurrencyRepository
 
     private var usdId: Long = 0
@@ -49,18 +47,7 @@ class LedgerBalanceTest {
 
     @BeforeEach
     fun signIn() {
-        val user = userRepository.save(
-            User(
-                email = "ledger-${System.nanoTime()}@example.com",
-                passwordHash = "x",
-                firstName = "Test",
-                lastName = "User",
-                role = Role.USER,
-                baseCurrency = currencyRepository.findByCode("USD")
-            )
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(UserPrincipal(user), null, emptyList())
+        identity.signIn(identity.newMember("ledger"))
 
         usdId = currencyRepository.findByCode("USD")!!.id
         jpyId = currencyRepository.findByCode("JPY")!!.id
@@ -186,7 +173,7 @@ class LedgerBalanceTest {
         assertEquals(38000L, accountService.balanceOf(from.id))
         assertEquals(12000L, accountService.balanceOf(to.id))
 
-        val legs = transactionRepo.findAllByTransferGroupIdAndUser(debit.transferGroupId!!, debit.user)
+        val legs = transactionRepo.findAllByTransferGroupIdAndHousehold(debit.transferGroupId!!, debit.household)
         assertEquals(2, legs.size, "a transfer is exactly two rows")
         assertEquals(setOf(TransactionType.TRANSFER), legs.map { it.type }.toSet())
         // Neither leg belongs to a category.
@@ -234,7 +221,7 @@ class LedgerBalanceTest {
         assertEquals(0L, accountService.balanceOf(to.id))
         assertEquals(
             0,
-            transactionRepo.findAllByTransferGroupIdAndUser(debit.transferGroupId!!, debit.user).size
+            transactionRepo.findAllByTransferGroupIdAndHousehold(debit.transferGroupId!!, debit.household).size
         )
     }
 

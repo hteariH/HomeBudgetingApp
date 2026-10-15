@@ -1,6 +1,7 @@
 package com.homebudget.app.controller
 
 import com.homebudget.app.dto.SyncPayload
+import com.homebudget.app.security.SecurityUtils
 import com.homebudget.app.service.RefreshTokenService
 import com.homebudget.app.service.SyncService
 import com.homebudget.app.service.UserService
@@ -14,15 +15,16 @@ import java.time.Instant
 class UserController(
     private val userService: UserService,
     private val syncService: SyncService,
-    private val refreshTokenService: RefreshTokenService
+    private val refreshTokenService: RefreshTokenService,
+    private val securityUtils: SecurityUtils
 ) {
 
     @GetMapping("/me")
-    fun getCurrentUser() = userService.getCurrentUser().toResponse()
+    fun getCurrentUser() = userService.getCurrentUser().toResponse(securityUtils.getCurrentHousehold())
 
     @PutMapping("/me/base-currency")
     fun updateBaseCurrency(@RequestParam currencyId: Long) =
-        userService.updateBaseCurrency(currencyId).toResponse()
+        userService.getCurrentUser().toResponse(userService.updateBaseCurrency(currencyId))
 
     /**
      * Everything this account holds, in the sync wire format.

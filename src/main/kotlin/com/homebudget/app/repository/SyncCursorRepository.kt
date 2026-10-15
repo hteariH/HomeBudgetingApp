@@ -6,7 +6,7 @@ import java.sql.Timestamp
 import java.time.Instant
 
 /**
- * The newest `updated_at` a user has on any syncable table.
+ * The newest `updated_at` a household has on any syncable table.
  *
  * Exists so that [com.homebudget.app.service.SyncService] can stamp each push strictly
  * later than everything already stored. Without that guarantee two writes can land in
@@ -16,22 +16,22 @@ import java.time.Instant
 @Repository
 class SyncCursorRepository(private val em: EntityManager) {
 
-    fun latestUpdatedAt(userId: Long): Instant? {
+    fun latestUpdatedAt(householdId: Long): Instant? {
         val sql = """
             SELECT MAX(m) FROM (
-                SELECT MAX(updated_at) AS m FROM accounts               WHERE user_id = :uid
+                SELECT MAX(updated_at) AS m FROM accounts                    WHERE household_id = :hid
                 UNION ALL
-                SELECT MAX(updated_at) AS m FROM categories             WHERE user_id = :uid
+                SELECT MAX(updated_at) AS m FROM categories                  WHERE household_id = :hid
                 UNION ALL
-                SELECT MAX(updated_at) AS m FROM subscriptions          WHERE user_id = :uid
+                SELECT MAX(updated_at) AS m FROM subscriptions               WHERE household_id = :hid
                 UNION ALL
-                SELECT MAX(updated_at) AS m FROM transactions           WHERE user_id = :uid
+                SELECT MAX(updated_at) AS m FROM transactions                WHERE household_id = :hid
                 UNION ALL
-                SELECT MAX(updated_at) AS m FROM user_currency_settings WHERE user_id = :uid
+                SELECT MAX(updated_at) AS m FROM household_currency_settings WHERE household_id = :hid
             ) x
         """.trimIndent()
 
-        return when (val raw = em.createNativeQuery(sql).setParameter("uid", userId).singleResult) {
+        return when (val raw = em.createNativeQuery(sql).setParameter("hid", householdId).singleResult) {
             null -> null
             is Timestamp -> raw.toInstant()
             is Instant -> raw

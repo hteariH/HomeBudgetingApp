@@ -3,7 +3,7 @@ package com.homebudget.app.repository
 import com.homebudget.app.domain.Account
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
-import com.homebudget.app.domain.User
+import com.homebudget.app.domain.Household
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -14,19 +14,19 @@ import java.time.Instant
 
 @Repository
 interface TransactionRepository : JpaRepository<Transaction, Long> {
-    fun findByIdAndUser(id: Long, user: User): Transaction?
-    fun findByUuidAndUser(uuid: String, user: User): Transaction?
+    fun findByIdAndHousehold(id: Long, household: Household): Transaction?
+    fun findByUuidAndHousehold(uuid: String, household: Household): Transaction?
     fun existsByAccountAndExternalId(account: Account, externalId: String): Boolean
     fun findByAccountAndExternalId(account: Account, externalId: String): Transaction?
     fun countByCategoryId(categoryId: Long): Long
 
     /** Both legs of a transfer. Deleting one leg without the other corrupts balances. */
-    fun findAllByTransferGroupIdAndUser(transferGroupId: String, user: User): List<Transaction>
+    fun findAllByTransferGroupIdAndHousehold(transferGroupId: String, household: Household): List<Transaction>
 
     @Query(
         """
         SELECT t FROM Transaction t
-        WHERE t.user = :user
+        WHERE t.household = :household
           AND (:accountId IS NULL OR t.account.id = :accountId)
           AND (:categoryId IS NULL OR t.category.id = :categoryId)
           AND (:type IS NULL OR t.type = :type)
@@ -36,7 +36,7 @@ interface TransactionRepository : JpaRepository<Transaction, Long> {
         """
     )
     fun findFiltered(
-        user: User,
+        household: Household,
         accountId: Long?,
         categoryId: Long?,
         type: TransactionType?,
@@ -64,13 +64,13 @@ interface TransactionRepository : JpaRepository<Transaction, Long> {
     @Query(
         """
         SELECT t FROM Transaction t
-        WHERE t.user = :user
+        WHERE t.household = :household
           AND t.type = com.homebudget.app.domain.TransactionType.TRANSFER
           AND t.accountAmountMinor < 0
         ORDER BY t.occurredAt DESC, t.id DESC
         """
     )
-    fun findTransferDebitLegs(user: User, pageable: Pageable): Page<Transaction>
+    fun findTransferDebitLegs(household: Household, pageable: Pageable): Page<Transaction>
 
     // ── Sync access ─────────────────────────────────────────────────────────
     // Native SQL on purpose: @SQLRestriction hides tombstones from every JPQL query,
@@ -78,11 +78,11 @@ interface TransactionRepository : JpaRepository<Transaction, Long> {
     // learns about would be pushed straight back.
 
     @Query(
-        value = "SELECT * FROM transactions WHERE user_id = :userId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
+        value = "SELECT * FROM transactions WHERE household_id = :householdId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
         nativeQuery = true
     )
-    fun findChangedSince(userId: Long, since: Instant, limit: Int): List<Transaction>
+    fun findChangedSince(householdId: Long, since: Instant, limit: Int): List<Transaction>
 
-    @Query(value = "SELECT * FROM transactions WHERE uuid = :uuid AND user_id = :userId", nativeQuery = true)
-    fun findByUuidIncludingDeleted(uuid: String, userId: Long): Transaction?
+    @Query(value = "SELECT * FROM transactions WHERE uuid = :uuid AND household_id = :householdId", nativeQuery = true)
+    fun findByUuidIncludingDeleted(uuid: String, householdId: Long): Transaction?
 }

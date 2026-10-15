@@ -35,8 +35,16 @@ data class Transaction(
     override val uuid: String = Syncable.newUuid(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    var user: User,
+    @JoinColumn(name = "household_id", nullable = false)
+    var household: Household,
+
+    /**
+     * Who wrote it. Null for rows the server writes itself - subscription charges - and
+     * after the author's login is deleted; the history stays with the household.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_user_id")
+    var createdBy: User? = null,
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "account_id", nullable = false)

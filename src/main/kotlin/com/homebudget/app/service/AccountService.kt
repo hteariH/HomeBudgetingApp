@@ -21,9 +21,9 @@ class AccountService(
     private val subscriptionRepo: SubscriptionRepository,
     private val securityUtils: SecurityUtils
 ) {
-    fun findAll(): List<Account> = accountRepo.findAllByUser(securityUtils.getCurrentUser())
+    fun findAll(): List<Account> = accountRepo.findAllByHousehold(securityUtils.getCurrentHousehold())
 
-    fun findById(id: Long): Account = accountRepo.findByIdAndUser(id, securityUtils.getCurrentUser())
+    fun findById(id: Long): Account = accountRepo.findByIdAndHousehold(id, securityUtils.getCurrentHousehold())
         ?: throw NoSuchElementException("Account not found: $id")
 
     /**
@@ -36,21 +36,21 @@ class AccountService(
      */
     @Transactional(readOnly = true)
     fun balances(): Map<Long, Long> =
-        accountRepo.balancesOf(securityUtils.getCurrentUser())
+        accountRepo.balancesOf(securityUtils.getCurrentHousehold())
             .associate { it.accountId to it.balanceMinor }
 
     @Transactional(readOnly = true)
     fun balanceOf(accountId: Long): Long = balances()[accountId] ?: 0L
 
     fun create(req: CreateAccountRequest): Account {
-        val user = securityUtils.getCurrentUser()
+        val household = securityUtils.getCurrentHousehold()
         val currency = currencyService.findById(req.currencyId)
         return accountRepo.save(
             Account(
                 name = req.name,
                 type = req.type,
                 initialBalanceMinor = MinorUnits.toMinor(req.initialBalance, currency.decimals),
-                user = user,
+                household = household,
                 currency = currency,
                 description = req.description,
                 icon = req.icon,

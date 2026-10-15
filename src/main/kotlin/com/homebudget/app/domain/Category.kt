@@ -24,8 +24,8 @@ data class Category(
     var name: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    var user: User,
+    @JoinColumn(name = "household_id", nullable = false)
+    var household: Household,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component
  * Android client - one source of truth, applied before the context is up rather than
  * after, and versioned like the rest of the schema.
  *
- * Per-user categories are seeded on registration by [CategoryService.seedDefaultCategories];
- * they cannot be seeded here because every category belongs to a user.
+ * Per-household categories are seeded on registration by [CategoryService.seedDefaultCategories];
+ * they cannot be seeded here because every category belongs to a household.
  */
 @Component
 class DataInitializer : ApplicationRunner {

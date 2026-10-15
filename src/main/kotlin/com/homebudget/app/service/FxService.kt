@@ -3,13 +3,13 @@ package com.homebudget.app.service
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.homebudget.app.domain.ExchangeRate
 import com.homebudget.app.domain.RateSource
-import com.homebudget.app.domain.User
+import com.homebudget.app.domain.Household
 import com.homebudget.app.repository.AccountRepository
 import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.ExchangeRateRepository
+import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.preferringOverrides
 import com.homebudget.app.repository.UserCurrencySettingRepository
-import com.homebudget.app.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
@@ -38,7 +38,7 @@ class FxService(
     private val currencyRepo: CurrencyRepository,
     private val settingRepo: UserCurrencySettingRepository,
     private val accountRepo: AccountRepository,
-    private val userRepo: UserRepository,
+    private val householdRepo: HouseholdRepository,
     private val rateRepo: ExchangeRateRepository,
     private val clock: Clock,
     @Value("\${app.fx.base:USD}") private val baseCode: String,
@@ -105,7 +105,7 @@ class FxService(
                 log.warn("Ignoring non-positive rate for {}/{}", baseCode, quote)
                 continue
             }
-            val existing = rateRepo.findByBaseCodeAndQuoteCodeAndRateDateAndUserIsNull(baseCode, quote, today)
+            val existing = rateRepo.findByBaseCodeAndQuoteCodeAndRateDateAndHouseholdIsNull(baseCode, quote, today)
             if (existing != null) {
                 existing.rate = rate
                 existing.updatedAt = LocalDateTime.now(clock)
@@ -136,9 +136,9 @@ class FxService(
      * a cross-currency transfer, say - uses the same numbers the phone would show.
      */
     @Transactional(readOnly = true)
-    fun rate(user: User, from: String, to: String): BigDecimal? {
+    fun rate(household: Household, from: String, to: String): BigDecimal? {
         if (from == to) return BigDecimal.ONE
-        val stored = rateRepo.latestFor(user).preferringOverrides()
+        val stored = rateRepo.latestFor(household).preferringOverrides()
             .filter { it.rate.signum() > 0 }
             .associate { (it.baseCode to it.quoteCode) to it.rate }
         val byPair = stored + pegsMissingFrom(stored)
@@ -164,14 +164,14 @@ class FxService(
     /**
      * Which currencies to quote.
      *
-     * The accounts and the users' base currencies are in here, not just the switched-on
-     * settings, because `user_currency_settings` is written by the phone's currency screen
+     * The accounts and the households' base currencies are in here, not just the switched-on
+     * settings, because `household_currency_settings` is written by the phone's currency screen
      * alone: a browser-only user never creates a row there, so quoting settings by
      * themselves left them with no rates at all and every cross-currency transfer silently
      * converting one-to-one.
      */
     fun quotedCodes(): List<String> =
-        (settingRepo.activeCurrencyCodes() + accountRepo.currencyCodesInUse() + userRepo.baseCurrencyCodes())
+        (settingRepo.activeCurrencyCodes() + accountRepo.currencyCodesInUse() + householdRepo.baseCurrencyCodes())
             .filter { it != baseCode }
             // A pegged currency's rate is a definition, not something to go and ask about.
             .filterNot { FxPegs.isPegged(it) }
@@ -213,15 +213,15 @@ class FxService(
      * override stored against anything else converts to that one thing and nothing else,
      * which is not what somebody who owns bitcoin and thinks in hryvnia is asking for.
      *
-     * One row per user and pair, re-dated on every save. Keeping a history would make the
+     * One row per household and pair, re-dated on every save. Keeping a history would make the
      * nightly job's fresher global rate win, which is exactly what an override is for.
      */
     @Transactional
-    fun setOverride(user: User, code: String, perHub: BigDecimal) {
+    fun setOverride(household: Household, code: String, perHub: BigDecimal) {
         val quote = code.uppercase()
         require(perHub.signum() > 0) { "A rate has to be greater than zero" }
         require(quote != FxPegs.HUB) { "${FxPegs.HUB} is what rates are quoted against" }
-        val existing = rateRepo.findByUserAndBaseCodeAndQuoteCode(user, quote, FxPegs.HUB)
+        val existing = rateRepo.findByHouseholdAndBaseCodeAndQuoteCode(household, quote, FxPegs.HUB)
         // More than one only if an older build wrote a history; collapse it while here.
         existing.drop(1).forEach { rateRepo.delete(it) }
         val row = existing.firstOrNull() ?: ExchangeRate(
@@ -230,7 +230,7 @@ class FxService(
             rate = perHub,
             rateDate = LocalDate.now(clock),
             source = RateSource.MANUAL,
-            user = user
+            household = household
         )
         row.rate = perHub
         row.rateDate = LocalDate.now(clock)
@@ -241,8 +241,8 @@ class FxService(
 
     /** Drops the override, putting the currency back on whatever the feed says - often nothing. */
     @Transactional
-    fun clearOverride(user: User, code: String) {
-        rateRepo.deleteAll(rateRepo.findByUserAndBaseCodeAndQuoteCode(user, code.uppercase(), FxPegs.HUB))
+    fun clearOverride(household: Household, code: String) {
+        rateRepo.deleteAll(rateRepo.findByHouseholdAndBaseCodeAndQuoteCode(household, code.uppercase(), FxPegs.HUB))
     }
 
     /** Seeds a newly registered user's active currencies from the catalog defaults. */

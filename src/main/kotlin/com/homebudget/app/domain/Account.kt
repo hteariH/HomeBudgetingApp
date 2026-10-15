@@ -39,8 +39,8 @@ data class Account(
     var initialBalanceMinor: Long = 0,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    var user: User,
+    @JoinColumn(name = "household_id", nullable = false)
+    var household: Household,
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "currency_id", nullable = false)

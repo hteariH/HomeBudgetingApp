@@ -5,13 +5,13 @@ import org.hibernate.annotations.SQLRestriction
 import java.time.Instant
 
 /**
- * Which currencies from the global catalog a user has switched on, and in what order.
+ * Which currencies from the global catalog a household has switched on, and in what order.
  *
  * The catalog itself is shared and admin-managed; without this table every user would
  * have to scroll all 104 entries to pick the two or three they actually use.
  */
 @Entity
-@Table(name = "user_currency_settings")
+@Table(name = "household_currency_settings")
 @SQLRestriction("deleted = false")
 data class UserCurrencySetting(
     @Id
@@ -22,8 +22,8 @@ data class UserCurrencySetting(
     override val uuid: String = Syncable.newUuid(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    var user: User,
+    @JoinColumn(name = "household_id", nullable = false)
+    var household: Household,
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "currency_id", nullable = false)

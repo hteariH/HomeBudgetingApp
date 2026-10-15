@@ -1,7 +1,7 @@
 package com.homebudget.app.repository
 
 import com.homebudget.app.domain.Subscription
-import com.homebudget.app.domain.User
+import com.homebudget.app.domain.Household
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -11,9 +11,9 @@ import java.time.LocalDate
 
 @Repository
 interface SubscriptionRepository : JpaRepository<Subscription, Long> {
-    fun findAllByUser(user: User): List<Subscription>
-    fun findByIdAndUser(id: Long, user: User): Subscription?
-    fun findByUuidAndUser(uuid: String, user: User): Subscription?
+    fun findAllByHousehold(household: Household): List<Subscription>
+    fun findByIdAndHousehold(id: Long, household: Household): Subscription?
+    fun findByUuidAndHousehold(uuid: String, household: Household): Subscription?
     fun countByCategoryId(categoryId: Long): Long
 
     /** Soft deletes cascade by hand; see [TransactionRepository.tombstoneByAccount]. */
@@ -38,11 +38,11 @@ interface SubscriptionRepository : JpaRepository<Subscription, Long> {
     // learns about would be pushed straight back.
 
     @Query(
-        value = "SELECT * FROM subscriptions WHERE user_id = :userId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
+        value = "SELECT * FROM subscriptions WHERE household_id = :householdId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
         nativeQuery = true
     )
-    fun findChangedSince(userId: Long, since: Instant, limit: Int): List<Subscription>
+    fun findChangedSince(householdId: Long, since: Instant, limit: Int): List<Subscription>
 
-    @Query(value = "SELECT * FROM subscriptions WHERE uuid = :uuid AND user_id = :userId", nativeQuery = true)
-    fun findByUuidIncludingDeleted(uuid: String, userId: Long): Subscription?
+    @Query(value = "SELECT * FROM subscriptions WHERE uuid = :uuid AND household_id = :householdId", nativeQuery = true)
+    fun findByUuidIncludingDeleted(uuid: String, householdId: Long): Subscription?
 }

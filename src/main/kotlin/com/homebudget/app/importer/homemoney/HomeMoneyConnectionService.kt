@@ -3,6 +3,7 @@ package com.homebudget.app.importer.homemoney
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.homebudget.app.domain.BankConnection
 import com.homebudget.app.domain.BankConnectionStatus
+import com.homebudget.app.domain.Household
 import com.homebudget.app.domain.User
 import com.homebudget.app.repository.BankConnectionRepository
 import com.homebudget.app.repository.UserRepository
@@ -79,22 +80,22 @@ class HomeMoneyConnectionService(
     // ── The link ────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    fun find(): BankConnection? = findFor(securityUtils.getCurrentUser())
+    fun find(): BankConnection? = findFor(securityUtils.getCurrentHousehold())
 
     /**
-     * The user-explicit form.
+     * The household-explicit form.
      *
      * The import runs on a background thread, where there is no security context to read
-     * a user out of, so everything past the controller passes one in.
+     * a household out of, so everything past the controller passes one in.
      */
     @Transactional(readOnly = true)
-    fun findFor(user: User): BankConnection? =
-        connectionRepo.findAllByUser(user).firstOrNull { it.provider == HOMEMONEY_PROVIDER }
+    fun findFor(household: Household): BankConnection? =
+        connectionRepo.findAllByHousehold(household).firstOrNull { it.provider == HOMEMONEY_PROVIDER }
 
     fun require(): BankConnection = find() ?: throw NoSuchElementException("HomeMoney is not connected")
 
-    fun requireFor(user: User): BankConnection =
-        findFor(user) ?: throw NoSuchElementException("HomeMoney is not connected")
+    fun requireFor(household: Household): BankConnection =
+        findFor(household) ?: throw NoSuchElementException("HomeMoney is not connected")
 
     fun disconnect() {
         // The imported accounts and their history stay; only the token goes. Deleting
@@ -142,7 +143,7 @@ class HomeMoneyConnectionService(
         val token = api.tokenByAuthorizationCode(clientId, clientSecret, redirectUri, code)
         val access = token.accessToken
             ?: throw HomeMoneyAuthException("HomeMoney returned no access token")
-        return store(user, access, token.refreshToken)
+        return store(securityUtils.getCurrentHousehold(), user, access, token.refreshToken)
     }
 
     /**
@@ -157,10 +158,10 @@ class HomeMoneyConnectionService(
         val token = api.tokenByPassword(clientId, clientSecret, username, password)
         val access = token.accessToken
             ?: throw HomeMoneyAuthException("HomeMoney returned no access token")
-        return store(securityUtils.getCurrentUser(), access, token.refreshToken)
+        return store(securityUtils.getCurrentHousehold(), securityUtils.getCurrentUser(), access, token.refreshToken)
     }
 
-    private fun store(user: User, accessToken: String, refreshToken: String?): BankConnection {
+    private fun store(household: Household, user: User, accessToken: String, refreshToken: String?): BankConnection {
         val label = runCatching { api.userInfo(accessToken).userName }.getOrNull()
         val credentials = objectMapper.writeValueAsString(
             buildMap {
@@ -168,7 +169,7 @@ class HomeMoneyConnectionService(
                 refreshToken?.let { put("refresh_token", it) }
             }
         )
-        val existing = findFor(user)
+        val existing = findFor(household)
         val connection = existing?.apply {
             this.credentials = credentials
             this.label = label ?: this.label
@@ -176,7 +177,8 @@ class HomeMoneyConnectionService(
             this.lastVerifiedAt = LocalDateTime.now(clock)
             this.updatedAt = LocalDateTime.now(clock)
         } ?: BankConnection(
-            user = user,
+            household = household,
+            connectedBy = user,
             provider = HOMEMONEY_PROVIDER,
             credentials = credentials,
             label = label,

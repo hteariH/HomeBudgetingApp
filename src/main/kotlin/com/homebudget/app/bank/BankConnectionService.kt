@@ -57,11 +57,11 @@ class BankConnectionService(
      * in [provider] and take the whole bank screen down with it. It is filtered here
      * rather than at the controller so every caller gets the same answer.
      */
-    fun findAll(): List<BankConnection> = connectionRepo.findAllByUser(securityUtils.getCurrentUser())
+    fun findAll(): List<BankConnection> = connectionRepo.findAllByHousehold(securityUtils.getCurrentHousehold())
         .filter { byId.containsKey(it.provider) }
 
     fun findById(id: Long): BankConnection =
-        connectionRepo.findByIdAndUser(id, securityUtils.getCurrentUser())
+        connectionRepo.findByIdAndHousehold(id, securityUtils.getCurrentHousehold())
             ?: throw NoSuchElementException("Bank connection not found: $id")
 
     /**
@@ -128,7 +128,7 @@ class BankConnectionService(
     /** Points a local account at one of the bank's accounts. */
     fun linkAccount(connectionId: Long, accountId: Long, externalAccountId: String): Account {
         val connection = findById(connectionId)
-        val account = accountRepo.findByIdAndUser(accountId, securityUtils.getCurrentUser())
+        val account = accountRepo.findByIdAndHousehold(accountId, securityUtils.getCurrentHousehold())
             ?: throw NoSuchElementException("Account not found: $accountId")
         account.bankConnection = connection
         account.externalAccountId = externalAccountId
@@ -137,7 +137,7 @@ class BankConnectionService(
     }
 
     fun unlinkAccount(accountId: Long): Account {
-        val account = accountRepo.findByIdAndUser(accountId, securityUtils.getCurrentUser())
+        val account = accountRepo.findByIdAndHousehold(accountId, securityUtils.getCurrentHousehold())
             ?: throw NoSuchElementException("Account not found: $accountId")
         account.bankConnection = null
         account.externalAccountId = null
@@ -149,6 +149,9 @@ class BankConnectionService(
 
     /**
      * A consent this user started, until they approve it or it goes stale.
+     *
+     * Keyed by the user rather than the household: a consent is completed by the person
+     * who started it.
      *
      * In memory rather than in a table because it is worth nothing after the few minutes
      * the user spends looking at their phone: losing one to a restart costs a retry, and
@@ -212,9 +215,10 @@ class BankConnectionService(
 
         val identity = provider.verify(credentials)
         // Reconnecting the same bank account replaces the access on the row that is
-        // already there. A second row would strand every account linked to the first.
+        // already there - whichever member made it. A second row would strand every
+        // account linked to the first.
         val existing = identity.externalClientId.takeIf { it.isNotBlank() }?.let { clientId ->
-            connectionRepo.findAllByUser(user)
+            connectionRepo.findAllByHousehold(securityUtils.getCurrentHousehold())
                 .firstOrNull { it.provider == provider.id && it.externalClientId == clientId }
         }
         return existing?.let { adopt(it, credentials, identity) } ?: store(provider, credentials, identity)
@@ -245,7 +249,7 @@ class BankConnectionService(
      * that doing it twice by accident is painful.
      */
     fun preview(accountId: Long, from: LocalDate, to: LocalDate): List<PendingImport> {
-        val user = securityUtils.getCurrentUser()
+        val household = securityUtils.getCurrentHousehold()
         val account = linkedAccount(accountId)
         val connection = account.bankConnection!!
 
@@ -267,7 +271,7 @@ class BankConnectionService(
                 mcc = tx.mcc,
                 alreadyImported = transactionRepo.existsByAccountAndExternalId(account, tx.externalId),
                 suggestedCategoryId = if (tx.mcc != 0) {
-                    categoryRepo.findByUserAndMccCodeAndType(user, tx.mcc, categoryType).firstOrNull()?.id
+                    categoryRepo.findByHouseholdAndMccCodeAndType(household, tx.mcc, categoryType).firstOrNull()?.id
                 } else null
             )
         }
@@ -305,8 +309,9 @@ class BankConnectionService(
         categoryByExternalId: Map<String, Long?>,
         transferAccountByExternalId: Map<String, Long?> = emptyMap()
     ): ImportResult {
+        val household = securityUtils.getCurrentHousehold()
         val user = securityUtils.getCurrentUser()
-        val account = accountRepo.findByIdAndUser(accountId, user)
+        val account = accountRepo.findByIdAndHousehold(accountId, household)
             ?: throw NoSuchElementException("Account not found: $accountId")
         val decimals = account.currency.decimals
 
@@ -321,16 +326,16 @@ class BankConnectionService(
             if (transactionRepo.existsByAccountAndExternalId(account, row.externalId)) { skipped++; continue }
 
             if (counterpartId != null) {
-                val counterpart = accountRepo.findByIdAndUser(counterpartId, user)
+                val counterpart = accountRepo.findByIdAndHousehold(counterpartId, household)
                 // A counterpart that is gone, or is the account itself, would make a
                 // transfer with nowhere to go rather than a ledger row worth keeping.
                 if (counterpart == null || counterpart.id == account.id) { skipped++; continue }
-                saveTransferPair(user, account, counterpart, row)
+                saveTransferPair(household, user, account, counterpart, row)
                 imported++
                 continue
             }
 
-            val category = categoryByExternalId[row.externalId]?.let { categoryRepo.findByIdAndUser(it, user) }
+            val category = categoryByExternalId[row.externalId]?.let { categoryRepo.findByIdAndHousehold(it, household) }
             val expectedType =
                 if (row.type == TransactionType.INCOME) CategoryType.INCOME else CategoryType.EXPENSE
             if (category != null && category.type != expectedType) { skipped++; continue }
@@ -338,7 +343,8 @@ class BankConnectionService(
             val amountMinor = rescale(row.amountMinor, decimals)
             transactionRepo.save(
                 Transaction(
-                    user = user,
+                    household = household,
+                    createdBy = user,
                     account = account,
                     category = category,
                     amountMinor = amountMinor,
@@ -403,7 +409,8 @@ class BankConnectionService(
      * than the source figure repeated.
      */
     private fun saveTransferPair(
-        user: User,
+        household: Household,
+        actor: User,
         account: Account,
         counterpart: Account,
         row: ImportableRow
@@ -411,7 +418,7 @@ class BankConnectionService(
         val nearDecimals = account.currency.decimals
         val farDecimals = counterpart.currency.decimals
         val nearMinor = rescale(row.amountMinor, nearDecimals)
-        val rate = fxService.rate(user, account.currency.code, counterpart.currency.code) ?: BigDecimal.ONE
+        val rate = fxService.rate(household, account.currency.code, counterpart.currency.code) ?: BigDecimal.ONE
         val farMinor = MinorUnits.toMinor(
             MinorUnits.toDecimal(nearMinor, nearDecimals).multiply(rate),
             farDecimals
@@ -437,7 +444,8 @@ class BankConnectionService(
         }
 
         val near = Transaction(
-            user = user,
+            household = household,
+            createdBy = actor,
             account = account,
             category = null,
             // Signed: the balance query adds TRANSFER rows as-is.
@@ -455,7 +463,8 @@ class BankConnectionService(
             externalId = row.externalId
         )
         val far = Transaction(
-            user = user,
+            household = household,
+            createdBy = actor,
             account = counterpart,
             category = null,
             amountMinor = if (incoming) -farMinor else farMinor,
@@ -480,7 +489,8 @@ class BankConnectionService(
         identity: ProviderIdentity
     ): BankConnection = connectionRepo.save(
         BankConnection(
-            user = securityUtils.getCurrentUser(),
+            household = securityUtils.getCurrentHousehold(),
+            connectedBy = securityUtils.getCurrentUser(),
             provider = provider.id,
             credentials = objectMapper.writeValueAsString(credentials),
             label = identity.displayName,
@@ -506,7 +516,7 @@ class BankConnectionService(
     }
 
     private fun linkedAccount(accountId: Long): Account {
-        val account = accountRepo.findByIdAndUser(accountId, securityUtils.getCurrentUser())
+        val account = accountRepo.findByIdAndHousehold(accountId, securityUtils.getCurrentHousehold())
             ?: throw NoSuchElementException("Account not found: $accountId")
         require(account.bankConnection != null && account.externalAccountId != null) {
             "Account '${account.name}' is not linked to a bank"

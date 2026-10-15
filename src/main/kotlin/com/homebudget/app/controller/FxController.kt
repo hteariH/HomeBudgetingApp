@@ -42,7 +42,7 @@ class FxController(
 
     @GetMapping("/rates")
     fun rates(): List<FxRateResponse> =
-        rateRepo.latestFor(securityUtils.getCurrentUser()).preferringOverrides().map {
+        rateRepo.latestFor(securityUtils.getCurrentHousehold()).preferringOverrides().map {
             FxRateResponse(
                 baseCode = it.baseCode,
                 quoteCode = it.quoteCode,
@@ -53,19 +53,19 @@ class FxController(
         }
 
     /**
-     * Sets this user's own rate for a currency, for the ones no feed carries - bitcoin,
+     * Sets this household's own rate for a currency, for the ones no feed carries - bitcoin,
      * a voucher currency somebody invented on the currencies screen. Quoted against USD
      * because that is what every triangulated conversion hops through.
      */
     @PutMapping("/rates/{code}")
     fun setOverride(@PathVariable code: String, @RequestBody body: FxOverrideRequest): ResponseEntity<Void> {
-        fxService.setOverride(securityUtils.getCurrentUser(), code, body.rate)
+        fxService.setOverride(securityUtils.getCurrentHousehold(), code, body.rate)
         return ResponseEntity.noContent().build()
     }
 
     @DeleteMapping("/rates/{code}")
     fun clearOverride(@PathVariable code: String): ResponseEntity<Void> {
-        fxService.clearOverride(securityUtils.getCurrentUser(), code)
+        fxService.clearOverride(securityUtils.getCurrentHousehold(), code)
         return ResponseEntity.noContent().build()
     }
 

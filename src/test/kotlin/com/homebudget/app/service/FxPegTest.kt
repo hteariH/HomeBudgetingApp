@@ -1,11 +1,9 @@
 package com.homebudget.app.service
 
-import com.homebudget.app.domain.Role
-import com.homebudget.app.domain.User
+import com.homebudget.app.TestIdentity
+import com.homebudget.app.domain.Household
 import com.homebudget.app.dto.CreateAccountRequest
 import com.homebudget.app.repository.CurrencyRepository
-import com.homebudget.app.repository.UserRepository
-import com.homebudget.app.security.UserPrincipal
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -14,7 +12,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.context.annotation.Import
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
@@ -31,29 +29,19 @@ import java.math.BigDecimal
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@Import(TestIdentity::class)
 class FxPegTest {
 
     @Autowired private lateinit var fxService: FxService
     @Autowired private lateinit var accountService: AccountService
-    @Autowired private lateinit var userRepository: UserRepository
+    @Autowired private lateinit var identity: TestIdentity
     @Autowired private lateinit var currencyRepository: CurrencyRepository
 
-    private lateinit var user: User
+    private lateinit var household: Household
 
     @BeforeEach
     fun signIn() {
-        user = userRepository.save(
-            User(
-                email = "fx-peg-${System.nanoTime()}@example.com",
-                passwordHash = "x",
-                firstName = "Test",
-                lastName = "User",
-                role = Role.USER,
-                baseCurrency = currencyRepository.findByCode("USD")
-            )
-        )
-        SecurityContextHolder.getContext().authentication =
-            UsernamePasswordAuthenticationToken(UserPrincipal(user), null, emptyList())
+        household = identity.newMember("fx-peg").also { identity.signIn(it) }.household
     }
 
     @AfterEach
@@ -76,7 +64,7 @@ class FxPegTest {
 
     @Test
     fun `a stablecoin converts without any stored rate`() {
-        val rate = fxService.rate(user, "USDT", "USD")
+        val rate = fxService.rate(household, "USDT", "USD")
 
         assertNotNull(rate, "USDT should convert to USD by definition")
         assertEquals(0, BigDecimal.ONE.compareTo(rate!!.stripTrailingZeros()))
@@ -84,9 +72,9 @@ class FxPegTest {
 
     @Test
     fun `a rate set by hand beats the peg`() {
-        fxService.setOverride(user, "USDT", BigDecimal("0.93"))
+        fxService.setOverride(household, "USDT", BigDecimal("0.93"))
 
-        val rate = fxService.rate(user, "USDT", "USD")
+        val rate = fxService.rate(household, "USDT", "USD")
 
         assertNotNull(rate)
         assertEquals(0, BigDecimal("0.93").compareTo(rate!!.stripTrailingZeros()))
@@ -94,9 +82,9 @@ class FxPegTest {
 
     @Test
     fun `an override is not buried by a rate fetched later the same day`() {
-        fxService.setOverride(user, "BTC", BigDecimal("95000"))
+        fxService.setOverride(household, "BTC", BigDecimal("95000"))
 
-        val rate = fxService.rate(user, "BTC", "USD")
+        val rate = fxService.rate(household, "BTC", "USD")
 
         assertNotNull(rate, "a hand-set rate is the only one BTC will ever have")
         assertEquals(0, BigDecimal("95000").compareTo(rate!!.stripTrailingZeros()))
