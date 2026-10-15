@@ -35,7 +35,7 @@ const kid = { userId: 2, firstName: 'Kid', lastName: 'Byron', email: 'kid@exampl
 function stubServer(members: object[], rows: RestTransaction[]) {
     const fetchMock = vi.fn((url: string) => {
         if (url.startsWith('/api/transactions')) return Promise.resolve(json({ content: rows, page: 0, size: 500, totalElements: rows.length, totalPages: 1 }));
-        if (url === '/api/household') return Promise.resolve(json({ id: 5, name: 'Home', baseCurrency: 'USD', members }));
+        if (url === '/api/household') return Promise.resolve(json({ id: 5, name: 'Home', baseCurrency: { id: 1, code: 'USD', name: 'US Dollar', symbol: '$' }, members }));
         if (url.startsWith('/api/accounts')) return Promise.resolve(json([account(1, 'Cash')]));
         return Promise.resolve(json({}, 404));
     });

@@ -87,7 +87,7 @@ export const en = {
     'register.closed': 'Registration on this instance is closed. Ask the person who runs it for an account.',
     'join.title': 'Join {{name}}',
     'join.invitedBy': '{{name}} invited you',
-    'join.moveWarning': 'Your accounts, categories and history will move into this household.',
+    'join.moveWarning': 'If you are the only person in your current household, its accounts and history move with you. Otherwise you join on your own and your current household keeps its books.',
     'join.accept': 'Join',
     'join.accepting': 'Joining…',
     'join.register': 'Create an account',

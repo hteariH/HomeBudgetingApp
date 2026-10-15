@@ -67,3 +67,16 @@ it('registers with the invitation token even when registration is closed, and la
         email: 'bo@x.org', inviteToken: 'tok_en-1',
     });
 });
+
+it('sends "sign in instead" back to the invitation when there is one', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json(200, closedInstance)));
+    renderRegister('/register?invite=tok_en-1');
+    const link = await screen.findByRole('link', { name: en['register.signIn'] });
+    expect(link).toHaveAttribute('href', `/login?next=${encodeURIComponent('/join?token=tok_en-1')}`);
+});
+
+it('sends "sign in instead" to plain sign-in without an invitation', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json(200, closedInstance)));
+    renderRegister('/register');
+    expect(await screen.findByRole('link', { name: en['register.signIn'] })).toHaveAttribute('href', '/login');
+});

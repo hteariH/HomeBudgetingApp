@@ -13,7 +13,7 @@ const members = [
     { userId: 1, firstName: 'Ada', lastName: 'Lovelace', email: 'ada@example.com', role: 'OWNER', joinedAt: '2026-10-01T10:00:00Z' },
     { userId: 2, firstName: 'Kid', lastName: 'Lovelace', email: 'kid@example.com', role: 'MEMBER', joinedAt: '2026-10-02T10:00:00Z' },
 ];
-const household = { id: 5, name: 'Lovelaces', baseCurrency: 'USD', members };
+const household = { id: 5, name: 'Lovelaces', baseCurrency: { id: 1, code: 'USD', name: 'US Dollar', symbol: '$' }, members };
 const invites = [{ id: 7, createdAt: '2026-10-10T10:00:00Z', expiresAt: '2026-10-17T10:00:00Z', createdBy: 'Ada Lovelace' }];
 
 function stubServer(role: 'OWNER' | 'MEMBER', roster = members) {

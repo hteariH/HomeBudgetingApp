@@ -57,7 +57,11 @@ const Register: React.FC<{ setup?: boolean }> = ({ setup = false }) => {
             footer={
                 <p className="text-ink-dim">
                     {t('register.hasAccount')}{' '}
-                    <Link to="/login" className="font-semibold text-brand-light transition-colors hover:text-brand">
+                    <Link
+                        to={inviteToken
+                            ? `/login?next=${encodeURIComponent(`/join?token=${encodeURIComponent(inviteToken)}`)}`
+                            : '/login'}
+                        className="font-semibold text-brand-light transition-colors hover:text-brand">
                         {t('register.signIn')}
                     </Link>
                 </p>

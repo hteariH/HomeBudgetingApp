@@ -459,7 +459,7 @@ export interface MemberDto {
 export interface HouseholdDto {
     id: number;
     name: string;
-    baseCurrency: string;
+    baseCurrency: CurrencyDto | null;
     members: MemberDto[];
 }
 
