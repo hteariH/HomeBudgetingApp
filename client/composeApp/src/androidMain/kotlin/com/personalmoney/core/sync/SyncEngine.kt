@@ -99,6 +99,9 @@ class SyncEngine constructor(
         val known = prefs.householdId.first()
         if (known != null && known != current) {
             wiper.wipe()
+            // The wipe took the base currency with it; without this the phone would show
+            // the new household's totals in the default currency.
+            me.baseCurrency?.code?.let { prefs.setBaseCurrency(it) }
             prefs.setHouseholdNotice(me.householdName)
             members.refresh()
         }

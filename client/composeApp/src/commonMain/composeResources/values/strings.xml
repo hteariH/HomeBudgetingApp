@@ -549,7 +549,7 @@
     <string name="family_invite">Invite someone</string>
     <string name="family_invite_share_text">Join our household in PersonalMoney: %1$s</string>
     <string name="family_leave">Leave household</string>
-    <string name="family_leave_confirm">You will get a household of your own. What you wrote stays here. Leave?</string>
+    <string name="family_leave_confirm">You will get a household of your own. What you wrote stays here; bank connections you made are disconnected. Leave?</string>
     <string name="family_leave_owner_hint">You own this household. Make another member the owner on the web before you leave.</string>
     <string name="family_joined_notice">You are now in the household “%1$s”</string>
 </resources>

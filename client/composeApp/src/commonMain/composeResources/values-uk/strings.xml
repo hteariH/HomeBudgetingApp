@@ -534,7 +534,7 @@
     <string name="family_invite">Запросити</string>
     <string name="family_invite_share_text">Приєднуйтесь до нашого домогосподарства в PersonalMoney: %1$s</string>
     <string name="family_leave">Залишити домогосподарство</string>
-    <string name="family_leave_confirm">У вас буде власне домогосподарство. Усе, що ви записали, залишиться тут. Вийти?</string>
+    <string name="family_leave_confirm">У вас буде власне домогосподарство. Усе, що ви записали, залишиться тут, а підключені вами банки буде відключено. Вийти?</string>
     <string name="family_leave_owner_hint">Ви власник домогосподарства. Перш ніж вийти, зробіть власником іншого учасника у вебверсії.</string>
     <string name="family_joined_notice">Тепер ви в домогосподарстві «%1$s»</string>
 </resources>

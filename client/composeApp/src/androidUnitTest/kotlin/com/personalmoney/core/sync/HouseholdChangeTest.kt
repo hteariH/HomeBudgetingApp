@@ -12,6 +12,7 @@ import com.personalmoney.core.database.dao.SubscriptionDao
 import com.personalmoney.core.database.dao.TransactionDao
 import com.personalmoney.core.database.entity.AccountEntity
 import com.personalmoney.core.household.HouseholdMembers
+import com.personalmoney.core.network.CurrencyDto
 import com.personalmoney.core.network.HomeBudgetApi
 import com.personalmoney.core.network.HouseholdDto
 import com.personalmoney.core.network.SyncPullResponseDto
@@ -51,10 +52,11 @@ class HouseholdChangeTest {
         }
     }
 
-    private fun serverSays(householdId: Long?, name: String? = "Berkunsky family") {
+    private fun serverSays(householdId: Long?, name: String? = "Berkunsky family", baseCurrency: String? = null) {
         coEvery { api.me() } returns UserDto(
             id = 1, email = "a@example.com", householdId = householdId, householdName = name,
             householdRole = "MEMBER",
+            baseCurrency = baseCurrency?.let { CurrencyDto(id = 9, code = it, name = it, symbol = it) },
         )
     }
 
@@ -98,6 +100,20 @@ class HouseholdChangeTest {
         assertEquals(2L, prefs.householdId.first())
         assertEquals("Berkunsky family", prefs.householdNotice.first())
         assertEquals(newCursor, prefs.syncCursor.first())
+    }
+
+    @Test
+    fun `after a change the base currency is the new household's, not the default`() = runTest {
+        prefs.setHouseholdId(1)
+        prefs.setBaseCurrency("UAH")
+        prefs.setOnboarded(true)
+        prefs.setAuthorBackfillDone(true)
+        serverSays(householdId = 2, baseCurrency = "EUR")
+
+        engine().syncNow()
+
+        assertEquals(1, wipes)
+        assertEquals("EUR", prefs.baseCurrency.first())
     }
 
     @Test
