@@ -60,6 +60,19 @@ class UserPreferences(private val store: KeyValueStore) {
     val authorBackfillDone: Flow<Boolean> =
         store.observeBoolean(Keys.AUTHOR_BACKFILL_DONE).map { it ?: false }
 
+    /**
+     * The household this phone's data was last synced for. When the server says the account
+     * now belongs to another one, the local ledger is somebody else's and gets cleared.
+     * Account-scoped, and written again by the sync engine right after the wipe it causes.
+     */
+    val householdId: Flow<Long?> = store.observeLong(Keys.HOUSEHOLD_ID)
+
+    /**
+     * The name of the household the phone has just switched to, kept until the dashboard
+     * has told the user once. Account-scoped like [householdId].
+     */
+    val householdNotice: Flow<String?> = store.observeString(Keys.HOUSEHOLD_NOTICE)
+
     suspend fun setBaseCurrency(code: String) = store.putString(Keys.BASE_CURRENCY, code)
 
     suspend fun setThemeMode(mode: ThemeMode) = store.putString(Keys.THEME, mode.name)
@@ -90,6 +103,11 @@ class UserPreferences(private val store: KeyValueStore) {
 
     suspend fun setAuthorBackfillDone(value: Boolean) = store.putBoolean(Keys.AUTHOR_BACKFILL_DONE, value)
 
+    suspend fun setHouseholdId(id: Long) = store.putLong(Keys.HOUSEHOLD_ID, id)
+
+    suspend fun setHouseholdNotice(name: String?) =
+        if (name == null) store.remove(Keys.HOUSEHOLD_NOTICE) else store.putString(Keys.HOUSEHOLD_NOTICE, name)
+
     /**
      * Drops every preference that belongs to the account rather than to the device, so the
      * next sign-in on this phone starts clean.
@@ -106,6 +124,8 @@ class UserPreferences(private val store: KeyValueStore) {
         Keys.SYNC_CURSOR,
         Keys.SYNC_LAST_OK_MS,
         Keys.AUTHOR_BACKFILL_DONE,
+        Keys.HOUSEHOLD_ID,
+        Keys.HOUSEHOLD_NOTICE,
         Keys.DEFAULT_ACCOUNT,
         Keys.BASE_CURRENCY,
         Keys.HOMEMONEY_AUTH_STATE,
@@ -141,4 +161,9 @@ internal object PreferenceKeys {
     // Set once the full re-pull that gave pre-v5 transactions their author has been
     // started (or was unnecessary because the phone had never synced).
     const val AUTHOR_BACKFILL_DONE = "author_backfill_done"
+
+    // The household the local ledger belongs to, and the one-time "you are now in ..." notice
+    // left for the dashboard when it changed.
+    const val HOUSEHOLD_ID = "household_id"
+    const val HOUSEHOLD_NOTICE = "household_notice"
 }

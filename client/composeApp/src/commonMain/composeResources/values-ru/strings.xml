@@ -526,4 +526,15 @@
     <string name="settings_delete_account_body">Счета, операции, категории, подписки и банковские подключения будут стёрты с сервера и с этого устройства. Отменить это нельзя, а экспорт после удаления будет пустым.</string>
     <string name="settings_delete_account_confirm">Удалить навсегда</string>
     <string name="settings_delete_account_working">Удаляем\u2026</string>
+
+    <!-- Family -->
+    <string name="family_title">Семья</string>
+    <string name="family_owner">Владелец</string>
+    <string name="family_member">Участник</string>
+    <string name="family_invite">Пригласить</string>
+    <string name="family_invite_share_text">Присоединяйтесь к нашему домохозяйству в PersonalMoney: %1$s</string>
+    <string name="family_leave">Покинуть домохозяйство</string>
+    <string name="family_leave_confirm">У вас будет собственное домохозяйство. Всё, что вы записали, останется здесь. Выйти?</string>
+    <string name="family_leave_owner_hint">Вы владелец домохозяйства. Прежде чем выйти, сделайте владельцем другого участника в веб-версии.</string>
+    <string name="family_joined_notice">Теперь вы в домохозяйстве «%1$s»</string>
 </resources>

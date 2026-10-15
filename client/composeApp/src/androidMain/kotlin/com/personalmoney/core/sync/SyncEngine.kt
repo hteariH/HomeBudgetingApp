@@ -2,6 +2,7 @@ package com.personalmoney.core.sync
 
 import android.util.Log
 import com.personalmoney.core.auth.TokenStore
+import com.personalmoney.core.data.LocalDataWiper
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.database.Transactor
 import com.personalmoney.core.database.dao.AccountDao
@@ -9,11 +10,13 @@ import com.personalmoney.core.database.dao.CategoryDao
 import com.personalmoney.core.database.dao.CurrencyDao
 import com.personalmoney.core.database.dao.SubscriptionDao
 import com.personalmoney.core.database.dao.TransactionDao
+import com.personalmoney.core.household.HouseholdMembers
 import com.personalmoney.core.network.HomeBudgetApi
 import com.personalmoney.core.network.SyncPayloadDto
 import com.personalmoney.core.network.SyncPushRequestDto
 import com.personalmoney.core.sync.SyncMappers.toDto
 import com.personalmoney.core.sync.SyncMappers.toEntity
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 /**
@@ -35,7 +38,9 @@ class SyncEngine constructor(
     private val currencyDao: CurrencyDao,
     private val transactor: Transactor,
     private val prefs: UserPreferences,
-    private val tokenStore: TokenStore
+    private val tokenStore: TokenStore,
+    private val wiper: LocalDataWiper,
+    private val members: HouseholdMembers
 ) {
 
     data class Result(
@@ -49,6 +54,9 @@ class SyncEngine constructor(
             Log.d(TAG, "Not signed in; nothing to sync")
             return Result(0, 0, 0)
         }
+        // Before the backfill: a wipe blanks the cursor, and the backfill then has nothing
+        // left to push and only records that it need not run.
+        followHouseholdChange()
         backfillAuthorsOnce()
         val pulled = pull()
         // Signing in on a second device lands on an account that already has data.
@@ -60,6 +68,42 @@ class SyncEngine constructor(
         // rather than leaving the screen showing an edit that did not stick.
         if (rejected > 0) pull()
         return Result(pulled, pushed, rejected)
+    }
+
+    /**
+     * Notices that the account now belongs to a different household than the one this
+     * phone's data was synced for - it was removed from one, left, or accepted an invitation
+     * into another - and starts over: the local ledger is cleared and the next pull reads
+     * the new household's data from the start. There is no confirmation; the old rows are
+     * not the user's to keep once they are no longer in that household.
+     *
+     * Edits not yet pushed belonged to the previous household and are deliberately dropped
+     * with the rest, not pushed first: after a removal they would land in the household the
+     * user is in now. (A merge also overwrites local rows unconditionally, so they would
+     * not survive the full pull anyway.)
+     *
+     * The first sync after an upgrade has no household recorded; it is just stored. If the
+     * server cannot be asked, or does not report a household, the check is skipped and the
+     * sync carries on as before.
+     */
+    private suspend fun followHouseholdChange() {
+        val me = try {
+            api.me()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not check the household; skipping", e)
+            return
+        }
+        val current = me.householdId ?: return
+        val known = prefs.householdId.first()
+        if (known != null && known != current) {
+            wiper.wipe()
+            prefs.setHouseholdNotice(me.householdName)
+            members.refresh()
+        }
+        // After a wipe, which removed both keys along with the rest of the account's state.
+        if (known != current) prefs.setHouseholdId(current)
     }
 
     /**

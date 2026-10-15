@@ -3,6 +3,7 @@ package com.personalmoney.core.data
 import androidx.room.withTransaction
 import com.personalmoney.core.database.AppDatabase
 import com.personalmoney.core.database.seed.DatabaseSeeder
+import com.personalmoney.core.household.HouseholdMembers
 
 /**
  * Empties the on-device ledger, then puts the starter content back.
@@ -21,6 +22,7 @@ class RoomLocalDataWiper(
     private val db: AppDatabase,
     private val seeder: DatabaseSeeder,
     private val preferences: UserPreferences,
+    private val members: HouseholdMembers,
 ) : LocalDataWiper {
 
     override suspend fun wipe() {
@@ -34,5 +36,6 @@ class RoomLocalDataWiper(
             seeder.seedIfEmpty()
         }
         preferences.clearAccountScoped()
+        members.clear()
     }
 }

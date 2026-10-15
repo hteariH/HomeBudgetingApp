@@ -2,6 +2,7 @@ package com.personalmoney.core.sync
 
 import com.personalmoney.core.auth.FakeTokenStore
 import com.personalmoney.core.data.FakeKeyValueStore
+import com.personalmoney.core.data.LocalDataWiper
 import com.personalmoney.core.data.UserPreferences
 import com.personalmoney.core.database.Transactor
 import com.personalmoney.core.database.dao.AccountDao
@@ -10,9 +11,11 @@ import com.personalmoney.core.database.dao.CurrencyDao
 import com.personalmoney.core.database.dao.SubscriptionDao
 import com.personalmoney.core.database.dao.TransactionDao
 import com.personalmoney.core.database.entity.AccountEntity
+import com.personalmoney.core.household.HouseholdMembers
 import com.personalmoney.core.network.HomeBudgetApi
 import com.personalmoney.core.network.SyncPullResponseDto
 import com.personalmoney.core.network.SyncPushResponseDto
+import com.personalmoney.core.network.UserDto
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -47,6 +50,8 @@ class SyncEngineAuthorBackfillTest {
             SyncPullResponseDto(serverTime = newCursor)
         }
         coEvery { api.push(any()) } returns SyncPushResponseDto(serverTime = newCursor)
+        // The household check runs first; this account stays in the one household throughout.
+        coEvery { api.me() } returns UserDto(id = 1, email = "a@example.com", householdId = 1)
         val transactor = object : Transactor {
             override suspend fun <R> transaction(block: suspend () -> R): R = block()
         }
@@ -60,6 +65,10 @@ class SyncEngineAuthorBackfillTest {
             transactor = transactor,
             prefs = prefs,
             tokenStore = FakeTokenStore(),
+            wiper = object : LocalDataWiper {
+                override suspend fun wipe() = error("the household did not change")
+            },
+            members = HouseholdMembers(api),
         )
     }
 

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -92,7 +93,7 @@ class DashboardViewModel constructor(
     categoryRepository: CategoryRepository,
     transactionRepository: TransactionRepository,
     exchangeRateRepository: ExchangeRateRepository,
-    userPreferences: UserPreferences,
+    private val userPreferences: UserPreferences,
     private val ledgerFilter: LedgerFilterRequest,
 ) : ViewModel() {
 
@@ -102,6 +103,17 @@ class DashboardViewModel constructor(
             emit(Unit)
             delay(60 * 60 * 1_000L)
         }
+    }
+
+    /**
+     * The household the phone has just been moved into, until the user has been told once.
+     * Written by the sync engine when it notices the account changed household.
+     */
+    val householdNotice: StateFlow<String?> = userPreferences.householdNotice
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun dismissHouseholdNotice() {
+        viewModelScope.launch { userPreferences.setHouseholdNotice(null) }
     }
 
     private val fxSnapshotFlow = exchangeRateRepository.observeAll().map { FxSnapshot.from(it) }

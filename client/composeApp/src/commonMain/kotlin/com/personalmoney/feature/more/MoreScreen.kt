@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material.icons.filled.Wallet
@@ -40,6 +41,7 @@ fun MoreScreen(
     onOpenAccounts: () -> Unit,
     onOpenCategories: () -> Unit,
     onOpenSubscriptions: () -> Unit,
+    onOpenFamily: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     Scaffold(
@@ -62,6 +64,7 @@ fun MoreScreen(
             MoreItem(Icons.Filled.Wallet, Res.string.dashboard_accounts, onOpenAccounts)
             MoreItem(Icons.Filled.Category, Res.string.dashboard_categories, onOpenCategories)
             MoreItem(Icons.Filled.Subscriptions, Res.string.dashboard_subscriptions, onOpenSubscriptions)
+            MoreItem(Icons.Filled.Groups, Res.string.family_title, onOpenFamily)
             MoreItem(Icons.Filled.Settings, Res.string.dashboard_settings, onOpenSettings)
         }
     }

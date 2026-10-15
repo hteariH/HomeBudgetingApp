@@ -71,6 +71,7 @@ import com.personalmoney.feature.categories.CategoryEditScreen
 import com.personalmoney.feature.currencies.CurrenciesScreen
 import com.personalmoney.feature.currencies.CurrencyEditScreen
 import com.personalmoney.feature.dashboard.DashboardScreen
+import com.personalmoney.feature.family.FamilyScreen
 import com.personalmoney.feature.homemoney.HomeMoneyImportScreen
 import com.personalmoney.feature.more.MoreScreen
 import com.personalmoney.feature.onboarding.OnboardingScreen
@@ -156,6 +157,7 @@ internal val registeredRoutes: List<String> = listOfNotNull(
     Routes.CURRENCIES,
     Routes.CURRENCY_EDIT,
     Routes.SETTINGS,
+    Routes.FAMILY,
     Routes.ANALYTICS,
     Routes.MORE.takeIf { moreTabAvailable },
     Routes.BANKS.takeIf { bankConnectionsAvailable },
@@ -417,6 +419,7 @@ fun PersonalMoneyNavHost(
                         onOpenAccounts = { navController.open(Routes.ACCOUNTS) },
                         onOpenCategories = { navController.open(Routes.CATEGORIES) },
                         onOpenSubscriptions = { navController.open(Routes.SUBSCRIPTIONS) },
+                        onOpenFamily = { navController.open(Routes.FAMILY) },
                         onOpenSettings = { navController.open(Routes.SETTINGS) }
                     )
                 }
@@ -578,6 +581,9 @@ fun PersonalMoneyNavHost(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() }
                 )
+            }
+            composable(Routes.FAMILY) {
+                FamilyScreen(onBack = sectionBack)
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(

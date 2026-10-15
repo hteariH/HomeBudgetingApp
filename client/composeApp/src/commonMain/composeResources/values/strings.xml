@@ -541,4 +541,15 @@
     <string name="settings_delete_account_body">Your accounts, transactions, categories, subscriptions and bank connections will be erased from the server and from this device. This cannot be undone, and an export made afterwards will be empty.</string>
     <string name="settings_delete_account_confirm">Delete for ever</string>
     <string name="settings_delete_account_working">Deleting\u2026</string>
+
+    <!-- Family -->
+    <string name="family_title">Family</string>
+    <string name="family_owner">Owner</string>
+    <string name="family_member">Member</string>
+    <string name="family_invite">Invite someone</string>
+    <string name="family_invite_share_text">Join our household in PersonalMoney: %1$s</string>
+    <string name="family_leave">Leave household</string>
+    <string name="family_leave_confirm">You will get a household of your own. What you wrote stays here. Leave?</string>
+    <string name="family_leave_owner_hint">You own this household. Make another member the owner on the web before you leave.</string>
+    <string name="family_joined_notice">You are now in the household “%1$s”</string>
 </resources>

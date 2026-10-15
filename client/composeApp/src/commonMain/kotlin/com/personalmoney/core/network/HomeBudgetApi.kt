@@ -59,6 +59,20 @@ class HomeBudgetApi(private val client: HttpClient) {
 
     suspend fun household(): HouseholdDto = client.get("api/household").body()
 
+    /** Owner only. The token in the returned path is shown once; the server keeps only its hash. */
+    suspend fun createInvite(): CreatedInviteDto =
+        client.post("api/household/invites") {
+            // Nothing to choose yet, but the endpoint reads a JSON body. A literal string is
+            // sent as it is; content negotiation leaves String bodies alone.
+            contentType(ContentType.Application.Json)
+            setBody("{}")
+        }.body()
+
+    /** Moves the caller out into a household of their own. 400 for an owner with others still in. */
+    suspend fun leaveHousehold() {
+        client.post("api/household/leave")
+    }
+
     /**
      * Deletes the account and everything the server holds for it, irreversibly.
      *

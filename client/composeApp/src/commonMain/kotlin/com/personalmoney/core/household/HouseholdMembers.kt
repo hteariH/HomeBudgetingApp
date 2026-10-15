@@ -30,6 +30,11 @@ class HouseholdMembers(private val api: HomeBudgetApi) {
         }
     }
 
+    /** Forgets everyone, so a different account on this phone never glimpses the last one's household. */
+    fun clear() {
+        _members.value = emptyList()
+    }
+
     /**
      * Initials for [userId], or null when there is nothing worth showing: a household of
      * one has no one to tell the author apart from, and an unknown author has no name.

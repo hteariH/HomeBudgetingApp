@@ -34,11 +34,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -48,6 +52,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.personalmoney.core.ui.pageBarColors
 import com.personalmoney.resources.*
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -76,6 +82,19 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val householdNotice by viewModel.householdNotice.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+
+    // Said once: the sync engine leaves the household's name here after it has replaced
+    // the phone's data. It is cleared as soon as it is picked up, so the snackbar is shown
+    // from a scope of its own - clearing it re-runs the effect below, and that would
+    // cancel a snackbar launched inside it.
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(householdNotice) {
+        val name = householdNotice ?: return@LaunchedEffect
+        viewModel.dismissHouseholdNotice()
+        scope.launch { snackbar.showSnackbar(getString(Res.string.family_joined_notice, name)) }
+    }
 
     // The wide dashboard is the React one: four headline figures, a six-month income and
     // spending chart, an account summary, and entry without leaving the page. None of that
@@ -89,7 +108,8 @@ fun DashboardScreen(
                 colors = pageBarColors(),
                 title = { Text(stringResource(Res.string.dashboard_title)) }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         if (wide) {
             WideDashboard(state, { id -> viewModel.openAccount(id); onOpenAccount() }, Modifier.padding(padding))

@@ -72,6 +72,14 @@ data class MemberDto(
 )
 
 @Serializable
+data class CreatedInviteDto(
+    val id: Long,
+    /** `/join?token=...`, relative to the server; the link people open is the server address plus this. */
+    val path: String,
+    val expiresAt: String
+)
+
+@Serializable
 data class HouseholdDto(
     val id: Long,
     val name: String,
