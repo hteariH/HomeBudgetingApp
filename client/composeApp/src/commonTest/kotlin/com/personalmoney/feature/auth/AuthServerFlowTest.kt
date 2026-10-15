@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
@@ -41,7 +42,12 @@ class AuthServerFlowTest {
     private fun instanceJson(registrationOpen: Boolean, setupRequired: Boolean = false) =
         """{"name":"PersonalMoney","version":"1.0.0","apiVersion":1,"setupRequired":$setupRequired,"registrationOpen":$registrationOpen,"mailEnabled":false,"bankProviders":[]}"""
 
-    private class Rig(val viewModel: AuthViewModel, val tokens: FakeTokenStore, val paths: MutableList<String>)
+    private class Rig(
+        val viewModel: AuthViewModel,
+        val tokens: FakeTokenStore,
+        val paths: MutableList<String>,
+        val wiper: RecordingWiper
+    )
 
     private fun rig(instance: String? = null, status: HttpStatusCode = HttpStatusCode.OK): Rig {
         val paths = mutableListOf<String>()
@@ -54,8 +60,9 @@ class AuthServerFlowTest {
             respond(body, status, headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
         }
         val tokens = FakeTokenStore(signedIn = false)
-        val auth = authRepositoryOver(engine, tokens, RecordingWiper())
-        return Rig(AuthViewModel(auth, NoOpSyncTrigger), tokens, paths)
+        val wiper = RecordingWiper()
+        val auth = authRepositoryOver(engine, tokens, wiper)
+        return Rig(AuthViewModel(auth, NoOpSyncTrigger), tokens, paths, wiper)
     }
 
     private fun Rig.fillIn(address: String) {
@@ -101,5 +108,41 @@ class AuthServerFlowTest {
 
         assertNull(rig.viewModel.state.value.serverProblem)
         assertNull(rig.viewModel.state.value.instance)
+    }
+
+    @Test
+    fun `a different account asks before anything is removed from the phone`() = authTest {
+        val rig = rig(instanceJson(registrationOpen = true))
+        rig.tokens.lastAccount = "https://old.example.com/|first@example.com"
+        rig.fillIn("money.example.com")
+
+        rig.viewModel.submit()
+        val asked = rig.viewModel.state.first { it.confirmSwitch }
+
+        assertFalse(asked.busy)
+        assertEquals(0, rig.wiper.wipes)
+        assertEquals(listOf("/api/instance"), rig.paths)
+
+        rig.viewModel.confirmSwitch()
+        rig.viewModel.state.first { it.signedIn }
+
+        assertEquals(1, rig.wiper.wipes)
+        assertFalse(rig.viewModel.state.value.confirmSwitch)
+    }
+
+    @Test
+    fun `declining the switch leaves the phone and the form alone`() = authTest {
+        val rig = rig(instanceJson(registrationOpen = true))
+        rig.tokens.lastAccount = "https://old.example.com/|first@example.com"
+        rig.fillIn("money.example.com")
+        rig.viewModel.submit()
+        rig.viewModel.state.first { it.confirmSwitch }
+
+        rig.viewModel.cancelSwitch()
+
+        assertFalse(rig.viewModel.state.value.confirmSwitch)
+        assertFalse(rig.viewModel.state.value.signedIn)
+        assertEquals(0, rig.wiper.wipes)
+        assertEquals(listOf("/api/instance"), rig.paths)
     }
 }

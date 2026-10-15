@@ -49,6 +49,14 @@ class AndroidTokenStore(
             if (value == null) remove(KEY_SERVER) else putString(KEY_SERVER, value)
         }.apply()
 
+    // Survives clear(): it is how a later sign-in knows whether the data still on the
+    // phone belongs to the account that is about to sign in.
+    override var lastAccount: String?
+        get() = prefs.getString(KEY_LAST_ACCOUNT, null)
+        set(value) = prefs.edit().apply {
+            if (value == null) remove(KEY_LAST_ACCOUNT) else putString(KEY_LAST_ACCOUNT, value)
+        }.apply()
+
     override fun save(access: String, refresh: String, email: String?) {
         prefs.edit()
             .putString(KEY_ACCESS, access)
@@ -104,5 +112,6 @@ class AndroidTokenStore(
         const val KEY_REFRESH = "refresh_token"
         const val KEY_EMAIL = "email"
         const val KEY_SERVER = "server_url"
+        const val KEY_LAST_ACCOUNT = "last_account"
     }
 }

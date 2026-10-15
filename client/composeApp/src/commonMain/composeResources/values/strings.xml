@@ -285,6 +285,9 @@
     <string name="auth_server_not_personalmoney">Something answered at that address, but it is not a PersonalMoney server.</string>
     <string name="auth_server_unsupported">That server speaks API version %1$d, which this app does not support. Update the app or the server.</string>
     <string name="auth_registration_closed">Registration on this server is closed. Ask the person who runs it for an account.</string>
+    <string name="auth_switch_title">Sign in to a different account?</string>
+    <string name="auth_switch_body">This phone still holds data from another account or server. It will be removed from the phone (not from that server) before signing in.</string>
+    <string name="auth_switch_confirm">Remove and sign in</string>
     <string name="settings_account">Account</string>
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_sign_out_confirm">Sign out? Local data will be removed from this device. It stays on the server.</string>

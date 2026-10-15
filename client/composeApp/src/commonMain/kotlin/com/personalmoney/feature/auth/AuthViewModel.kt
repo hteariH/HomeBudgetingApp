@@ -31,7 +31,9 @@ data class AuthUiState(
     val registerMode: Boolean = false,
     val busy: Boolean = false,
     val error: String? = null,
-    val signedIn: Boolean = false
+    val signedIn: Boolean = false,
+    /** Signing in would remove another account's data from the phone; waiting for a yes. */
+    val confirmSwitch: Boolean = false
 ) {
     /**
      * Mirrors the server's rule - and only where the server actually has one.
@@ -69,6 +71,9 @@ class AuthViewModel constructor(
     private val _state = MutableStateFlow(freshState())
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
 
+    /** The user has agreed to replace the phone's data for the server and email now typed. */
+    private var switchConfirmed = false
+
     init {
         // Empty the form whenever a session ends, because this view model outlives the
         // session: signing out or deleting an account swaps the nav host back to this
@@ -93,11 +98,16 @@ class AuthViewModel constructor(
         signedIn = signedIn,
     )
 
-    fun onServerAddressChange(value: String) = _state.update {
-        it.copy(serverAddress = value, serverProblem = null, instance = null, error = null)
+    fun onServerAddressChange(value: String) {
+        switchConfirmed = false
+        _state.update { it.copy(serverAddress = value, serverProblem = null, instance = null, error = null) }
     }
 
-    fun onEmailChange(value: String) = _state.update { it.copy(email = value, error = null) }
+    fun onEmailChange(value: String) {
+        switchConfirmed = false
+        _state.update { it.copy(email = value, error = null) }
+    }
+
     fun onPasswordChange(value: String) = _state.update { it.copy(password = value, error = null) }
     fun onFirstNameChange(value: String) = _state.update { it.copy(firstName = value, error = null) }
     fun onLastNameChange(value: String) = _state.update { it.copy(lastName = value, error = null) }
@@ -122,6 +132,11 @@ class AuthViewModel constructor(
             if (current.registerMode && !instance.registrationOpen && !instance.setupRequired) {
                 val closed = getString(Res.string.auth_registration_closed)
                 _state.update { it.copy(busy = false, error = closed) }
+                return@launch
+            }
+
+            if (!switchConfirmed && authRepository.wouldSwitchAccount(check.baseUrl, current.email)) {
+                _state.update { it.copy(busy = false, confirmSwitch = true) }
                 return@launch
             }
 
@@ -152,4 +167,13 @@ class AuthViewModel constructor(
             }
         }
     }
+
+    /** The user agreed to remove the phone's data: go ahead with the sign-in. */
+    fun confirmSwitch() {
+        switchConfirmed = true
+        _state.update { it.copy(confirmSwitch = false) }
+        submit()
+    }
+
+    fun cancelSwitch() = _state.update { it.copy(confirmSwitch = false) }
 }

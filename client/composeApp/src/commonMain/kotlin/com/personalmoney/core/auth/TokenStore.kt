@@ -22,6 +22,9 @@ interface TokenStore {
     /** The server signed in to. Kept by [clear]: signing out does not forget the address. */
     var serverUrl: String?
 
+    /** "<server>|<email>" of the last successful sign-in. Kept by [clear]. */
+    var lastAccount: String?
+
     fun save(access: String, refresh: String, email: String?)
     fun clear()
 }

@@ -261,6 +261,9 @@
     <string name="auth_server_not_personalmoney">За цією адресою хтось відповідає, але це не сервер PersonalMoney.</string>
     <string name="auth_server_unsupported">Сервер використовує API версії %1$d, яку цей застосунок не підтримує. Оновіть застосунок або сервер.</string>
     <string name="auth_registration_closed">Реєстрація на цьому сервері закрита. Попросіть акаунт у того, хто його адмініструє.</string>
+    <string name="auth_switch_title">Увійти в інший акаунт?</string>
+    <string name="auth_switch_body">На телефоні залишилися дані іншого акаунта або сервера. Перед входом їх буде видалено з телефона (не з того сервера).</string>
+    <string name="auth_switch_confirm">Видалити й увійти</string>
     <string name="settings_account">Акаунт</string>
     <string name="settings_sign_out">Вийти</string>
     <string name="settings_sign_out_confirm">Вийти? Локальні дані буде видалено з пристрою. На сервері вони збережуться.</string>

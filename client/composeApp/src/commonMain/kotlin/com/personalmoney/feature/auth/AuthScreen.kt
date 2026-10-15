@@ -58,6 +58,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personalmoney.core.auth.ServerCheck
+import com.personalmoney.core.ui.components.ConfirmDialog
 import com.personalmoney.core.ui.theme.Accent
 import com.personalmoney.core.ui.webChrome
 import com.personalmoney.core.ui.theme.LocalFinanceColors
@@ -88,6 +89,17 @@ fun AuthScreen(
 
     LaunchedEffect(state.signedIn) {
         if (state.signedIn) onSignedIn()
+    }
+
+    if (state.confirmSwitch) {
+        ConfirmDialog(
+            title = stringResource(Res.string.auth_switch_title),
+            message = stringResource(Res.string.auth_switch_body),
+            confirmLabel = stringResource(Res.string.auth_switch_confirm),
+            dismissLabel = stringResource(Res.string.action_cancel),
+            onConfirm = viewModel::confirmSwitch,
+            onDismiss = viewModel::cancelSwitch
+        )
     }
 
     // A Surface rather than a plain Box: Surface is what publishes `LocalContentColor`,

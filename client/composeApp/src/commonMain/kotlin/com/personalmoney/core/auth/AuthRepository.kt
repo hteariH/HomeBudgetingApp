@@ -60,10 +60,23 @@ class AuthRepository constructor(
         }
     }
 
+    private fun accountKey(baseUrl: String, email: String) = "$baseUrl|${email.trim().lowercase()}"
+
+    /** Whether signing in here would put a different ledger on top of what the phone holds. */
+    fun wouldSwitchAccount(baseUrl: String, email: String): Boolean {
+        val last = tokenStore.lastAccount ?: return false
+        return last != accountKey(baseUrl, email)
+    }
+
     /** [baseUrl] is the address [checkServer] approved; it becomes the client's base. */
     suspend fun login(baseUrl: String, email: String, password: String): AuthResult = runCatchingAuth {
         useServer(baseUrl)
         val response = api.login(LoginRequestDto(email.trim(), password))
+        // Only once the server has accepted the credentials: a failed attempt must not cost
+        // the phone its data. Before the tokens are saved, so nothing is signed in on top of
+        // another ledger even for an instant.
+        if (wouldSwitchAccount(baseUrl, email)) localData.wipe()
+        tokenStore.lastAccount = accountKey(baseUrl, email)
         tokenStore.save(response.token, response.refreshToken, response.email)
         AuthResult.Success
     }
