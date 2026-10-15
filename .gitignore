@@ -64,3 +64,6 @@ Thumbs.db
 
 # Self-hosted compose state (docker-compose.yml bind mounts).
 /postgres/
+
+# Static project page build output
+site/dist/

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Browsers that understand the SVG take it and stay sharp at any scale; the
+         .ico carries hand-rendered 16-256px bitmaps for the ones that do not. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0D0F14" />
+    <meta
+      name="description"
+      content="PersonalMoney is an open-source (AGPL-3.0) personal and family finance app you run on your own NAS or home server."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>PersonalMoney — self-hosted personal and family finances</title>
+
+    <script>
+      // Applied before first paint so a saved light theme does not flash dark. Mirrors
+      // readThemeMode() in src/theme.tsx: "system" (or nothing stored) follows the OS.
+      (function () {
+        try {
+          var t = (localStorage.getItem('theme') || '').toLowerCase();
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+          var l = localStorage.getItem('lang');
+          if (l) document.documentElement.setAttribute('lang', l);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>This page needs JavaScript. The source and the installation steps are at https://github.com/hteariH/HomeBudgetingApp</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

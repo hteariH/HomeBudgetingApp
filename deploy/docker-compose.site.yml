@@ -1,84 +1,17 @@
-# PersonalMoney stack. Sits behind the shared `edge` Caddy that owns ports 80/443 on the
-# VPS, exactly like the wordle and crocodile stacks: no host ports are published here,
-# the app joins the external `edge` network and is reached by its alias from
-# deploy/personalmoney.caddy.
+# The project's page at personalmoney.app: static files behind the shared edge Caddy.
+# The files are copied to /opt/personalmoney-site/dist by the site workflow.
 services:
-  db:
-    image: mysql:8.0
-    container_name: homebudget-db
+  site:
+    image: nginx:1.27-alpine
+    container_name: personalmoney-site
     restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: homebudget
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
-      - db_data:/var/lib/mysql
-    # Default network only: the database is reachable from `app` and nothing else.
-    # Never put it on `edge`, and never publish 3306 - that would expose the database
-    # of a public service to the internet.
+      - ./dist:/usr/share/nginx/html:ro
     networks:
-      - default
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  app:
-    image: ${DOCKER_IMAGE}
-    container_name: homebudget-app
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/homebudget
-      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
-      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      # Encrypts stored bank credentials. Rotating it makes existing connections
-      # unreadable, so users would have to reconnect; keep it stable.
-      APP_CRYPTO_SECRET: ${CRYPTO_SECRET}
-      # Absolute base for links inside emails - a relative link in a mail client goes
-      # nowhere.
-      APP_BASE_URL: ${APP_BASE_URL:-https://personalmoney.app}
-      APP_MAIL_FROM: ${MAIL_FROM:-noreply@personalmoney.app}
-      # The OAuth client homemoney.ua issued us. Their demo client is the fallback, so
-      # the import keeps working before ours is registered.
-      HOMEMONEY_CLIENT_ID: ${HOMEMONEY_CLIENT_ID:-5}
-      HOMEMONEY_CLIENT_SECRET: ${HOMEMONEY_CLIENT_SECRET:-demo}
-      # Resend over plain SMTP. Defaults are Resend's fixed values, so the only real
-      # secret is the API key; point these elsewhere to switch provider without a
-      # code change.
-      MAIL_HOST: ${MAIL_HOST:-smtp.resend.com}
-      MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME:-resend}
-      # The Resend API key (re_...).
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
-      # Verifies Play purchases with Google. Empty means nothing can be bought; the
-      # paywall reports that rather than taking money into a void, and premium granted
-      # by hand keeps working either way.
-      PLAY_SERVICE_ACCOUNT: ${PLAY_SERVICE_ACCOUNT:-}
-      PLAY_PACKAGE_NAME: ${PLAY_PACKAGE_NAME:-com.personalmoney}
-      PLAY_PRODUCTS: ${PLAY_PRODUCTS:-premium_monthly,premium_yearly}
-    # No `ports:` on purpose. The edge Caddy terminates TLS and reaches us over the
-    # shared network; publishing a host port would expose plain HTTP alongside it.
-    networks:
-      default: {}
-      # Reachable by the edge Caddy as `personalmoney-app` (see deploy/personalmoney.caddy).
       edge:
         aliases:
-          - personalmoney-app
+          - personalmoney-site
 
 networks:
-  # Shared with the edge proxy and the other app stacks. Created once on the VPS:
-  #   docker network create edge
   edge:
     external: true
-
-volumes:
-  db_data:

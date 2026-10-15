@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+
+/* ─── Design Tokens ────────────────────────────────────────────────────── *
+ * Every colour is stored twice: once as bare RGB channels, which is the only
+ * form Tailwind's `<alpha-value>` placeholder can build an rgb() out of, and
+ * once as a ready-to-use colour for the plain CSS below and for inline styles.
+ * Editing a colour means editing the -rgb channel line only.
+ * ----------------------------------------------------------------------- */
+:root {
+  --bg-base-rgb:      13 15 20;
+  --bg-surface-rgb:   22 26 35;
+  --bg-card-rgb:      30 35 48;
+  --bg-hover-rgb:     37 43 59;
+  --border-rgb:       45 52 72;
+  --border-light-rgb: 58 66 96;
+
+  --text-primary-rgb:   240 242 248;
+  --text-secondary-rgb: 139 147 176;
+  --text-muted-rgb:     85 93 124;
+
+  --accent-rgb:       99 102 241;
+  --accent-light-rgb: 129 140 248;
+  --accent-dark-rgb:  79 70 229;
+
+  --green-rgb:  16 185 129;
+  --red-rgb:    239 68 68;
+  --yellow-rgb: 245 158 11;
+  --cyan-rgb:   6 182 212;
+  --purple-rgb: 168 85 247;
+
+  --bg-base:      rgb(var(--bg-base-rgb));
+  --bg-surface:   rgb(var(--bg-surface-rgb));
+  --bg-card:      rgb(var(--bg-card-rgb));
+  --bg-hover:     rgb(var(--bg-hover-rgb));
+  --border:       rgb(var(--border-rgb));
+  --border-light: rgb(var(--border-light-rgb));
+
+  --text-primary:   rgb(var(--text-primary-rgb));
+  --text-secondary: rgb(var(--text-secondary-rgb));
+  --text-muted:     rgb(var(--text-muted-rgb));
+
+  --accent:       rgb(var(--accent-rgb));
+  --accent-light: rgb(var(--accent-light-rgb));
+  --accent-dark:  rgb(var(--accent-dark-rgb));
+  --accent-glow:  rgb(var(--accent-rgb) / 0.25);
+
+  --green:  rgb(var(--green-rgb));
+  --red:    rgb(var(--red-rgb));
+  --yellow: rgb(var(--yellow-rgb));
+  --cyan:   rgb(var(--cyan-rgb));
+  --purple: rgb(var(--purple-rgb));
+
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow:    0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+
+  --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  color-scheme: dark;
+}
+
+/* ─── Light Mode Tokens ────────────────────────────────────────────────── *
+ * Light is not the dark palette with the numbers flipped, because depth does not
+ * flip: on a dark page a raised layer is lighter, on a light page it can only be
+ * whiter, and white is the ceiling. So the ladder is built downwards from the
+ * card - the page sits a tinted step below white, hover a step below that. The
+ * first version of this block put the page at #F8FAFC under white cards, 1.05:1
+ * apart, with a #E2E8F0 border at 1.23:1 holding them apart; on anything but a
+ * colour-calibrated monitor the whole app read as one flat sheet of white. These
+ * values put a card 1.20:1 above the page, which is the separation dark has.
+ * ----------------------------------------------------------------------- */
+[data-theme="light"] {
+  --bg-base-rgb:      230 235 243;
+  --bg-surface-rgb:   255 255 255;
+  --bg-card-rgb:      255 255 255;
+  --bg-hover-rgb:     212 221 233;
+  --border-rgb:       195 204 218;
+  --border-light-rgb: 148 163 184;
+
+  --text-primary-rgb:   15 23 42;
+  /* Slate 500 was 4.76:1 on white and fell under AA the moment the same text
+     landed on a hover row; this clears 4.5:1 on every surface above. */
+  --text-secondary-rgb: 71 85 105;
+  --text-muted-rgb:     90 103 121;
+
+  /* Every accent and status hue goes one or two steps down here. They were picked
+     to glow on near-black; on white the same values are pastels - the indigo is
+     4.47:1, the amber 2.15:1 - so a filled button in white text looks disabled and
+     an icon in --yellow is barely a smudge. The dark palette keeps the bright set.
+     --accent-light keeps its name and loses its literal meaning: it is the emphasis
+     step - the wordmark, a link, a primary button under the cursor - and emphasis on
+     white means going down, not up. Anything reading it gets a stronger indigo here,
+     which is what those call sites wanted from it in dark too. */
+  --accent-rgb:       79 70 229;
+  --accent-light-rgb: 67 56 202;
+  --accent-dark-rgb:  55 48 163;
+
+  --green-rgb:  4 120 87;
+  --red-rgb:    200 30 30;
+  --yellow-rgb: 180 83 9;
+  --cyan-rgb:   14 116 144;
+  --purple-rgb: 126 34 206;
+
+  --accent-glow: rgb(var(--accent-rgb) / 0.15);
+
+  --shadow-sm: 0 1px 2px rgba(15,23,42,0.10);
+  --shadow:    0 4px 10px -2px rgba(15,23,42,0.14), 0 2px 4px -2px rgba(15,23,42,0.08);
+  --shadow-lg: 0 12px 28px -6px rgba(15,23,42,0.20), 0 6px 10px -6px rgba(15,23,42,0.10);
+
+  color-scheme: light;
+}
+
+/* ─── Reset ───────────────────────────────────────────────────────────── */
+html { font-size: 16px; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+/* Preflight drops the native focus ring; put a token-coloured one back so the
+   page stays keyboard-navigable. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--accent-light); box-shadow: 0 0 16px var(--accent-glow); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-light); }
+
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-lg { padding: 13px 26px; font-size: 15px; }
+.btn-icon { padding: 8px; border-radius: var(--radius-sm); }
+
+/* ─── Language Switcher ───────────────────────────────────────────────── */
+.lang-switcher { position: relative; }
+.lang-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 168px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 300;
+}
+.lang-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: left;
+}
+.lang-option:hover { background: var(--bg-hover); color: var(--text-primary); }
+.lang-option.active { color: var(--accent-light); background: var(--accent-glow); }
+
+/* ─── Installation steps ──────────────────────────────────────────────── */
+.code-block {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-base);
+  padding: 16px 18px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+.code-block code { display: block; white-space: pre; }
+.code-block .comment { color: var(--text-muted); }
+
+@tailwind utilities;

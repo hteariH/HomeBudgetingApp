@@ -1,7 +1,12 @@
-# Deploying PersonalMoney
+# Deploying the project page
 
-The stack sits behind the shared `edge` Caddy that owns ports 80/443 on the VPS, the
-same way the wordle and crocodile stacks do. Nothing here publishes a host port.
+`personalmoney.app` serves the project's page (`site/`): what PersonalMoney is and how to
+install it. The app itself is not hosted here; everyone runs their own instance from the
+published image and `docker-compose.yml`.
+
+The page is static. nginx serves the built files behind the shared `edge` Caddy that owns
+ports 80/443 on the VPS, the same way the wordle and crocodile stacks do. Nothing here
+publishes a host port.
 
 ## One-time setup
 
@@ -14,79 +19,43 @@ same way the wordle and crocodile stacks do. Nothing here publishes a host port.
 
 Certificates are issued by the edge Caddy on first request; nothing to do beyond DNS.
 
-### 2. Mail — Resend
+### 2. The edge network
 
-Sending is plain SMTP, so the provider is swappable via environment variables. Resend's
-values are the defaults in `docker-compose.yml`; only the API key is a secret.
-
-1. Add `personalmoney.app` as a domain in Resend.
-2. Add the DNS records Resend generates for it — a DKIM record plus SPF, and usually an
-   MX on a sending subdomain for bounce handling. **Take them from the Resend dashboard
-   rather than copying them from anywhere else**: the DKIM value is unique per domain.
-3. Wait for Resend to show the domain as verified. Until it does, mail either will not
-   send or will land in spam.
-4. Create an API key and put it in the `MAIL_PASSWORD` repository secret.
-
-Consider adding a DMARC record (`_dmarc`, starting at `p=none`) once SPF and DKIM pass.
-It is not required to send, but it is what stops somebody else spoofing the domain.
-
-**Until `MAIL_PASSWORD` is set the app still runs.** Mail failures are swallowed and
-logged, so registration works and nobody is locked out - the confirmation link simply
-never arrives, and users can request another one.
-
-### 3. Secrets
-
-Application secrets live in `/opt/homebudget/.env` on the server, the same way the
-edge and wordle stacks do. Deploys never write to that file, so it survives every
-release and is the one place to look.
-
-Use the generator, which produces the random values on the server so they never travel
-anywhere:
+The site container joins the external `edge` network, which is created once on the VPS
+(it already exists wherever the other stacks run):
 
 ```bash
-scp deploy/init-env.sh <vps>:/tmp/
-ssh <vps> 'sudo bash /tmp/init-env.sh'
+sudo docker network create edge
 ```
 
-It asks only for the Resend key; the database passwords and both secrets are generated
-in place. It refuses to run if the file already exists, because regenerating
-`CRYPTO_SECRET` would silently make every stored bank connection unreadable.
+### 3. GitHub secrets
 
-It prints `JWT_SECRET` and `CRYPTO_SECRET` once at the end - **put them in a password
-manager then**. `CRYPTO_SECRET` cannot be recovered from anywhere else once the disk
-is gone.
+The site workflow needs only the SSH secrets, named the same way as the edge and wordle
+repos so one set of values works everywhere: `SSH_HOST`, `SSH_USER`, `SSH_KEY` and
+optionally `SSH_PORT`.
 
-`.env.example` documents the same fields if you would rather write the file by hand.
+### 4. Stop the old app stack (once)
 
-GitHub only needs the SSH secrets, named the same way as the edge and wordle repos so
-one set of values works everywhere: `SSH_HOST`, `SSH_USER`, `SSH_KEY` and optionally
-`SSH_PORT`. Nothing about the application is stored there any more, so the older
-`DB_*`, `JWT_SECRET`, `CRYPTO_SECRET` and `MAIL_*` repository secrets can be deleted.
+Before this site existed, `personalmoney.app` served the hosted app from `/opt/homebudget`.
+Stop that stack by hand on the VPS:
 
-### 4. The database must be created fresh
+```bash
+cd /opt/homebudget && sudo docker compose down
+```
 
-The schema is not compatible with whatever the pre-Flyway deployment left behind: money
-changed type, the `transfers` table is gone, and constraint names differ. Flyway is
-deliberately not baselined, so it will refuse to run against the old schema rather than
-half-migrate it.
-
-Drop the old database once, before the first deploy of this version.
+Its database volume stays on disk after `down`. If you want a copy of what was in it, take a
+final `mysqldump` before removing the volume; otherwise remove it with
+`sudo docker volume rm homebudget_db_data`.
 
 ## What the deploy does
 
-On push to `master`: run the backend tests and, in parallel, the client's tests and its
-WebAssembly bundle; build and push the image to GHCR; copy `docker-compose.yml` to
-`~/homebudget` and `deploy/personalmoney.caddy` to `/opt/edge/conf.d/`; then bring the
-stack up and reload the shared Caddy.
+The site workflow (`.github/workflows/site.yml`) builds `site/` (`npm test`, `npm run build`)
+and, on the VPS:
 
-The client under `client/` is built in its own job and handed to the image build as an
-artifact, because the backend image has no Android SDK and adding one would be a heavy
-price for a directory of static files. It travels within the run rather than through a
-release, so the server and the web client it serves are always the same commit - there is
-no version to pin and nothing to keep in step by hand.
+- copies `site/dist/` to `/opt/personalmoney-site/dist`;
+- copies `deploy/docker-compose.site.yml` to `/opt/personalmoney-site/docker-compose.yml`;
+- copies `deploy/personalmoney.caddy` to `/opt/edge/conf.d/`;
+- runs `docker compose up -d` in `/opt/personalmoney-site` and reloads the shared Caddy.
 
-Every push to `master` therefore rebuilds both. That is deliberate: a change to either
-side has to reach production as one image, so there are no path filters to get wrong.
-
-The app joins the external `edge` network as `personalmoney-app`; the database stays on
-the stack's own network and is never reachable from the proxy or the internet.
+The container is `personalmoney-site`, reachable on the `edge` network by that alias from
+`deploy/personalmoney.caddy`.

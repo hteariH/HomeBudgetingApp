@@ -1,33 +1,14 @@
-# Edge site config for PersonalMoney. Deployed to /opt/edge/conf.d/personalmoney.caddy.
-# The app container joins the `edge` network with alias `personalmoney-app` and serves the
-# API and the React SPA itself, so a single reverse_proxy target is enough. Caddy obtains
-# and renews the Let's Encrypt cert for this hostname automatically.
+# Edge site config for the PersonalMoney project page. Deployed to
+# /opt/edge/conf.d/personalmoney.caddy.
+# personalmoney.app serves only the static page in site/; the app itself runs on each
+# user's own server. The site container joins the `edge` network with alias
+# `personalmoney-site`. Caddy obtains and renews the Let's Encrypt cert for this
+# hostname automatically.
 personalmoney.app {
 	encode zstd gzip
 
-	# AdMob verifies that the apps declaring this publisher id are really ours by
-	# fetching this file from the developer website named in their store listing.
-	# It is answered here rather than by the application because it belongs to the
-	# domain, not to the budgeting app, and the edge config ships on every deploy.
-	handle /app-ads.txt {
-		header Content-Type "text/plain; charset=utf-8"
-		respond "google.com, pub-4510992616986316, DIRECT, f08c47fec0942fa0" 200
-	}
-
-	# The real client address. Without it every request looks like it came from the
-	# proxy, and the login rate limiter would throttle all users as one.
-	#
-	# The domain is additionally proxied through Cloudflare, which puts the true client
-	# in CF-Connecting-IP; that header is passed through untouched and the application
-	# prefers it. Turning the Cloudflare proxy off later needs no change here.
-	#
-	# Wrapped in `handle` so it is mutually exclusive with the block above: a bare
-	# reverse_proxy directive would otherwise still match /app-ads.txt.
 	handle {
-		reverse_proxy personalmoney-app:8085 {
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
-		}
+		reverse_proxy personalmoney-site:80
 	}
 
 	header {

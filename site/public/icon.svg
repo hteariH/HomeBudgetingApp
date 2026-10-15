@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PersonalMoney">
+  <!--
+    Vector favicon, preferred by browsers that support it: stays crisp on any
+    display where the bitmaps in favicon.ico would be resampled.
+
+    Same mark as the in-app logo: the lucide "trending-up" glyph on the accent to
+    cyan brand gradient. The glyph is the 24x24 lucide viewbox scaled to 70% of the
+    tile and centred, i.e. translate((64 - 44.8) / 2) with scale(44.8 / 24).
+
+    Note for editors: CSS custom property names cannot be written in here, because a
+    double hyphen is not allowed inside an XML comment and silently breaks the file.
+  -->
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="12" fill="url(#brand)"/>
+
+  <g transform="translate(9.6 9.6) scale(1.8667)"
+     fill="none" stroke="#fff" stroke-width="2.5"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 7h6v6"/>
+    <path d="m22 7-8.5 8.5-5-5L2 19"/>
+  </g>
+</svg>

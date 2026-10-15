@@ -1,0 +1,81 @@
+<!doctype html>
+<!--
+  A plain static file, not a route in the page: crawlers that run no JavaScript (Google Play's
+  among them) must be able to read it. Keep the `.html` in the URL for that reason.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy — PersonalMoney</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1b1b1f;
+    --muted: #5a5a66;
+    --rule: #e2e2e8;
+    --accent: #3d4499;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #131317; --fg: #e6e6ea; --muted: #a0a0ae; --rule: #2d2d36; --accent: #aab4ff; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 .25rem; letter-spacing: -.02em; }
+  h2 { font-size: 1.2rem; margin: 2.5rem 0 .6rem; letter-spacing: -.01em; }
+  .updated { color: var(--muted); font-size: .9rem; margin: 0 0 2rem; }
+  a { color: var(--accent); }
+  ul { padding-left: 1.2rem; }
+  li { margin: .35rem 0; }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Privacy — PersonalMoney</h1>
+<p class="updated">Last updated: 15 October 2026</p>
+
+<p>PersonalMoney is software you run yourself. This page says what that means for your data.</p>
+
+<h2>The project collects nothing</h2>
+<p>This website and the project behind it do not collect, receive or store your financial data,
+your account details or your usage. There is no hosted PersonalMoney service to sign up to, and
+no analytics or advertising on this page.</p>
+
+<h2>Whoever runs an instance controls its data</h2>
+<p>Your accounts, transactions, categories and bank connections live in the database of the
+server you install PersonalMoney on. The person who runs that server — you, or whoever invited
+you to theirs — can see and back up that data, decides who may register, and is responsible for
+securing it. If you use somebody else's instance, ask them how they handle it.</p>
+
+<h2>The Android app</h2>
+<ul>
+  <li>It talks only to the server address you enter when you sign in.</li>
+  <li>The one exception is the public <a href="https://frankfurter.dev">Frankfurter</a>
+      exchange-rate API, which receives currency codes only — never amounts or identifiers.</li>
+  <li>It contains no advertising and no analytics.</li>
+</ul>
+
+<h2>Receipt photos</h2>
+<p>Today, receipts are read on your device and the photo is discarded once it has been read;
+nothing is uploaded. When AI-assisted receipt reading arrives, a photo is sent only to the AI
+provider that the owner of your instance has configured, and to nobody else.</p>
+
+<h2>Questions</h2>
+<p>Open an issue in the <a href="https://github.com/hteariH/HomeBudgetingApp">project repository</a>.</p>
+
+<footer>
+  <a href="/">PersonalMoney</a> · Open source under AGPL-3.0
+</footer>
+
+</main>
+</body>
+</html>
