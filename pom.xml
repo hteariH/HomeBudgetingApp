@@ -180,6 +180,14 @@
             <artifactId>core</artifactId>
             <version>3.5.4</version>
         </dependency>
+
+        <!-- ImageIO reads JPEG and PNG on its own; this adds WebP, which Android and some
+             browsers send. Pure Java, so the container needs no native library. -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-webp</artifactId>
+            <version>3.12.0</version>
+        </dependency>
     </dependencies>
 
     <build>

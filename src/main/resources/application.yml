@@ -1,6 +1,11 @@
 spring:
   application:
     name: homebudgeting
+  servlet:
+    multipart:
+      # Receipt photos. The receipt endpoint answers 413 for anything over 15 MB itself.
+      max-file-size: 15MB
+      max-request-size: 16MB
   jackson:
     default-property-inclusion: non_null
     serialization:

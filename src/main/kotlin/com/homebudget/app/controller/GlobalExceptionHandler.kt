@@ -119,6 +119,30 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 409, error = "Set By Environment", message = ex.message)
         )
 
+    /** No model reads receipts for this household; an owner or the administrator can set one up. */
+    @ExceptionHandler(com.homebudget.app.receipt.ReceiptScanUnavailableException::class)
+    fun handleReceiptScanUnavailable(ex: com.homebudget.app.receipt.ReceiptScanUnavailableException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            ErrorResponse(status = 409, error = "Not Set Up", message = ex.message)
+        )
+
+    /** A receipt photo over 15 MB: refused by the service, or earlier by the multipart limit. */
+    @ExceptionHandler(
+        com.homebudget.app.receipt.ReceiptTooLargeException::class,
+        org.springframework.web.multipart.MaxUploadSizeExceededException::class
+    )
+    fun handleTooLarge(ex: Exception): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(
+            ErrorResponse(status = 413, error = "Payload Too Large", message = "The photo is larger than 15 MB")
+        )
+
+    /** Not a JPEG, PNG or WebP this server can read - HEIC included. */
+    @ExceptionHandler(com.homebudget.app.receipt.UnsupportedImageException::class)
+    fun handleUnsupportedImage(ex: com.homebudget.app.receipt.UnsupportedImageException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(
+            ErrorResponse(status = 415, error = "Unsupported Media Type", message = ex.message)
+        )
+
     /** The caller's membership moved after the request was authenticated; they sync again. */
     @ExceptionHandler(com.homebudget.app.household.HouseholdChangedException::class)
     fun handleHouseholdChanged(ex: com.homebudget.app.household.HouseholdChangedException): ResponseEntity<ErrorResponse> =

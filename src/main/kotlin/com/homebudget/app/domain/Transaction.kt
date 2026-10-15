@@ -97,6 +97,14 @@ data class Transaction(
     @Column(name = "external_id", length = 100)
     var externalId: String? = null,
 
+    /**
+     * The receipt this entry was saved from. Eager because responses are built outside
+     * the session (open-in-view is off); it goes when the entry is deleted.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "receipt_id")
+    var receipt: com.homebudget.app.receipt.Receipt? = null,
+
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 

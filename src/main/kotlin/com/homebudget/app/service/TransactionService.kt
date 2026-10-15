@@ -5,6 +5,7 @@ import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.CreateTransactionRequest
 import com.homebudget.app.dto.UpdateTransactionRequest
+import com.homebudget.app.receipt.ReceiptService
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.security.SecurityUtils
 import org.springframework.data.domain.Page
@@ -22,7 +23,8 @@ class TransactionService(
     private val transactionRepo: TransactionRepository,
     private val accountService: AccountService,
     private val categoryService: CategoryService,
-    private val securityUtils: SecurityUtils
+    private val securityUtils: SecurityUtils,
+    private val receiptService: ReceiptService
 ) {
     fun findFiltered(
         accountId: Long?,
@@ -66,12 +68,14 @@ class TransactionService(
         }
 
         val amountMinor = MinorUnits.toMinor(req.amount, account.currency.decimals)
+        val household = securityUtils.getCurrentHousehold()
+        val receipt = req.receiptUuid?.let { receiptService.linkable(it, household, transactionUuid = null) }
 
         // No balance bookkeeping here on purpose - the balance is derived from these
         // rows, so inserting the row *is* the balance update.
         return transactionRepo.save(
             Transaction(
-                household = securityUtils.getCurrentHousehold(),
+                household = household,
                 createdBy = user,
                 account = account,
                 category = category,
@@ -80,7 +84,8 @@ class TransactionService(
                 accountAmountMinor = amountMinor,
                 type = req.type,
                 occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant(),
-                description = req.description
+                description = req.description,
+                receipt = receipt
             )
         )
     }
@@ -100,6 +105,9 @@ class TransactionService(
         req.date?.let { transaction.occurredAt = it.atStartOfDay(ZoneOffset.UTC).toInstant() }
         req.occurredAt?.let { transaction.occurredAt = it }
         req.description?.let { transaction.description = it }
+        req.receiptUuid?.let {
+            transaction.receipt = receiptService.linkable(it, securityUtils.getCurrentHousehold(), transaction.uuid)
+        }
         transaction.updatedAt = Instant.now()
 
         return transactionRepo.save(transaction)
@@ -117,13 +125,17 @@ class TransactionService(
         tombstoneAll(listOf(transaction))
     }
 
+    /** Tombstones [rows]; a receipt saved with one of them is deleted, photo and all. */
     private fun tombstoneAll(rows: List<Transaction>) {
         val now = Instant.now()
+        val receipts = rows.mapNotNull { it.receipt }
         rows.forEach {
             it.deleted = true
             it.updatedAt = now
+            it.receipt = null
         }
         transactionRepo.saveAll(rows)
+        receipts.forEach(receiptService::deleteWithPhoto)
     }
 
     /** Used by the subscription job, which supplies its own instant. */

@@ -100,7 +100,8 @@ fun Transaction.toResponse(balanceMinor: Long, baseDecimals: Int) = TransactionR
     subscriptionId = subscription?.id,
     createdByUserId = createdBy?.id,
     createdAt = createdAt,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    receiptUuid = receipt?.uuid
 )
 
 // ───── Transfer Mappers ─────

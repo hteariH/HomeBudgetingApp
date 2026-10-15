@@ -154,7 +154,9 @@ data class TransactionResponse(
     /** Null for entries no person wrote, such as subscription charges. */
     val createdByUserId: Long?,
     val createdAt: LocalDateTime,
-    val updatedAt: Instant
+    val updatedAt: Instant,
+    /** The receipt this entry was saved from, if any. */
+    val receiptUuid: String? = null
 )
 
 data class CreateTransactionRequest(
@@ -166,7 +168,9 @@ data class CreateTransactionRequest(
     val date: LocalDate,
     /** Preferred over [date] when the client knows the time of day. */
     val occurredAt: Instant? = null,
-    val description: String? = null
+    val description: String? = null,
+    /** A receipt of the household's from `POST /api/receipts`; it is kept with this entry. */
+    val receiptUuid: String? = null
 )
 
 data class UpdateTransactionRequest(
@@ -174,7 +178,9 @@ data class UpdateTransactionRequest(
     val amount: BigDecimal? = null,
     val date: LocalDate? = null,
     val occurredAt: Instant? = null,
-    val description: String? = null
+    val description: String? = null,
+    /** Attaches a receipt; null leaves the current one. */
+    val receiptUuid: String? = null
 )
 
 // ───────── Transfer DTOs ─────────
