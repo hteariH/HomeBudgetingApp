@@ -19,6 +19,7 @@ export const AppRoutes = {
     analytics: `${APP}/analytics`,
     banks: `${APP}/banks`,
     homeMoney: `${APP}/import/homemoney`,
+    admin: `${APP}/admin`,
     settings: `${APP}/settings`,
     onboarding: `${APP}/onboarding`,
 } as const;

@@ -125,4 +125,13 @@ export const endpoints = {
     me: () => api<T.UserDto>('/users/me'),
     deleteMe: () => api<void>('/users/me', { method: 'DELETE' }),
     logout: () => api<void>('/auth/logout', { method: 'POST' }),
+
+    // ── the instance and its administration ─────────────────────────────────
+    instance: () => api<T.InstanceDto>('/instance'),
+    adminUsers: () => api<T.AdminUserDto[]>('/admin/users'),
+    adminRegistration: () => api<T.RegistrationSettingDto>('/admin/registration'),
+    setAdminRegistration: (open: boolean) =>
+        api<T.RegistrationSettingDto>('/admin/registration', { method: 'PUT', json: { open } }),
+    adminResetLink: (userId: number) => api<T.ResetLinkDto>(`/admin/users/${userId}/reset-link`, { method: 'POST' }),
+    adminDeleteUser: (userId: number) => api<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
 };

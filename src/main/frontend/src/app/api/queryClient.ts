@@ -24,6 +24,9 @@ export const qk = {
     me: ['me'] as const,
     bank: ['bank'] as const,
     homeMoney: ['homemoney'] as const,
+    instance: ['instance'] as const,
+    adminUsers: ['admin', 'users'] as const,
+    adminRegistration: ['admin', 'registration'] as const,
 };
 
 /**

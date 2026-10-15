@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, Shield, User } from 'lucide-react';
 import { useT } from '../../i18n';
+import { useMe } from '../api/hooks';
 import { AppRoutes } from '../lib/routes';
 
 /**
@@ -15,6 +16,7 @@ export const AccountMenu: React.FC<{ email: string | null; showName: boolean; on
 }) => {
     const t = useT();
     const navigate = useNavigate();
+    const { data: me } = useMe();
     const [open, setOpen] = useState(false);
     const root = useRef<HTMLDivElement>(null);
 
@@ -65,6 +67,11 @@ export const AccountMenu: React.FC<{ email: string | null; showName: boolean; on
                 <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[220px] rounded-token border border-line bg-card p-1.5 shadow-token-lg">
                     {email && <div className="truncate px-3 py-2 text-xs text-ink-dim">{email}</div>}
                     <div className="my-1 border-t border-line" />
+                    {me?.role === 'ADMIN' && (
+                        <button role="menuitem" className={`${item} text-ink-soft hover:text-ink`} onClick={() => go(AppRoutes.admin)}>
+                            <Shield size={16} /> {t('nav_admin')}
+                        </button>
+                    )}
                     <button role="menuitem" className={`${item} text-ink-soft hover:text-ink`} onClick={() => go(AppRoutes.settings)}>
                         <Settings size={16} /> {t('dashboard_settings')}
                     </button>

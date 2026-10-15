@@ -437,6 +437,7 @@ export interface UserDto {
     firstName?: string;
     lastName?: string;
     baseCurrency?: CurrencyDto | null;
+    role?: 'USER' | 'ADMIN';
 }
 
 export interface JwtResponseDto {
@@ -446,4 +447,35 @@ export interface JwtResponseDto {
     firstName?: string;
     lastName?: string;
     role?: string;
+}
+
+export interface InstanceDto {
+    name: string;
+    version: string;
+    apiVersion: number;
+    setupRequired: boolean;
+    registrationOpen: boolean;
+    mailEnabled: boolean;
+    bankProviders: string[];
+}
+
+export interface AdminUserDto {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: 'USER' | 'ADMIN';
+    createdAt: string;
+    lastSignInAt?: string | null;
+    householdId?: number | null;
+}
+
+export interface RegistrationSettingDto {
+    open: boolean;
+    lockedByEnvironment: boolean;
+}
+
+export interface ResetLinkDto {
+    path: string;
+    expiresAt: string;
 }

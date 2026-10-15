@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, ExternalLink } from 'lucide-react';
 import { LANGUAGES, useI18n, type Lang } from '../../../i18n';
 import { useTheme, type ThemeMode } from '../../../theme';
 import { endpoints } from '../../api/endpoints';
 import { useBaseCurrency, useCurrencies } from '../../api/hooks';
-import { queryClient } from '../../api/queryClient';
+import { queryClient, qk } from '../../api/queryClient';
 import { session } from '../../api/session';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { CurrencySelect } from '../../components/CurrencySelect';
@@ -15,9 +16,8 @@ import { AppRoutes } from '../../lib/routes';
 import { prefs } from '../../prefs';
 import { Page } from '../../shell/Page';
 
-/** Carried over from the Compose web build's AppInfo. */
-const PRIVACY_POLICY_URL = 'https://gist.github.com/hteariH/bfd7d6412cc41a227bcc53646655bfc2';
-const VERSION = '0.1.0';
+/** The instance serves its own privacy page. */
+const PRIVACY_POLICY_URL = '/privacy.html';
 
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="px-5 pb-2 pt-4 text-xs font-semibold uppercase tracking-wide text-brand-light">{children}</div>
@@ -34,6 +34,7 @@ const SettingsPage: React.FC = () => {
     const navigate = useNavigate();
     const base = useBaseCurrency();
     const { data: currencies = [] } = useCurrencies();
+    const { data: instance } = useQuery({ queryKey: qk.instance, queryFn: endpoints.instance, staleTime: Infinity });
     const [deleting, setDeleting] = useState<{ open: boolean; busy: boolean; error: string | null }>({
         open: false,
         busy: false,
@@ -117,7 +118,7 @@ const SettingsPage: React.FC = () => {
                     <div className="border-t border-line px-5 py-3.5">
                         <span className="block text-sm font-medium text-ink">{t('settings_about')}</span>
                         <span className="block text-xs text-ink-soft">
-                            {t('settings_version')} {VERSION}
+                            {t('settings_version')} {instance?.version ?? '…'}
                         </span>
                     </div>
                 </Card>
