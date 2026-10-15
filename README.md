@@ -120,6 +120,14 @@ money.example.com {
 }
 ```
 
+The proxy must accept request bodies of at least 16 MB, or receipt photos are refused before
+they reach the server. Caddy and Traefik have no limit by default; Nginx (and Nginx Proxy
+Manager) allows only 1 MB unless told otherwise:
+
+```
+client_max_body_size 16m;
+```
+
 ## Updating
 
 ```bash
