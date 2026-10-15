@@ -2,7 +2,6 @@ package com.personalmoney.core.di
 
 import androidx.room.Room
 import androidx.room.withTransaction
-import com.personalmoney.BuildConfig
 import com.personalmoney.core.auth.AuthRepository
 import com.personalmoney.core.auth.AndroidTokenStore
 import com.personalmoney.core.auth.TokenStore
@@ -102,7 +101,10 @@ val networkModule = module {
     // OkHttp is the Ktor engine on Android. On iOS this becomes Darwin and on wasm Js;
     // only this line changes, because everything above it is engine-agnostic.
     single<HttpClientEngine> { OkHttp.create() }
-    single { HomeBudgetApi(createBackendClient(get(), get(), BuildConfig.API_BASE_URL, get())) }
+    single {
+        val tokens = get<TokenStore>()
+        HomeBudgetApi(createBackendClient(get(), get(), { tokens.serverUrl }, tokens))
+    }
     single { FrankfurterApi(createPlainClient(get(), get(), frankfurterBaseUrl)) }
 }
 

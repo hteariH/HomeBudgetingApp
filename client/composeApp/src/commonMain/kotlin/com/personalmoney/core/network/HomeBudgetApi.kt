@@ -24,6 +24,9 @@ import io.ktor.http.contentType
  */
 class HomeBudgetApi(private val client: HttpClient) {
 
+    /** Absolute on purpose: it is asked of an address before that address is the client's base. */
+    suspend fun instance(baseUrl: String): InstanceDto = client.get("${baseUrl}api/instance").body()
+
     suspend fun login(body: LoginRequestDto): JwtResponseDto =
         client.post("api/auth/login") { jsonBody(body) }.body()
 

@@ -17,6 +17,7 @@ class FakeTokenStore(signedIn: Boolean = true) : TokenStore {
     override var accessToken: String? = if (signedIn) "access" else null
     override var refreshToken: String? = if (signedIn) "refresh" else null
     override var email: String? = if (signedIn) "someone@example.com" else null
+    override var serverUrl: String? = null
     var cleared = false
 
     override fun save(access: String, refresh: String, email: String?) {

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    A self-hosted server is often a LAN address with no certificate, or a home domain
+    with a certificate from the owner's own CA. So: plain http is allowed (the sign-in
+    screen warns about it), and CAs the user installed on the phone are trusted.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

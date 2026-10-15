@@ -6,6 +6,7 @@ import com.personalmoney.core.network.HomeBudgetApi
 import com.personalmoney.core.network.LoginRequestDto
 import com.personalmoney.core.network.RegisterRequestDto
 import io.ktor.client.plugins.ResponseException
+import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
 import kotlinx.coroutines.flow.StateFlow
 
@@ -30,24 +31,57 @@ class AuthRepository constructor(
     val signedIn: StateFlow<Boolean> = tokenStore.signedIn
     val email: String? get() = tokenStore.email
 
-    suspend fun login(email: String, password: String): AuthResult = runCatchingAuth {
+    /** The server last signed in to, so the sign-in form can offer it again. */
+    val lastServer: String? get() = tokenStore.serverUrl
+
+    /**
+     * Asks a typed address who it is, before anyone sends it a password.
+     *
+     * The answer tells the UI what to say: not a URL at all, nothing there, something there
+     * that is not ours, or ours but speaking an API this build cannot.
+     */
+    suspend fun checkServer(input: String): ServerCheck {
+        val base = ServerAddress.normalize(input) ?: return ServerCheck.Invalid
+        return try {
+            val instance = api.instance(base)
+            if (instance.apiVersion !in ServerAddress.MIN_API_VERSION..ServerAddress.MAX_API_VERSION) {
+                ServerCheck.Unsupported(instance.apiVersion)
+            } else {
+                ServerCheck.Ok(base, instance)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            ServerCheck.Unreachable
+        } catch (e: Exception) {
+            // A 404, an HTML page, JSON of some other shape: something answered, and it is
+            // not a PersonalMoney server.
+            ServerCheck.NotPersonalMoney
+        }
+    }
+
+    /** [baseUrl] is the address [checkServer] approved; it becomes the client's base. */
+    suspend fun login(baseUrl: String, email: String, password: String): AuthResult = runCatchingAuth {
+        tokenStore.serverUrl = baseUrl
         val response = api.login(LoginRequestDto(email.trim(), password))
         tokenStore.save(response.token, response.refreshToken, response.email)
         AuthResult.Success
     }
 
     suspend fun register(
+        baseUrl: String,
         email: String,
         password: String,
         firstName: String,
         lastName: String
     ): AuthResult = runCatchingAuth {
+        tokenStore.serverUrl = baseUrl
         api.register(
             RegisterRequestDto(email.trim(), password, firstName.trim(), lastName.trim())
         )
         // Registration does not return tokens, so sign in straight away to spare the
         // user typing the same credentials twice.
-        login(email, password)
+        login(baseUrl, email, password)
     }
 
     /**

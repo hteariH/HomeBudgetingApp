@@ -52,12 +52,13 @@ class AuthFormResetTest {
     }
 
     /** A login response shaped like the server's, so `AuthRepository` can parse it. */
-    private fun signInEngine() = MockEngine {
-        respond(
-            content = """{"token":"a","refreshToken":"r","email":"first@example.com"}""",
-            status = HttpStatusCode.OK,
-            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
-        )
+    private fun signInEngine() = MockEngine { request ->
+        val body = if (request.url.encodedPath == "/api/instance") {
+            """{"name":"PersonalMoney","version":"1.0.0","apiVersion":1,"setupRequired":false,"registrationOpen":true,"mailEnabled":false,"bankProviders":[]}"""
+        } else {
+            """{"token":"a","refreshToken":"r","email":"first@example.com"}"""
+        }
+        respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
     }
 
     private fun viewModel(engine: MockEngine = signInEngine()): Pair<AuthViewModel, FakeTokenStore> {
@@ -73,6 +74,7 @@ class AuthFormResetTest {
     @Test
     fun `a successful sign-in does not leave the password in memory`() = authTest {
         val (viewModel, _) = viewModel()
+        viewModel.onServerAddressChange("https://money.example.com")
         viewModel.onEmailChange("first@example.com")
         viewModel.onPasswordChange("a-real-password")
 

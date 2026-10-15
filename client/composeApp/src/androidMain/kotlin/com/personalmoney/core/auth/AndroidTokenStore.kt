@@ -43,6 +43,12 @@ class AndroidTokenStore(
         get() = prefs.getString(KEY_EMAIL, null)
         set(value) = prefs.edit().putString(KEY_EMAIL, value).apply()
 
+    override var serverUrl: String?
+        get() = prefs.getString(KEY_SERVER, null)
+        set(value) = prefs.edit().apply {
+            if (value == null) remove(KEY_SERVER) else putString(KEY_SERVER, value)
+        }.apply()
+
     override fun save(access: String, refresh: String, email: String?) {
         prefs.edit()
             .putString(KEY_ACCESS, access)
@@ -53,7 +59,12 @@ class AndroidTokenStore(
     }
 
     override fun clear() {
-        prefs.edit().clear().apply()
+        // The server address stays: signing out does not forget where to sign in again.
+        prefs.edit()
+            .remove(KEY_ACCESS)
+            .remove(KEY_REFRESH)
+            .remove(KEY_EMAIL)
+            .apply()
         _signedIn.value = false
     }
 
@@ -92,5 +103,6 @@ class AndroidTokenStore(
         const val KEY_ACCESS = "access_token"
         const val KEY_REFRESH = "refresh_token"
         const val KEY_EMAIL = "email"
+        const val KEY_SERVER = "server_url"
     }
 }

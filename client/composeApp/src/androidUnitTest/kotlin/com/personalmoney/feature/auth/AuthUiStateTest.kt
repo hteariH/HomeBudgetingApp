@@ -16,10 +16,11 @@ class AuthUiStateTest {
 
     private val short = "short"
     private val long = "a".repeat(AuthUiState.MIN_PASSWORD_LENGTH)
+    private val server = "money.example.com"
 
     @Test
     fun `a short password can still sign in`() {
-        val state = AuthUiState(email = "user@example.com", password = short)
+        val state = AuthUiState(serverAddress = server, email = "user@example.com", password = short)
 
         // The server accepts it, so the client must not be the one refusing.
         assertTrue(state.canSubmit)
@@ -28,6 +29,7 @@ class AuthUiStateTest {
     @Test
     fun `a short password cannot register`() {
         val state = AuthUiState(
+            serverAddress = server,
             email = "user@example.com",
             password = short,
             firstName = "Ada",
@@ -43,6 +45,7 @@ class AuthUiStateTest {
     @Test
     fun `registration still needs both names`() {
         val base = AuthUiState(
+            serverAddress = server,
             email = "user@example.com",
             password = long,
             registerMode = true,
@@ -55,15 +58,31 @@ class AuthUiStateTest {
 
     @Test
     fun `an empty password submits nothing`() {
-        val state = AuthUiState(email = "user@example.com", password = "")
+        val state = AuthUiState(serverAddress = server, email = "user@example.com", password = "")
 
         assertFalse(state.canSubmit)
     }
 
     @Test
     fun `a request already in flight cannot be sent twice`() {
-        val state = AuthUiState(email = "user@example.com", password = long, busy = true)
+        val state = AuthUiState(serverAddress = server, email = "user@example.com", password = long, busy = true)
 
         assertFalse(state.canSubmit)
+    }
+
+    @Test
+    fun `nothing can be submitted without a server address`() {
+        val state = AuthUiState(email = "user@example.com", password = long)
+
+        assertFalse(state.canSubmit)
+        assertTrue(state.copy(serverAddress = server).canSubmit)
+    }
+
+    @Test
+    fun `only an explicit http address is flagged as cleartext`() {
+        assertTrue(AuthUiState(serverAddress = "http://192.168.1.10:8080").cleartext)
+        assertFalse(AuthUiState(serverAddress = "192.168.1.10:8080").cleartext)
+        assertFalse(AuthUiState(serverAddress = "https://money.example.com").cleartext)
+        assertFalse(AuthUiState(serverAddress = "").cleartext)
     }
 }

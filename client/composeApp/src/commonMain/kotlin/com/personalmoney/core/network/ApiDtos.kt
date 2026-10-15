@@ -204,3 +204,15 @@ data class ApiErrorDto(
     val error: String = "",
     @SerialName("message") val message: String? = null
 )
+
+/** `/api/instance`: what a server offers, read before anyone signs in. */
+@Serializable
+data class InstanceDto(
+    val name: String,
+    val version: String = "",
+    val apiVersion: Int,
+    val setupRequired: Boolean = false,
+    val registrationOpen: Boolean = false,
+    val mailEnabled: Boolean = false,
+    val bankProviders: List<String> = emptyList()
+)

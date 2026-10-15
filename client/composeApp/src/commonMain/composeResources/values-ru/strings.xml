@@ -253,6 +253,14 @@
     <string name="auth_create_account">Создать аккаунт</string>
     <string name="auth_need_account">Нет аккаунта? Зарегистрируйтесь</string>
     <string name="auth_have_account">Уже есть аккаунт? Войдите</string>
+    <string name="auth_server_label">Адрес сервера</string>
+    <string name="auth_server_hint">Адрес, по которому открывается PersonalMoney, например money.example.com или 192.168.1.10:8080</string>
+    <string name="auth_server_cleartext_warning">Этот адрес использует обычный http: трафик не шифруется. Используйте его только в доверенной сети.</string>
+    <string name="auth_server_invalid">Это не адрес сервера.</string>
+    <string name="auth_server_unreachable">Не удалось связаться с сервером. Проверьте адрес и что вы в нужной сети.</string>
+    <string name="auth_server_not_personalmoney">По этому адресу кто-то отвечает, но это не сервер PersonalMoney.</string>
+    <string name="auth_server_unsupported">Сервер использует API версии %1$d, которую это приложение не поддерживает. Обновите приложение или сервер.</string>
+    <string name="auth_registration_closed">Регистрация на этом сервере закрыта. Попросите аккаунт у того, кто его администрирует.</string>
     <string name="settings_account">Аккаунт</string>
     <string name="settings_sign_out">Выйти</string>
     <string name="settings_sign_out_confirm">Выйти? Локальные данные будут удалены с устройства. На сервере они сохранятся.</string>

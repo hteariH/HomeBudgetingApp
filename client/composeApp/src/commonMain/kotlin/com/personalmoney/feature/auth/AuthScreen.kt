@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material3.Button
@@ -56,6 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.personalmoney.core.auth.ServerCheck
 import com.personalmoney.core.ui.theme.Accent
 import com.personalmoney.core.ui.webChrome
 import com.personalmoney.core.ui.theme.LocalFinanceColors
@@ -128,21 +130,28 @@ fun AuthScreen(
                         Spacer(Modifier.height(28.dp))
                         AuthCard(state = state, viewModel = viewModel)
                         Spacer(Modifier.height(28.dp))
-                        TextButton(onClick = viewModel::toggleMode, enabled = !state.busy) {
-                            Text(
-                                stringResource(
-                                    if (state.registerMode) Res.string.auth_have_account
-                                    else Res.string.auth_need_account
-                                ),
-                                style = MaterialTheme.typography.bodyMedium,
-                                // The scheme's accent, not the palette's light step: that
-                                // one is the indigo picked to carry on near-black, and on
-                                // the light theme's page it is 3.0:1 - a link that reads as
-                                // disabled. `primary` is the same colour in dark and the
-                                // darker step in light.
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold,
-                            )
+                        // A server that has closed registration has nothing to switch to, and
+                        // until an address has been checked there is no way to know. In
+                        // register mode the toggle stays regardless, or a closed server would
+                        // leave no way back to signing in.
+                        val instance = state.instance
+                        if (state.registerMode || instance == null || instance.registrationOpen || instance.setupRequired) {
+                            TextButton(onClick = viewModel::toggleMode, enabled = !state.busy) {
+                                Text(
+                                    stringResource(
+                                        if (state.registerMode) Res.string.auth_have_account
+                                        else Res.string.auth_need_account
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    // The scheme's accent, not the palette's light step: that
+                                    // one is the indigo picked to carry on near-black, and on
+                                    // the light theme's page it is 3.0:1 - a link that reads as
+                                    // disabled. `primary` is the same colour in dark and the
+                                    // darker step in light.
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
                         }
                     }
                 }
@@ -277,6 +286,33 @@ private fun AuthCard(state: AuthUiState, viewModel: AuthViewModel) {
             Modifier.padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            LabelledField(
+                label = stringResource(Res.string.auth_server_label),
+                value = state.serverAddress,
+                onValueChange = viewModel::onServerAddressChange,
+                icon = Icons.Outlined.Dns,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                hint = stringResource(Res.string.auth_server_hint),
+            )
+            if (state.cleartext) {
+                Text(
+                    stringResource(Res.string.auth_server_cleartext_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            state.serverProblem?.let { problem ->
+                ErrorAlert(
+                    when (problem) {
+                        ServerCheck.Invalid -> stringResource(Res.string.auth_server_invalid)
+                        ServerCheck.Unreachable -> stringResource(Res.string.auth_server_unreachable)
+                        ServerCheck.NotPersonalMoney -> stringResource(Res.string.auth_server_not_personalmoney)
+                        is ServerCheck.Unsupported -> stringResource(Res.string.auth_server_unsupported, problem.apiVersion)
+                        is ServerCheck.Ok -> ""
+                    }
+                )
+            }
+
             if (state.registerMode) {
                 LabelledField(
                     label = stringResource(Res.string.auth_first_name),

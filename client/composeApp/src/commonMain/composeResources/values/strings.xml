@@ -277,6 +277,14 @@
     <string name="auth_create_account">Create account</string>
     <string name="auth_need_account">No account yet? Register</string>
     <string name="auth_have_account">Already have an account? Sign in</string>
+    <string name="auth_server_label">Server address</string>
+    <string name="auth_server_hint">The address you open PersonalMoney at, e.g. money.example.com or 192.168.1.10:8080</string>
+    <string name="auth_server_cleartext_warning">This address uses plain http: traffic to it is not encrypted. Use it only on a network you trust.</string>
+    <string name="auth_server_invalid">That is not a server address.</string>
+    <string name="auth_server_unreachable">Could not reach that server. Check the address and that you are on the right network.</string>
+    <string name="auth_server_not_personalmoney">Something answered at that address, but it is not a PersonalMoney server.</string>
+    <string name="auth_server_unsupported">That server speaks API version %1$d, which this app does not support. Update the app or the server.</string>
+    <string name="auth_registration_closed">Registration on this server is closed. Ask the person who runs it for an account.</string>
     <string name="settings_account">Account</string>
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_sign_out_confirm">Sign out? Local data will be removed from this device. It stays on the server.</string>

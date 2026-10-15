@@ -34,13 +34,15 @@ fun createJson(): Json = Json {
 private const val TIMEOUT_MS = 20_000L
 
 /**
- * Requests that mint tokens; the bearer header must never ride along on these.
+ * Requests that mint tokens, and the unauthenticated instance probe; the bearer header must
+ * never ride along on these.
  *
  * Matched on path segments rather than a string suffix so it holds regardless of how the
  * base URL is spelled (trailing slash, sub-path deployment).
  */
 private fun isAuthEndpoint(segments: List<String>): Boolean {
     val parts = segments.filter { it.isNotEmpty() }
+    if (parts.size >= 2 && parts[parts.size - 2] == "api" && parts.last() == "instance") return true
     if (parts.size < 2) return false
     return parts[parts.size - 2] == "auth" &&
         parts[parts.size - 1] in setOf("login", "register", "refresh")
@@ -75,7 +77,7 @@ fun createPlainClient(
 fun createBackendClient(
     engine: HttpClientEngine,
     json: Json,
-    baseUrl: String,
+    baseUrl: () -> String?,
     tokenStore: TokenStore,
 ): HttpClient = HttpClient(engine) {
     expectSuccess = true
@@ -85,7 +87,9 @@ fun createBackendClient(
         requestTimeoutMillis = TIMEOUT_MS
     }
     install(Logging) { level = LogLevel.INFO }
-    defaultRequest { url(baseUrl) }
+    // Read per request: the address is whatever the user signed in to, and can change
+    // without rebuilding the client.
+    defaultRequest { baseUrl()?.let { url(it) } }
 
     install(Auth) {
         bearer {

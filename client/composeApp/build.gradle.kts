@@ -21,12 +21,6 @@ val hasReleaseSigning = keystoreProps.getProperty("storeFile").orEmpty().isNotBl
 val privacyPolicyUrl = keystoreProps.getProperty("privacyPolicyUrl")
     ?: "https://gist.github.com/hteariH/bfd7d6412cc41a227bcc53646655bfc2"
 
-// Backend the app syncs with. 10.0.2.2 is the emulator's route to the host machine,
-// so a debug build talks to a server running locally; release points at production.
-// Override either by putting apiBaseUrl / apiBaseUrlDebug in keystore.properties.
-val apiBaseUrl = keystoreProps.getProperty("apiBaseUrl") ?: "https://homebudget.example.com/"
-val apiBaseUrlDebug = keystoreProps.getProperty("apiBaseUrlDebug") ?: "http://10.0.2.2:8085/"
-
 kotlin {
     androidTarget {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
@@ -227,7 +221,6 @@ android {
             versionNameSuffix = "-debug"
             isDebuggable = true
             buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
-            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrlDebug\"")
         }
         release {
             isMinifyEnabled = true
@@ -237,7 +230,6 @@ android {
                 "proguard-rules.pro"
             )
             buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
-            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -282,16 +274,6 @@ android {
     sourceSets {
         getByName("androidTest") {
             assets.srcDir("$projectDir/schemas")
-        }
-
-        // The multiplatform plugin maps `androidDebug` onto the debug build type for
-        // Kotlin and for resources, but not for the manifest - AGP looks for that under
-        // `src/debug`. The overlay was therefore never merged, and the cleartext
-        // exemption it points at sat in the APK doing nothing: a debug build could not
-        // reach a server on the host machine at all. Named explicitly so the manifest can
-        // stay next to the resource it references.
-        getByName("debug") {
-            manifest.srcFile("src/androidDebug/AndroidManifest.xml")
         }
     }
 }

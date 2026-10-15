@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalmoney.core.auth.AuthRepository
 import com.personalmoney.core.auth.AuthResult
+import com.personalmoney.core.auth.ServerAddress
+import com.personalmoney.core.auth.ServerCheck
+import com.personalmoney.core.network.InstanceDto
+import com.personalmoney.resources.*
 import com.personalmoney.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,8 +16,14 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 data class AuthUiState(
+    val serverAddress: String = "",
+    /** Why the typed address was refused; never [ServerCheck.Ok]. */
+    val serverProblem: ServerCheck? = null,
+    /** What the server said about itself, once the address checked out. */
+    val instance: InstanceDto? = null,
     val email: String = "",
     val password: String = "",
     val firstName: String = "",
@@ -34,13 +44,17 @@ data class AuthUiState(
      * about typing one you already have.
      */
     val canSubmit: Boolean
-        get() = !busy && email.contains('@') && if (registerMode) {
+        get() = !busy && serverAddress.isNotBlank() && email.contains('@') && if (registerMode) {
             password.length >= MIN_PASSWORD_LENGTH &&
                 firstName.isNotBlank() &&
                 lastName.isNotBlank()
         } else {
             password.isNotBlank()
         }
+
+    /** The typed address is plain http, which the screen warns about. */
+    val cleartext: Boolean
+        get() = ServerAddress.normalize(serverAddress)?.let(ServerAddress::isCleartext) == true
 
     companion object {
         const val MIN_PASSWORD_LENGTH = 10
@@ -52,7 +66,7 @@ class AuthViewModel constructor(
     private val syncTrigger: SyncTrigger
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(AuthUiState())
+    private val _state = MutableStateFlow(freshState())
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
 
     init {
@@ -69,8 +83,18 @@ class AuthViewModel constructor(
             authRepository.signedIn
                 .drop(1)
                 .filter { !it }
-                .collect { _state.value = AuthUiState() }
+                .collect { _state.value = freshState() }
         }
+    }
+
+    /** An empty form, with the server last signed in to already filled in. */
+    private fun freshState(signedIn: Boolean = false) = AuthUiState(
+        serverAddress = authRepository.lastServer?.removeSuffix("/") ?: "",
+        signedIn = signedIn,
+    )
+
+    fun onServerAddressChange(value: String) = _state.update {
+        it.copy(serverAddress = value, serverProblem = null, instance = null, error = null)
     }
 
     fun onEmailChange(value: String) = _state.update { it.copy(email = value, error = null) }
@@ -88,15 +112,29 @@ class AuthViewModel constructor(
         _state.update { it.copy(busy = true, error = null) }
 
         viewModelScope.launch {
+            val check = authRepository.checkServer(current.serverAddress)
+            if (check !is ServerCheck.Ok) {
+                _state.update { it.copy(busy = false, serverProblem = check) }
+                return@launch
+            }
+            val instance = check.instance
+            _state.update { it.copy(instance = instance) }
+            if (current.registerMode && !instance.registrationOpen && !instance.setupRequired) {
+                val closed = getString(Res.string.auth_registration_closed)
+                _state.update { it.copy(busy = false, error = closed) }
+                return@launch
+            }
+
             val result = if (current.registerMode) {
                 authRepository.register(
+                    baseUrl = check.baseUrl,
                     email = current.email,
                     password = current.password,
                     firstName = current.firstName,
                     lastName = current.lastName
                 )
             } else {
-                authRepository.login(current.email, current.password)
+                authRepository.login(check.baseUrl, current.email, current.password)
             }
 
             when (result) {
@@ -107,7 +145,7 @@ class AuthViewModel constructor(
                     // A fresh state rather than a copy: the credentials have done their
                     // job, and there is no reason for a plaintext password to sit in
                     // memory for as long as the app runs.
-                    _state.value = AuthUiState(signedIn = true)
+                    _state.value = freshState(signedIn = true)
                 }
                 is AuthResult.Failure ->
                     _state.update { it.copy(busy = false, error = result.message) }
