@@ -1,8 +1,10 @@
 package com.homebudget.app.service
 
 import com.homebudget.app.domain.Household
+import com.homebudget.app.domain.HouseholdRole
 import com.homebudget.app.domain.Role
 import com.homebudget.app.domain.User
+import com.homebudget.app.household.requireOwner
 import com.homebudget.app.repository.HouseholdMemberRepository
 import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.UserRepository
@@ -25,6 +27,7 @@ class UserService(
     fun getCurrentUser(): User = securityUtils.getCurrentUser()
 
     fun updateBaseCurrency(currencyId: Long): Household {
+        requireOwner(memberRepository.findFirstByUserId(getCurrentUser().id)!!)
         val household = householdRepository.findById(securityUtils.getCurrentHousehold().id).orElseThrow()
         household.baseCurrency = currencyService.findById(currencyId)
         household.updatedAt = Instant.now()
@@ -54,7 +57,20 @@ class UserService(
      * rows, and JPQL would not see those rows at all thanks to @SQLRestriction.
      */
     fun deleteUser(user: User) {
-        val membership = memberRepository.findFirstByUserId(user.id)
+        val membership = memberRepository.findFirstByUserId(user.id)?.also {
+            // The household's lock, as membership changes and joins take it; then the row
+            // as it is now, since a hand-over may have landed while this call waited.
+            householdRepository.lockById(it.household.id)
+            em.refresh(it)
+        }
+        if (membership != null && membership.role == HouseholdRole.OWNER &&
+            memberRepository.countByHouseholdId(membership.household.id) > 1
+        ) {
+            // Never leave a household without an owner: the longest-standing member takes over.
+            memberRepository.findAllByHouseholdIdOrderByJoinedAtAscIdAsc(membership.household.id)
+                .first { it.user.id != user.id }
+                .let { memberRepository.save(it.apply { role = HouseholdRole.OWNER }) }
+        }
         if (membership != null && memberRepository.countByHouseholdId(membership.household.id) == 1L) {
             deleteHousehold(membership.household.id)
         }

@@ -8,6 +8,7 @@ import com.homebudget.app.domain.RateSource
 import com.homebudget.app.domain.SubscriptionFrequency
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.*
+import com.homebudget.app.household.MembershipService
 import com.homebudget.app.repository.*
 import com.homebudget.app.security.UserPrincipal
 import com.homebudget.app.service.*
@@ -47,6 +48,8 @@ open class HouseholdIsolationTest {
     @Autowired lateinit var transactionService: TransactionService
     @Autowired lateinit var transferService: TransferService
     @Autowired lateinit var bankConnectionService: BankConnectionService
+    @Autowired lateinit var membershipService: MembershipService
+    @Autowired lateinit var householdService: HouseholdService
     @Autowired lateinit var accountRepository: AccountRepository
     @Autowired lateinit var categoryRepository: CategoryRepository
     @Autowired lateinit var subscriptionRepository: SubscriptionRepository
@@ -194,6 +197,20 @@ open class HouseholdIsolationTest {
 
         identity.signIn(alice)
         assertEquals("Shared cash", accountService.findById(aliceAccountId()).name)
+    }
+
+    @Test
+    fun `a member who leaves no longer sees the family's books`() {
+        val partner = identity.joinAs("partner", alice.household)
+        identity.signIn(partner)
+        assertEquals(listOf("Alice cash"), accountService.findAll().map { it.name })
+
+        membershipService.leave()
+
+        // The next request resolves the principal afresh, now to the partner's own household.
+        identity.signIn(UserPrincipal(partner.user, householdService.householdOf(partner.user)))
+        assertTrue(accountService.findAll().isEmpty())
+        assertTrue(syncService.pull(Instant.EPOCH, 500).changes.accounts.isEmpty())
     }
 
     @Test

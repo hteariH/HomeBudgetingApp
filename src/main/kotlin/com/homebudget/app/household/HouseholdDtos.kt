@@ -28,4 +28,8 @@ data class HouseholdResponse(
     val members: List<MemberResponse>
 )
 
+data class TransferOwnershipRequest(val userId: Long)
+
+data class RenameHouseholdRequest(val name: String)
+
 data class JoinedResponse(val householdId: Long, val householdName: String)
