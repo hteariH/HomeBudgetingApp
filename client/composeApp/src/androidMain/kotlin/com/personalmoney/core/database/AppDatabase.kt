@@ -25,7 +25,7 @@ import com.personalmoney.core.database.entity.TransactionEntity
         CurrencyEntity::class,
         ExchangeRateEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

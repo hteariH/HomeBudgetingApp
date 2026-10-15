@@ -15,6 +15,10 @@ import com.personalmoney.core.domain.model.Category
 import com.personalmoney.core.domain.model.Transaction
 import com.personalmoney.core.domain.CategoryType
 import com.personalmoney.core.domain.TransactionType
+import com.personalmoney.core.receipt.ReceiptDraft
+import com.personalmoney.core.receipt.ReceiptScanner
+import com.personalmoney.core.receipt.ScanOutcome
+import com.personalmoney.core.receipt.receiptScanAvailable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +57,29 @@ data class QuickAddUiState(
     val canSave: Boolean get() = isAmountValid && selectedAccount != null && selectedCategory != null && !saving
 }
 
+/** Something a scan has to tell the user, once. */
+sealed interface ScanNotice {
+    /** The form was filled. [withMerchant]: the note was too, so the screen shows it. */
+    data class Filled(val withMerchant: Boolean) : ScanNotice
+
+    /** [reason] is the server's own sentence, or null for "it did not work". */
+    data class Failed(val reason: String?) : ScanNotice
+
+    data object Offline : ScanNotice
+}
+
+/**
+ * Receipt scanning, kept out of [QuickAddUiState] because none of it feeds the form's own
+ * derivation - and that state is already rebuilt from a dozen flows.
+ */
+data class ReceiptScanState(
+    /** The household has a receipt reader. False until the server says so. */
+    val canScan: Boolean = false,
+    /** A photo is with the server, being read. */
+    val reading: Boolean = false,
+    val notice: ScanNotice? = null,
+)
+
 private fun currentDate(): LocalDate =
     Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
@@ -61,7 +88,8 @@ class QuickAddViewModel constructor(
     private val accountRepository: AccountRepository,
     private val categoryRepository: CategoryRepository,
     private val transactionRepository: TransactionRepository,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val receiptScanner: ReceiptScanner,
 ) : ViewModel() {
 
     private val initialType: TransactionType = runCatching {
@@ -80,6 +108,12 @@ class QuickAddViewModel constructor(
     private val savingFlow = MutableStateFlow(false)
     private val savedFlow = MutableStateFlow(false)
     private val errorFlow = MutableStateFlow<String?>(null)
+
+    private val _scan = MutableStateFlow(ReceiptScanState())
+    val scan: StateFlow<ReceiptScanState> = _scan.asStateFlow()
+
+    /** The receipt the form was last filled from; saved with the entry. */
+    private var receiptUuid: String? = null
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val categoriesFlow = typeFlow.flatMapLatest { type ->
@@ -138,6 +172,12 @@ class QuickAddViewModel constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), QuickAddUiState(type = initialType))
 
     init {
+        // Asked each time the screen opens: an owner can set a provider up on the web at
+        // any moment. Anything short of a clear yes keeps the button hidden.
+        if (receiptScanAvailable) viewModelScope.launch {
+            val canScan = receiptScanner.canScan()
+            _scan.update { it.copy(canScan = canScan) }
+        }
         // Resolve default account on first run.
         viewModelScope.launch {
             if (selectedAccountIdFlow.value == null) {
@@ -192,6 +232,43 @@ class QuickAddViewModel constructor(
 
     fun clearError() { errorFlow.value = null }
 
+    /** Sends the photo to the server to be read, and fills the form from what comes back. */
+    fun scanReceipt(jpeg: ByteArray) {
+        if (_scan.value.reading) return
+        _scan.update { it.copy(reading = true, notice = null) }
+        viewModelScope.launch {
+            val notice = when (val outcome = receiptScanner.scan(jpeg)) {
+                is ScanOutcome.Ready -> {
+                    apply(outcome.draft)
+                    ScanNotice.Filled(withMerchant = outcome.draft.merchant != null)
+                }
+                is ScanOutcome.Failed -> ScanNotice.Failed(outcome.reason)
+                ScanOutcome.Offline -> ScanNotice.Offline
+            }
+            _scan.update { it.copy(reading = false, notice = notice) }
+        }
+    }
+
+    fun clearScanNotice() {
+        _scan.update { it.copy(notice = null) }
+    }
+
+    /**
+     * Fills what the receipt says, and only that: a field it did not read keeps whatever the
+     * user had typed. Everything stays editable - the scan fills the form and stops.
+     */
+    private suspend fun apply(draft: ReceiptDraft) {
+        draft.total?.let(::setAmountText)
+        draft.date?.let(::setDate)
+        draft.merchant?.let(::setNote)
+        // Only a category this phone has: the server suggests from the household's list,
+        // which a device that has not synced yet may not hold.
+        draft.suggestedCategoryUuid?.let { uuid ->
+            categoriesFlow.first().firstOrNull { it.uuid == uuid }?.let(::selectCategory)
+        }
+        receiptUuid = draft.receiptUuid
+    }
+
     private fun save() {
         if (savingFlow.value) return
         val state = uiState.value
@@ -219,7 +296,8 @@ class QuickAddViewModel constructor(
             accountAmountMinor = amountMinor,
             fxRateToAccount = 1.0,
             occurredAt = occurredAt,
-            note = state.note.takeIf { it.isNotBlank() }
+            note = state.note.takeIf { it.isNotBlank() },
+            receiptUuid = receiptUuid,
         )
 
         viewModelScope.launch {

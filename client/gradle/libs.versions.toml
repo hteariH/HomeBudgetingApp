@@ -36,11 +36,6 @@ bignum = "0.3.10"
 
 ktor = "3.5.2"
 
-# On-device OCR for the receipt scanner. Tesseract rather than ML Kit because Google
-# ships no Cyrillic model for ML Kit at all, and this app's market writes its receipts in
-# Ukrainian. The language data is bundled in assets, so a first scan needs no network.
-tesseract4android = "4.9.0"
-
 appcompat = "1.7.0"
 splashscreen = "1.0.1"
 biometric = "1.2.0-alpha05"
@@ -121,8 +116,6 @@ ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref =
 ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
-
-tesseract4android = { group = "cz.adaptech.tesseract4android", name = "tesseract4android", version.ref = "tesseract4android" }
 
 google-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 

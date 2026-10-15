@@ -101,4 +101,17 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+/**
+ * v5 → v6: a transaction remembers the receipt it was scanned from.
+ *
+ * Nullable, so existing rows start out NULL. A row pulled before v6 learns of its receipt
+ * only when the server next sends it; pushing it in the meantime is safe, because the
+ * server reads a missing receipt as "keep the link" rather than "remove it".
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE transactions ADD COLUMN receipt_uuid TEXT")
+    }
+}
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)

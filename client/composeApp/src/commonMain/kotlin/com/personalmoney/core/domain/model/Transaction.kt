@@ -37,4 +37,6 @@ data class Transaction(
     val transferFeeMinor: Long? = null,
     /** The household member who wrote it; null for a row the server has not attributed. */
     val createdByUserId: Long? = null,
+    /** The server-side receipt this entry was scanned from; its photo and items stay there. */
+    val receiptUuid: String? = null,
 )

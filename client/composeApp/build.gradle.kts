@@ -134,8 +134,6 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-
-            implementation(libs.tesseract4android)
         }
 
         androidUnitTest.dependencies {
@@ -150,9 +148,7 @@ kotlin {
         androidInstrumentedTest.dependencies {
             // Spelled out rather than inherited: AGP does not put the tested variant's
             // `implementation` dependencies on the instrumented-test *compile* classpath,
-            // so ReceiptRecognitionTest cannot see ML Kit, coroutines or LocalDate without
-            // asking for them here.
-            implementation(libs.tesseract4android)
+            // so a test cannot see coroutines or LocalDate without asking for them here.
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
             // MigrationTest has always needed this and never had it, so the whole

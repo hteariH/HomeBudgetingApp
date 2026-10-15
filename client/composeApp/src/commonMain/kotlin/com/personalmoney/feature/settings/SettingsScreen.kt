@@ -56,6 +56,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val deletion by viewModel.deletion.collectAsStateWithLifecycle()
+    val receiptSetupNeeded by viewModel.receiptSetupNeeded.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val openUrl = rememberUrlOpener()
@@ -133,6 +134,14 @@ fun SettingsScreen(
             BiometricLockSection(viewModel, state.biometricLockEnabled)
 
             BackupSection(snackbar)
+
+            if (receiptSetupNeeded) {
+                SettingsItem(
+                    title = stringResource(Res.string.quickadd_scan_receipt),
+                    subtitle = stringResource(Res.string.receipt_setup_on_web),
+                    onClick = { }
+                )
+            }
 
             SettingsItem(
                 title = stringResource(Res.string.settings_privacy_policy),

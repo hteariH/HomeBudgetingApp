@@ -4,12 +4,18 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.accept
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 
 /**
@@ -97,7 +103,46 @@ class HomeBudgetApi(private val client: HttpClient) {
 
     suspend fun push(body: SyncPushRequestDto): SyncPushResponseDto =
         client.post("api/sync/push") { jsonBody(body) }.body()
+
+    /** Who reads this household's receipts, if anyone - `source` is `NONE` when nobody does. */
+    suspend fun householdAiProvider(): ProviderViewDto = client.get("api/household/ai-provider").body()
+
+    /**
+     * Hands a receipt photo to the server to read. Answers at once; the reading happens in
+     * the background, so poll [receipt] with the uuid this returns.
+     *
+     * 409 when the household has no provider, 413 above 15 MB, 415 for a format the server
+     * cannot decode - each with a `message` written for the user.
+     */
+    suspend fun uploadReceipt(jpeg: ByteArray): ReceiptAcceptedDto =
+        client.post("api/receipts") {
+            // A full-resolution phone photo over a mobile uplink can take longer than the
+            // timeout every other call lives with.
+            timeout { requestTimeoutMillis = UPLOAD_TIMEOUT_MS }
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "image",
+                            jpeg,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "image/jpeg")
+                                append(HttpHeaders.ContentDisposition, "filename=\"receipt.jpg\"")
+                            },
+                        )
+                    }
+                )
+            )
+        }.body()
+
+    suspend fun receipt(uuid: String): ReceiptDto = client.get("api/receipts/$uuid").body()
+
+    /** The stored photo, as JPEG bytes. Fetched with the session, like every other call. */
+    suspend fun receiptImage(uuid: String): ByteArray =
+        client.get("api/receipts/$uuid/image") { accept(ContentType.Image.JPEG) }.body()
 }
+
+private const val UPLOAD_TIMEOUT_MS = 120_000L
 
 private fun io.ktor.client.request.HttpRequestBuilder.jsonBody(body: Any) {
     contentType(ContentType.Application.Json)

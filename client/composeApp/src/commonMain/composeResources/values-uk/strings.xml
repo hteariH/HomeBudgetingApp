@@ -55,8 +55,13 @@
     <string name="quickadd_invalid_amount">Введіть суму</string>
     <string name="quickadd_calc_error">Невірний вираз</string>
     <string name="quickadd_scan_receipt">Сканувати чек</string>
-    <string name="quickadd_scan_nothing_found">На фото нічого розпізнати</string>
     <string name="quickadd_scan_failed">Не вдалося відсканувати чек</string>
+    <string name="receipt_reading">Читаємо чек…</string>
+    <string name="receipt_offline">Для сканування потрібне підключення до вашого сервера</string>
+    <string name="receipt_title">Чек</string>
+    <string name="receipt_items">Позиції</string>
+    <string name="receipt_setup_on_web">Налаштуйте розпізнавання чеків у вебзастосунку</string>
+    <string name="receipt_unavailable">Не вдалося завантажити чек. Потрібне підключення до вашого сервера.</string>
 
     <string name="accounts_title">Рахунки</string>
     <string name="account_picker_title">Виберіть рахунок</string>
