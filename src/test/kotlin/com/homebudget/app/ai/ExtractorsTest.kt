@@ -228,6 +228,31 @@ class ExtractorsTest {
         assertEquals(1, server.requests.size, "the key must not be carried to another address")
     }
 
+    @ParameterizedTest
+    @EnumSource(AiProviderType::class)
+    fun `a key the JDK refuses in a header fails as unreachable without quoting it`(type: AiProviderType) {
+        val e = assertThrows<ExtractionException> { extractor(type, key = "sk-leak\nme").extract(jpeg, context) }
+        assertEquals("Could not reach the model at 127.0.0.1", e.reason)
+        assertFalse(e.message!!.contains("sk-leak"))
+        assertTrue(server.requests.isEmpty())
+    }
+
+    @Test
+    fun `a read interrupted by a shutdown says so`() {
+        server.reply(200, envelope(AiProviderType.OPENAI_COMPATIBLE, receiptJson), delayMillis = 10_000)
+        var failure: Throwable? = null
+        val reading = Thread {
+            failure = runCatching { extractor(AiProviderType.OPENAI_COMPATIBLE).extract(jpeg, context) }.exceptionOrNull()
+        }
+        reading.start()
+        val deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos()
+        while (server.requests.isEmpty() && System.nanoTime() < deadline) Thread.sleep(10)
+        reading.interrupt()
+        reading.join(5_000)
+
+        assertEquals(ExtractionException.INTERRUPTED, (failure as ExtractionException).reason)
+    }
+
     @Test
     fun `an unreachable host names the host`() {
         val freePort = ServerSocket(0, 0, InetAddress.getLoopbackAddress()).use { it.localPort }

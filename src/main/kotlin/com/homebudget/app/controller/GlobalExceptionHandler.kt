@@ -119,6 +119,13 @@ class GlobalExceptionHandler {
             ErrorResponse(status = 409, error = "Set By Environment", message = ex.message)
         )
 
+    /** Every Test slot is in use; the caller tries again shortly. */
+    @ExceptionHandler(com.homebudget.app.ai.AiBusyException::class)
+    fun handleAiBusy(ex: com.homebudget.app.ai.AiBusyException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(
+            ErrorResponse(status = 429, error = "Too Many Requests", message = ex.message)
+        )
+
     /** No model reads receipts for this household; an owner or the administrator can set one up. */
     @ExceptionHandler(com.homebudget.app.receipt.ReceiptScanUnavailableException::class)
     fun handleReceiptScanUnavailable(ex: com.homebudget.app.receipt.ReceiptScanUnavailableException): ResponseEntity<ErrorResponse> =

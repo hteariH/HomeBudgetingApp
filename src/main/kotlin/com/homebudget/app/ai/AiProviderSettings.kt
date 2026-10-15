@@ -57,6 +57,19 @@ class AiProviderSettings(
         const val MAX_KEY_LENGTH = 1500
 
         const val MAX_BASE_URL_LENGTH = 500
+
+        const val KEY_CHARACTERS_NOT_ALLOWED = "The API key contains characters that are not allowed"
+
+        /**
+         * Printable ASCII without the space. A key goes into an HTTP header, and the JDK
+         * refuses anything else there with a message that quotes the value.
+         */
+        private val KEY = Regex("[!-~]+") // 0x21-0x7E
+
+        /** A key as it is used: trimmed, null when nothing is left. */
+        fun cleanKey(key: String?): String? = key?.trim()?.ifEmpty { null }
+
+        fun isAllowedKey(key: String): Boolean = KEY.matches(key)
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -82,7 +95,10 @@ class AiProviderSettings(
             AiProviderType.ANTHROPIC -> ANTHROPIC_URL
             AiProviderType.GEMINI -> GEMINI_URL
         }
-        return ResolvedProvider(type, baseUrl, envModel.trim(), envApiKey.ifBlank { null }, AiProviderSource.ENVIRONMENT)
+        val key = cleanKey(envApiKey)?.takeIf { k ->
+            isAllowedKey(k).also { ok -> if (!ok) log.warn("AI_API_KEY contains characters that are not allowed; using no key") }
+        }
+        return ResolvedProvider(type, baseUrl, envModel.trim(), key, AiProviderSource.ENVIRONMENT)
     }
 
     /** The provider used for [householdId]'s receipts, or null when none is configured. */
@@ -95,6 +111,11 @@ class AiProviderSettings(
     @Transactional(readOnly = true)
     fun instanceProvider(): ResolvedProvider? =
         environment ?: providers.findFirstByScope(AiProviderScope.INSTANCE)?.let { resolved(it, AiProviderSource.INSTANCE) }
+
+    /** The household's own provider, ignoring the instance's; null when it has none. */
+    @Transactional(readOnly = true)
+    fun householdProvider(householdId: Long): ResolvedProvider? =
+        providers.findByHouseholdId(householdId)?.let { resolved(it, AiProviderSource.HOUSEHOLD) }
 
     /** What the household's owner and members see. */
     @Transactional(readOnly = true)
@@ -179,19 +200,20 @@ class AiProviderSettings(
      * one - but only while type and address stay the same. A key belongs to the host it was
      * entered for and must never be sent anywhere else.
      */
-    private fun keyFor(stored: AiProviderEntity?, req: ProviderRequest): String? = when {
-        req.apiKey == null ->
-            stored?.takeIf { it.type == req.type && it.baseUrl == normalisedBaseUrl(req) }?.apiKey
-        req.apiKey.isEmpty() -> null
-        else -> req.apiKey
-    }
+    private fun keyFor(stored: AiProviderEntity?, req: ProviderRequest): String? =
+        if (req.apiKey == null) stored?.takeIf { it.type == req.type && it.baseUrl == normalisedBaseUrl(req) }?.apiKey
+        else cleanKey(req.apiKey)
 
     private fun validate(req: ProviderRequest, administrator: Boolean) {
         require(req.model.isNotBlank()) { "Choose a model" }
         require(MODEL_NAME.matches(req.model.trim())) {
             "A model name is up to 200 letters, digits and . _ : / @ -"
         }
-        require(req.apiKey == null || req.apiKey.length <= MAX_KEY_LENGTH) { "The key is too long" }
+        cleanKey(req.apiKey)?.let { key ->
+            require(key.length <= MAX_KEY_LENGTH) { "The key is too long" }
+            // The message never quotes the key.
+            require(isAllowedKey(key)) { KEY_CHARACTERS_NOT_ALLOWED }
+        }
         if (req.type != AiProviderType.OPENAI_COMPATIBLE) return
         val url = req.baseUrl?.trim()?.trimEnd('/')
         require(!url.isNullOrBlank()) { "Enter the address of the model's API" }

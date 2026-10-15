@@ -5,6 +5,7 @@ import com.homebudget.app.domain.Role
 import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.UserPrincipal
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,6 +38,8 @@ class AiProviderEndpointsTest {
     @Autowired private lateinit var mvc: MockMvc
     @Autowired private lateinit var identity: TestIdentity
     @Autowired private lateinit var users: UserRepository
+    @Autowired private lateinit var providers: AiProviderRepository
+    @Autowired private lateinit var sample: SampleReceiptTest
 
     private fun admin(): UserPrincipal {
         val made = identity.newMember("admin")
@@ -161,6 +164,89 @@ class AiProviderEndpointsTest {
                 assertEquals("Bearer sk-saved", server.requests.single().headers["authorization"])
             } finally {
                 mvc.perform(delete("/api/admin/ai-provider").with(asUser(admin)))
+            }
+        }
+    }
+
+    @Test
+    fun `a stored key the JDK refuses never comes back from the Test button`() {
+        val admin = admin()
+        FakeModelServer().use { server ->
+            // Stored past validation, as an older version or a hand-edited row could have it.
+            val row = providers.save(AiProviderEntity(scope = AiProviderScope.INSTANCE, type = AiProviderType.OPENAI_COMPATIBLE,
+                baseUrl = "${server.base}/v1", model = "llava", apiKey = "sk-leak\nme"))
+            try {
+                val answer = mvc.perform(post("/api/admin/ai-provider/test").with(asUser(admin)))
+                    .andExpect(status().isOk)
+                    .andExpect(jsonPath("$.ok").value(false))
+                    .andReturn().response.contentAsString
+                assertFalse(answer.contains("sk-leak"), answer)
+                assertTrue(server.requests.isEmpty())
+            } finally {
+                providers.delete(row)
+            }
+        }
+    }
+
+    @Test
+    fun `a key with characters that are not allowed is refused without quoting it`() {
+        val owner = identity.newMember("badkey")
+        val request = """{"type":"OPENAI_COMPATIBLE","baseUrl":"https://api.openai.com/v1","model":"m","apiKey":"sk-leak\nme"}"""
+        val answer = mvc.perform(
+            put("/api/household/ai-provider").with(asUser(owner)).contentType(MediaType.APPLICATION_JSON).content(request)
+        ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("The API key contains characters that are not allowed"))
+            .andReturn().response.contentAsString
+        assertFalse(answer.contains("sk-leak"), answer)
+        mvc.perform(
+            post("/api/household/ai-provider/test").with(asUser(owner)).contentType(MediaType.APPLICATION_JSON).content(request)
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `a household test without a body never spends the instance provider`() {
+        val admin = admin()
+        val owner = identity.newMember("frugal")
+        FakeModelServer().use { server ->
+            mvc.perform(
+                put("/api/admin/ai-provider").with(asUser(admin)).contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"type":"OPENAI_COMPATIBLE","baseUrl":"${server.base}/v1","model":"llava"}""")
+            ).andExpect(status().isOk)
+            try {
+                mvc.perform(post("/api/household/ai-provider/test").with(asUser(owner)))
+                    .andExpect(status().isOk)
+                    .andExpect(jsonPath("$.ok").value(false))
+                    .andExpect(jsonPath("$.reason").value("Set up a household provider first"))
+                assertTrue(server.requests.isEmpty())
+            } finally {
+                mvc.perform(delete("/api/admin/ai-provider").with(asUser(admin)))
+            }
+        }
+    }
+
+    @Test
+    fun `tests beyond AI_CONCURRENCY wait briefly and are then refused with 429`() {
+        val admin = admin()
+        val wait = sample.slotWait
+        sample.slotWait = java.time.Duration.ofMillis(200)
+        FakeModelServer().use { server ->
+            val request = """{"type":"OPENAI_COMPATIBLE","baseUrl":"${server.base}/v1","model":"llava"}"""
+            fun test() = mvc.perform(
+                post("/api/admin/ai-provider/test").with(asUser(admin)).contentType(MediaType.APPLICATION_JSON).content(request)
+            )
+            repeat(2) { server.reply(200, openAiReply("""{"merchant":"SHOP","items":[]}"""), delayMillis = 3_000) }
+            val running = List(2) { Thread { test() }.apply { start() } }
+            try {
+                val deadline = System.nanoTime() + 5_000_000_000
+                while (server.requests.size < 2 && System.nanoTime() < deadline) Thread.sleep(10)
+                assertEquals(2, server.requests.size)
+
+                test().andExpect(status().isTooManyRequests)
+                    .andExpect(jsonPath("$.message").value("The model is busy, try again in a minute"))
+                assertEquals(2, server.requests.size)
+            } finally {
+                running.forEach { it.join(10_000) }
+                sample.slotWait = wait
             }
         }
     }

@@ -6,7 +6,6 @@ import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.SyncAccount
 import com.homebudget.app.dto.SyncPayload
 import com.homebudget.app.dto.SyncPushRequest
-import com.homebudget.app.dto.SyncRejectionReason
 import com.homebudget.app.dto.SyncTransaction
 import com.homebudget.app.security.UserPrincipal
 import com.homebudget.app.service.AccountService
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -190,23 +190,22 @@ class ReceiptLinkTest {
     }
 
     @Test
-    fun `one push naming a receipt on two new transactions links the first and refuses the second`() {
+    fun `one push naming a receipt on two new transactions links the first and saves the second without it`() {
         val receipt = newReceipt()
         val first = UUID.randomUUID().toString()
         val second = UUID.randomUUID().toString()
 
         val pushed = push(syncTx(first, receipt.uuid), syncTx(second, receipt.uuid))
 
-        assertEquals(1, pushed.applied)
-        val refused = pushed.rejected.single()
-        assertEquals(second, refused.uuid)
-        assertEquals(SyncRejectionReason.INVALID, refused.reason)
+        assertEquals(2, pushed.applied, "rejections: ${pushed.rejected}")
+        assertTrue(pushed.rejected.isEmpty())
         val pulled = syncService.pull(Instant.EPOCH, 500).changes.transactions
         assertEquals(receipt.uuid, pulled.single { it.uuid == first }.receiptUuid)
+        assertNull(pulled.single { it.uuid == second }.receiptUuid)
     }
 
     @Test
-    fun `one push attaching a receipt to two existing transactions refuses the second`() {
+    fun `one push attaching a receipt to two existing transactions links only the first`() {
         val receipt = newReceipt()
         val first = UUID.randomUUID().toString()
         val second = UUID.randomUUID().toString()
@@ -220,26 +219,41 @@ class ReceiptLinkTest {
             syncTx(second, receipt.uuid, base = stored[second])
         )
 
-        assertEquals(1, pushed.applied, "rejections: ${pushed.rejected}")
-        assertEquals(second, pushed.rejected.single().uuid)
-        assertEquals(SyncRejectionReason.INVALID, pushed.rejected.single().reason)
+        assertEquals(2, pushed.applied, "rejections: ${pushed.rejected}")
+        val pulled = syncService.pull(Instant.EPOCH, 500).changes.transactions
+        assertEquals(receipt.uuid, pulled.single { it.uuid == first }.receiptUuid)
+        assertNull(pulled.single { it.uuid == second }.receiptUuid)
     }
 
     @Test
-    fun `sync refuses a foreign receipt and a receipt another transaction holds`() {
+    fun `sync saves an entry naming a foreign or taken receipt without linking it`() {
         val foreign = newReceipt(identity.newMember("neighbour"))
         identity.signIn(owner)
         val foreignTx = UUID.randomUUID().toString()
-        val unknown = push(syncTx(foreignTx, foreign.uuid)).rejected.single()
-        assertEquals(foreignTx, unknown.uuid)
-        assertEquals(SyncRejectionReason.UNKNOWN_REFERENCE, unknown.reason)
+        val withForeign = push(syncTx(foreignTx, foreign.uuid))
+        assertTrue(withForeign.rejected.isEmpty(), "rejections: ${withForeign.rejected}")
 
         val receipt = newReceipt()
-        assertTrue(push(syncTx(UUID.randomUUID().toString(), receipt.uuid)).rejected.isEmpty())
+        val holder = UUID.randomUUID().toString()
+        assertTrue(push(syncTx(holder, receipt.uuid)).rejected.isEmpty())
         val second = UUID.randomUUID().toString()
-        val taken = push(syncTx(second, receipt.uuid)).rejected.single()
-        assertEquals(second, taken.uuid)
-        assertEquals(SyncRejectionReason.INVALID, taken.reason)
+        assertTrue(push(syncTx(second, receipt.uuid)).rejected.isEmpty())
+
+        val pulled = syncService.pull(Instant.EPOCH, 500).changes.transactions
+        assertNull(pulled.single { it.uuid == foreignTx }.receiptUuid)
+        assertEquals(receipt.uuid, pulled.single { it.uuid == holder }.receiptUuid)
+        assertNull(pulled.single { it.uuid == second }.receiptUuid)
         assertFalse(gone(receipt))
+        assertFalse(gone(foreign))
+    }
+
+    @Test
+    fun `sync saves a new entry naming an unknown receipt without a link`() {
+        val txUuid = UUID.randomUUID().toString()
+
+        val pushed = push(syncTx(txUuid, UUID.randomUUID().toString()))
+
+        assertEquals(1, pushed.applied, "rejections: ${pushed.rejected}")
+        assertNull(syncService.pull(Instant.EPOCH, 500).changes.transactions.single { it.uuid == txUuid }.receiptUuid)
     }
 }

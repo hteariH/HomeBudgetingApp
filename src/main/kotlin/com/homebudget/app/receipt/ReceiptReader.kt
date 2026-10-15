@@ -50,7 +50,7 @@ class ReceiptReader(
 ) {
     companion object {
         const val NO_PROVIDER = "No model is set up to read receipts"
-        const val INTERRUPTED = "Reading was interrupted — scan again"
+        const val INTERRUPTED = ExtractionException.INTERRUPTED
 
         /** NUMERIC(14,3): eleven digits before the point. */
         private val MAX_QUANTITY = BigDecimal("99999999999.999")
@@ -127,10 +127,25 @@ class ReceiptReader(
             Outcome.Read(extractors.create(provider, settings.timeout).extract(jpeg, job.context))
         } catch (e: ExtractionException) {
             Outcome.Failed(e.reason)
-        } catch (e: Exception) {
+        } catch (e: InterruptedException) {
+            Outcome.Failed(INTERRUPTED)
+        } catch (e: Throwable) {
+            // An Error too: anything that escapes here would leave the receipt PENDING for good.
             log.warn("Reading receipt {} failed unexpectedly: {}", receiptId, e.javaClass.name)
             Outcome.Failed(ExtractionException.UNREADABLE)
         }
+        // A shutdown interrupts the read; whatever it surfaced as, that is the reason. The flag
+        // is cleared for the write - an interrupted thread cannot borrow a database connection -
+        // and set again after it.
+        val interrupted = Thread.interrupted()
+        try {
+            save(receiptId, if (interrupted) Outcome.Failed(INTERRUPTED) else outcome)
+        } finally {
+            if (interrupted) Thread.currentThread().interrupt()
+        }
+    }
+
+    private fun save(receiptId: Long, outcome: Outcome) {
         try {
             tx.executeWithoutResult { write(receiptId, outcome) }
         } catch (e: Exception) {

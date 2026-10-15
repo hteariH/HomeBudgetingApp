@@ -9,6 +9,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.*
+import java.time.Duration
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 
 /** The instance-wide model, for the administrator. */
 @RestController
@@ -58,23 +61,46 @@ class HouseholdAiProviderController(
         settings.deleteHousehold(m.household.id)
     }
 
-    /** As for the administrator; owner only, and only settings the household could save. */
+    /**
+     * As for the administrator; owner only, and only settings the household could save.
+     * Without a body it tests the household's own provider - never the instance's, which
+     * an owner is not to spend.
+     */
     @PostMapping("/test")
     fun test(@RequestBody(required = false) req: ProviderRequest?): ProviderTestResult {
         val m = membership()
         requireOwner(m)
-        return sample.run(if (req == null) settings.resolveFor(m.household.id) else settings.unsavedHousehold(m.household.id, req))
+        if (req != null) return sample.run(settings.unsavedHousehold(m.household.id, req))
+        val own = settings.householdProvider(m.household.id)
+            ?: return ProviderTestResult(ok = false, reason = SampleReceiptTest.NO_HOUSEHOLD_PROVIDER)
+        return sample.run(own)
     }
 
     private fun membership() = members.findFirstByUserId(securityUtils.getCurrentUser().id)
         ?: throw IllegalStateException("No household")
 }
 
-/** Runs the bundled sample receipt through a provider, for the Test button. */
+/** Every test slot was taken for too long; answered 429. */
+class AiBusyException : RuntimeException("The model is busy, try again in a minute")
+
+/**
+ * Runs the bundled sample receipt through a provider, for the Test button. At most
+ * `AI_CONCURRENCY` tests run at once, so the button cannot be used to flood a model.
+ */
 @Component
 class SampleReceiptTest(private val factory: ExtractorFactory, private val settings: AiProviderSettings) {
 
+    companion object {
+        const val NO_HOUSEHOLD_PROVIDER = "Set up a household provider first"
+        const val FAILED = "The test could not be run with these settings"
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
+
+    private val slots = Semaphore(settings.concurrency.coerceAtLeast(1))
+
+    /** How long a test waits for a free slot before it is refused; shorter in tests. */
+    internal var slotWait: Duration = Duration.ofSeconds(5)
 
     private val image: ByteArray by lazy {
         ClassPathResource("ai/sample-receipt.jpg").inputStream.use { it.readBytes() }
@@ -82,6 +108,7 @@ class SampleReceiptTest(private val factory: ExtractorFactory, private val setti
 
     fun run(provider: ResolvedProvider?): ProviderTestResult {
         if (provider == null) return ProviderTestResult(ok = false, reason = "No model is set up to read receipts")
+        if (!slots.tryAcquire(slotWait.toMillis(), TimeUnit.MILLISECONDS)) throw AiBusyException()
         return try {
             val receipt = factory.create(provider, settings.timeout)
                 .extract(image, ExtractionContext(expenseCategories = emptyList(), currencies = emptyList()))
@@ -89,6 +116,12 @@ class SampleReceiptTest(private val factory: ExtractorFactory, private val setti
         } catch (e: ExtractionException) {
             log.info("Testing the {} model {} failed: {}", provider.type, provider.model, e.reason)
             ProviderTestResult(ok = false, reason = e.reason)
+        } catch (e: Exception) {
+            // Never e.message: it may quote what was sent, the key included.
+            log.warn("Testing the {} model {} failed unexpectedly: {}", provider.type, provider.model, e.javaClass.name)
+            ProviderTestResult(ok = false, reason = FAILED)
+        } finally {
+            slots.release()
         }
     }
 }

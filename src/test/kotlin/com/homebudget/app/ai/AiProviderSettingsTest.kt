@@ -152,6 +152,21 @@ class AiProviderSettingsTest {
     }
 
     @Test
+    fun `keys are trimmed and a key with other characters is refused without quoting it`() {
+        val household = identity.newMember("keychars").household
+        settings.saveHousehold(household.id, openai.copy(apiKey = "  sk-trimmed\n"))
+        assertEquals("sk-trimmed", settings.resolveFor(household.id)!!.apiKey)
+        assertEquals("sk-x", settings.unsavedHousehold(household.id, openai.copy(apiKey = " sk-x ")).apiKey)
+
+        for (bad in listOf("sk-leak\nme", "sk-leak me", "sk-leak\u00e9", "sk-leak\u0000", "sk-leak\u007f", "sk-leak\r\nX: y")) {
+            val e = assertThrows<IllegalArgumentException>(bad) { settings.saveHousehold(household.id, openai.copy(apiKey = bad)) }
+            assertEquals(AiProviderSettings.KEY_CHARACTERS_NOT_ALLOWED, e.message)
+            assertThrows<IllegalArgumentException>(bad) { settings.unsavedHousehold(household.id, openai.copy(apiKey = bad)) }
+        }
+        assertEquals("sk-trimmed", settings.resolveFor(household.id)!!.apiKey)
+    }
+
+    @Test
     fun `a key is not carried to a new address`() {
         try {
             settings.saveInstance(ProviderRequest(AiProviderType.OPENAI_COMPATIBLE, "https://llm.example.com/v1", "m", "sk-a"))
@@ -250,5 +265,27 @@ class AiProviderSettingsEnvironmentTest {
         assertThrows<AiProviderLockedException> {
             settings.unsavedInstance(ProviderRequest(AiProviderType.GEMINI, null, "g", null))
         }
+    }
+}
+
+/** The environment's key is read once, at startup; a bad one is dropped rather than sent. */
+class AiProviderEnvironmentKeyTest {
+
+    private fun settingsWithKey(key: String) = AiProviderSettings(
+        org.mockito.Mockito.mock(AiProviderRepository::class.java),
+        "ANTHROPIC", "", "claude-env", key, Duration.ofMinutes(5), 2
+    )
+
+    @Test
+    fun `the environment key is trimmed`() {
+        assertEquals("sk-env", settingsWithKey("  sk-env\n").instanceProvider()!!.apiKey)
+    }
+
+    @Test
+    fun `an environment key with characters that are not allowed is treated as absent`() {
+        val provider = settingsWithKey("sk-env\nX: y").instanceProvider()!!
+        assertEquals(AiProviderSource.ENVIRONMENT, provider.source)
+        assertNull(provider.apiKey)
+        assertNull(settingsWithKey("sk-\u00e9").instanceProvider()!!.apiKey)
     }
 }

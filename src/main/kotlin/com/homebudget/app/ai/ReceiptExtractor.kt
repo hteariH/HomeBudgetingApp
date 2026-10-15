@@ -36,6 +36,8 @@ class ExtractionException(val reason: String) : RuntimeException(reason) {
     companion object {
         const val CANNOT_READ_IMAGES = "This model cannot read images"
         const val UNREADABLE = "The model's answer could not be read"
+        /** The server stopped while the model was reading. */
+        const val INTERRUPTED = "Reading was interrupted — scan again"
         fun unreachable(host: String) = ExtractionException("Could not reach the model at $host")
         fun tooSlow(timeout: Duration) = ExtractionException("The model took longer than ${formatTimeout(timeout)}")
     }
@@ -102,16 +104,21 @@ abstract class HttpReceiptExtractor(
     protected open fun ask(image: String, prompt: String, reply: String?): String =
         answerOf(post(body(image, prompt, reply)))
 
-    protected fun post(body: ObjectNode): HttpResponse<String> {
-        val builder = HttpRequest.newBuilder(endpoint)
-            .timeout(timeout)
-            .header("Content-Type", "application/json")
-        headers().forEach { (k, v) -> builder.header(k, v) }
-        val request = builder
-            .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)))
-            .build()
-        return try {
+    protected fun post(body: ObjectNode): HttpResponse<String> =
+        try {
+            // Built in here: the JDK refuses a bad header with a message that quotes the
+            // value - the key - and that message must not travel any further.
+            val builder = HttpRequest.newBuilder(endpoint)
+                .timeout(timeout)
+                .header("Content-Type", "application/json")
+            headers().forEach { (k, v) -> builder.header(k, v) }
+            val request = builder
+                .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)))
+                .build()
             http.send(request, HttpResponse.BodyHandlers.ofString())
+        } catch (e: IllegalArgumentException) {
+            log.warn("Could not build the request to the model at {}", host)
+            throw ExtractionException.unreachable(host)
         } catch (e: HttpConnectTimeoutException) {
             log.warn("Could not connect to the model at {}", host)
             throw ExtractionException.unreachable(host)
@@ -123,9 +130,8 @@ abstract class HttpReceiptExtractor(
             throw ExtractionException.unreachable(host)
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
-            throw ExtractionException.unreachable(host)
+            throw ExtractionException(ExtractionException.INTERRUPTED)
         }
-    }
 
     /** The answer's text from a 2xx response, or the reason the request failed. */
     protected fun answerOf(response: HttpResponse<String>): String {

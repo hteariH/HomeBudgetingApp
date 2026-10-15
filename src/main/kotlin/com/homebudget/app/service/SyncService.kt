@@ -376,19 +376,15 @@ class SyncService(
                     "unknown counterpart account ${record.transferCounterpartAccountUuid}")
                 continue
             }
-            // A receipt to attach must be the household's and not another entry's. A null
-            // uuid leaves the link alone; a tombstone takes its receipt with it below.
+            // A receipt to attach must be the household's and not another entry's. One that is
+            // not is dropped rather than the entry: the entry is the record, the photo a bonus.
+            // A null uuid leaves the link alone; a tombstone takes its receipt with it below.
             val receiptUuid = record.receiptUuid.takeUnless { record.deleted }
-            val receipt = receiptUuid?.let { receiptService.lookUp(it, household.id) }
-            if (receiptUuid != null && receipt == null) {
-                reject(rejected, record, "transaction", SyncRejectionReason.UNKNOWN_REFERENCE,
-                    "unknown receipt $receiptUuid")
-                continue
+            val receipt = receiptUuid?.let { receiptService.lookUp(it, household.id) }?.takeUnless {
+                receiptService.isLinkedElsewhere(it, record.uuid)
             }
-            if (receipt != null && receiptService.isLinkedElsewhere(receipt, record.uuid)) {
-                reject(rejected, record, "transaction", SyncRejectionReason.INVALID,
-                    "receipt $receiptUuid is saved with another transaction")
-                continue
+            if (receiptUuid != null && receipt == null) {
+                log.info("Sync push for household {}: a transaction names a receipt it cannot have; saving it without", household.id)
             }
 
             val decimals = account.currency.decimals

@@ -49,6 +49,7 @@ class ReceiptService(
     fun upload(image: MultipartFile): Receipt {
         val household = securityUtils.getCurrentHousehold()
         settings.resolveFor(household.id) ?: throw ReceiptScanUnavailableException()
+        // Defensive only: Spring's multipart limit (MaxUploadSizeExceededException) refuses larger uploads first.
         if (image.size > MAX_UPLOAD_BYTES) throw ReceiptTooLargeException()
 
         val uuid = UUID.randomUUID().toString()
