@@ -2,6 +2,8 @@ package com.personalmoney.core.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.auth.authProvider
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -23,6 +25,18 @@ import io.ktor.http.contentType
  * a `ResponseException` rather than returning a body nobody checked.
  */
 class HomeBudgetApi(private val client: HttpClient) {
+
+    /**
+     * Drops the bearer token the client has cached.
+     *
+     * Ktor's bearer provider loads the token from the [TokenStore][com.personalmoney.core.auth.TokenStore]
+     * once and keeps it, so a session that ended or moved to another server would otherwise
+     * keep authenticating requests - to the new server - with the old server's token.
+     * This is the one place that forgets it.
+     */
+    fun forgetSession() {
+        client.authProvider<BearerAuthProvider>()?.clearToken()
+    }
 
     /** Absolute on purpose: it is asked of an address before that address is the client's base. */
     suspend fun instance(baseUrl: String): InstanceDto = client.get("${baseUrl}api/instance").body()

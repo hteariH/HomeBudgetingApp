@@ -62,7 +62,7 @@ class AuthRepository constructor(
 
     /** [baseUrl] is the address [checkServer] approved; it becomes the client's base. */
     suspend fun login(baseUrl: String, email: String, password: String): AuthResult = runCatchingAuth {
-        tokenStore.serverUrl = baseUrl
+        useServer(baseUrl)
         val response = api.login(LoginRequestDto(email.trim(), password))
         tokenStore.save(response.token, response.refreshToken, response.email)
         AuthResult.Success
@@ -75,7 +75,7 @@ class AuthRepository constructor(
         firstName: String,
         lastName: String
     ): AuthResult = runCatchingAuth {
-        tokenStore.serverUrl = baseUrl
+        useServer(baseUrl)
         api.register(
             RegisterRequestDto(email.trim(), password, firstName.trim(), lastName.trim())
         )
@@ -120,6 +120,16 @@ class AuthRepository constructor(
     private suspend fun endSession() {
         localData.wipe()
         tokenStore.clear()
+        api.forgetSession()
+    }
+
+    /**
+     * Points the client at [baseUrl] with no session carried over from wherever it pointed
+     * before: the cached bearer token belongs to the old server and must not be sent to this one.
+     */
+    private fun useServer(baseUrl: String) {
+        api.forgetSession()
+        tokenStore.serverUrl = baseUrl
     }
 
     private inline fun runCatchingAuth(block: () -> AuthResult): AuthResult = try {
