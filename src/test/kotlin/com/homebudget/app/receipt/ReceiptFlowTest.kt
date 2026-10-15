@@ -18,6 +18,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
@@ -39,6 +42,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.util.Base64
 import javax.imageio.ImageIO
@@ -84,6 +88,7 @@ class ReceiptFlowTest {
     @Autowired private lateinit var receipts: ReceiptRepository
     @Autowired private lateinit var images: ReceiptImages
     @Autowired private lateinit var categories: CategoryRepository
+    @Autowired private lateinit var context: ConfigurableApplicationContext
 
     private val server = FakeModelServer()
     private lateinit var owner: UserPrincipal
@@ -195,6 +200,23 @@ class ReceiptFlowTest {
             .andExpect(jsonPath("$.failureReason").value("The model's answer could not be read"))
             .andExpect(jsonPath("$.merchant").doesNotExist())
         assertEquals(2, server.requests.size)
+    }
+
+    @Test
+    fun `receipts left pending by a restart are failed when the application is ready`() {
+        val interrupted = receipts.save(Receipt(household = owner.household, imagePath = "receipts/x/old.jpg",
+            createdAt = Instant.now().minus(Duration.ofHours(1))))
+        val queuedNow = receipts.save(Receipt(household = owner.household, imagePath = "receipts/x/new.jpg",
+            createdAt = Instant.now().plus(Duration.ofMinutes(1))))
+
+        context.publishEvent(ApplicationReadyEvent(SpringApplication(), emptyArray(), context, Duration.ZERO))
+
+        mvc.perform(get("/api/receipts/${interrupted.uuid}").with(asUser(owner)))
+            .andExpect(jsonPath("$.status").value("FAILED"))
+            .andExpect(jsonPath("$.failureReason").value("Reading was interrupted — scan again"))
+        mvc.perform(get("/api/receipts/${queuedNow.uuid}").with(asUser(owner)))
+            .andExpect(jsonPath("$.status").value("PENDING"))
+        receipts.deleteAll(listOf(interrupted, queuedNow))
     }
 
     @Test

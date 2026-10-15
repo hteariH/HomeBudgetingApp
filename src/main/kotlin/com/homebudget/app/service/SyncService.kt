@@ -335,6 +335,10 @@ class SyncService(
         return applied
     }
 
+    /**
+     * Writes pushed transactions. A null `receiptUuid` keeps whatever receipt the server
+     * has linked - deliberately, so a client that predates receipts cannot unlink one.
+     */
     private fun applyTransactions(
         household: Household,
         actor: User,

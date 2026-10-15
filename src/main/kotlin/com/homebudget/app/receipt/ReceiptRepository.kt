@@ -1,6 +1,7 @@
 package com.homebudget.app.receipt
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
@@ -9,6 +10,15 @@ import java.time.Instant
 interface ReceiptRepository : JpaRepository<Receipt, Long> {
 
     fun findByUuidAndHouseholdId(uuid: String, householdId: Long): Receipt?
+
+    /** Receipts still PENDING from before [before]: their reading died with the last run. */
+    @Modifying
+    @Query(
+        """UPDATE Receipt r SET r.status = com.homebudget.app.receipt.ReceiptStatus.FAILED,
+               r.failureReason = :reason, r.updatedAt = :now
+           WHERE r.status = com.homebudget.app.receipt.ReceiptStatus.PENDING AND r.createdAt < :before"""
+    )
+    fun failPendingBefore(before: Instant, reason: String, now: Instant): Int
 
     // Transactions holding a receipt. Tombstones count: the unique index on
     // `transactions.receipt_id` covers them too. Two queries rather than one with

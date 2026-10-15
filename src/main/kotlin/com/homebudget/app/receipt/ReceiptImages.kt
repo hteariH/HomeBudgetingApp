@@ -1,10 +1,15 @@
 package com.homebudget.app.receipt
 
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.awt.RenderingHints
+import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -24,8 +29,8 @@ class UnsupportedImageException : RuntimeException("Send the photo as JPEG or PN
  * Turns an uploaded photo into the JPEG that is kept and sent to the model, and keeps
  * it on disk under `<app.data-dir>/receipts/<household uuid>/<receipt uuid>.jpg`.
  *
- * The photo is decoded and drawn into a fresh image, so nothing from the original file -
- * EXIF location, camera serial, embedded thumbnails - survives into what is stored.
+ * The photo is decoded and drawn into a fresh image, upright, so nothing from the original
+ * file - EXIF location, camera serial, embedded thumbnails - survives into what is stored.
  */
 @Component
 class ReceiptImages(@Value("\${app.data-dir:/data}") dataDir: String) {
@@ -77,10 +82,16 @@ class ReceiptImages(@Value("\${app.data-dir:/data}") dataDir: String) {
 
     /** JPEG, PNG or WebP in; a JPEG at most [MAX_SIDE] px on its longest side out. */
     fun compress(upload: ByteArray): ByteArray {
-        val source = decode(upload)
-        val scale = minOf(1.0, MAX_SIDE.toDouble() / max(source.width, source.height))
-        val width = max(1, (source.width * scale).roundToInt())
-        val height = max(1, (source.height * scale).roundToInt())
+        val (source, format) = decode(upload)
+        // Phones store the sensor's pixels and say in EXIF which way is up; the metadata is
+        // dropped below, so the turn is applied here or the photo ends up sideways.
+        val orientation = if (format == "jpeg" || format == "jpg") exifOrientation(upload) else 1
+        val sideways = orientation in 5..8
+        val uprightWidth = if (sideways) source.height else source.width
+        val uprightHeight = if (sideways) source.width else source.height
+        val scale = minOf(1.0, MAX_SIDE.toDouble() / max(uprightWidth, uprightHeight))
+        val width = max(1, (uprightWidth * scale).roundToInt())
+        val height = max(1, (uprightHeight * scale).roundToInt())
 
         val target = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
         val g = target.createGraphics()
@@ -90,14 +101,45 @@ class ReceiptImages(@Value("\${app.data-dir:/data}") dataDir: String) {
             // Transparent PNG areas become white paper rather than JPEG black.
             g.color = Color.WHITE
             g.fillRect(0, 0, width, height)
-            g.drawImage(source, 0, 0, width, height, null)
+            g.scale(width.toDouble() / uprightWidth, height.toDouble() / uprightHeight)
+            g.drawImage(source, uprightTransform(orientation, source.width.toDouble(), source.height.toDouble()), null)
         } finally {
             g.dispose()
         }
         return encode(target)
     }
 
-    private fun decode(upload: ByteArray): BufferedImage {
+    /** The EXIF Orientation (1-8) of a JPEG; 1 when there is none or it cannot be read. */
+    private fun exifOrientation(upload: ByteArray): Int {
+        try {
+            ImageIO.createImageInputStream(ByteArrayInputStream(upload)).use { stream ->
+                val exif = JPEGSegmentUtil.readSegments(stream, JPEG.APP1, "Exif").firstOrNull() ?: return 1
+                val data = exif.data()
+                data.read() // the pad byte after the "Exif" identifier
+                val directory = ImageIO.createImageInputStream(data).use { TIFFReader().read(it) }
+                val value = directory.getEntryById(TIFF.TAG_ORIENTATION)?.value as? Number
+                return value?.toInt()?.takeIf { it in 1..8 } ?: 1
+            }
+        } catch (e: Exception) {
+            // Broken EXIF is common; the photo itself decoded fine, so keep it as it is.
+            return 1
+        }
+    }
+
+    /** Maps the stored pixels ([w] x [h]) onto the upright picture for EXIF [orientation]. */
+    private fun uprightTransform(orientation: Int, w: Double, h: Double): AffineTransform = when (orientation) {
+        2 -> AffineTransform(-1.0, 0.0, 0.0, 1.0, w, 0.0)   // mirrored
+        3 -> AffineTransform(-1.0, 0.0, 0.0, -1.0, w, h)    // upside down
+        4 -> AffineTransform(1.0, 0.0, 0.0, -1.0, 0.0, h)   // mirrored upside down
+        5 -> AffineTransform(0.0, 1.0, 1.0, 0.0, 0.0, 0.0)  // transposed
+        6 -> AffineTransform(0.0, 1.0, -1.0, 0.0, h, 0.0)   // turn 90 clockwise
+        7 -> AffineTransform(0.0, -1.0, -1.0, 0.0, h, w)    // transversed
+        8 -> AffineTransform(0.0, -1.0, 1.0, 0.0, 0.0, w)   // turn 90 anticlockwise
+        else -> AffineTransform()
+    }
+
+    /** The decoded picture and its format name (lower case). */
+    private fun decode(upload: ByteArray): Pair<BufferedImage, String> {
         val input = ImageIO.createImageInputStream(ByteArrayInputStream(upload)) ?: throw UnsupportedImageException()
         input.use {
             val reader = ImageIO.getImageReaders(input).asSequence()
@@ -111,7 +153,8 @@ class ReceiptImages(@Value("\${app.data-dir:/data}") dataDir: String) {
                 // it is scaled down to MAX_SIDE afterwards anyway.
                 val step = max(1, longest / (MAX_SIDE * 2))
                 if (step > 1) param.setSourceSubsampling(step, step, 0, 0)
-                return reader.read(0, param) ?: throw UnsupportedImageException()
+                val image = reader.read(0, param) ?: throw UnsupportedImageException()
+                return image to reader.formatName.lowercase()
             } catch (e: IOException) {
                 throw UnsupportedImageException()
             } catch (e: RuntimeException) {

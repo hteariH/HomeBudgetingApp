@@ -43,6 +43,44 @@ class ReceiptImagesTest {
         return plain.copyOfRange(0, 2) + segment + plain.copyOfRange(2, plain.size)
     }
 
+    /**
+     * A 400x300 JPEG whose EXIF says "turn 90 degrees clockwise" (Orientation = 6), with a
+     * black square in the stored top-left corner. The EXIF block is a minimal big-endian
+     * TIFF directory written by hand, so the test does not lean on the code it checks.
+     */
+    private fun jpegTurnedClockwise(): ByteArray {
+        val image = BufferedImage(400, 300, BufferedImage.TYPE_INT_RGB)
+        val g = image.createGraphics()
+        g.color = Color.WHITE
+        g.fillRect(0, 0, 400, 300)
+        g.color = Color.BLACK
+        g.fillRect(0, 0, 60, 60)
+        g.dispose()
+        val plain = ByteArrayOutputStream().also { ImageIO.write(image, "jpeg", it) }.toByteArray()
+        val tiff = byteArrayOf(
+            'M'.code.toByte(), 'M'.code.toByte(), 0, 42, 0, 0, 0, 8,  // header, first directory at 8
+            0, 1,                                                      // one entry
+            0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, 6, 0, 0,                  // Orientation, SHORT, 1, value 6
+            0, 0, 0, 0                                                 // no next directory
+        )
+        val payload = "Exif".toByteArray() + byteArrayOf(0, 0) + tiff
+        val length = payload.size + 2
+        val segment = byteArrayOf(0xFF.toByte(), 0xE1.toByte(), (length shr 8).toByte(), length.toByte()) + payload
+        return plain.copyOfRange(0, 2) + segment + plain.copyOfRange(2, plain.size)
+    }
+
+    private fun dark(image: BufferedImage, x: Int, y: Int) = (image.getRGB(x, y) and 0xFF) < 64
+
+    @Test
+    fun `a phone photo is stored upright`() {
+        val stored = ImageIO.read(ByteArrayInputStream(ReceiptImages(dataDir.toString()).compress(jpegTurnedClockwise())))
+        assertEquals(300, stored.width, "width and height swap for a quarter turn")
+        assertEquals(400, stored.height)
+        // Turned clockwise, the stored top-left corner ends up top-right.
+        assertTrue(dark(stored, 270, 30), "the marker is top-right")
+        assertFalse(dark(stored, 30, 30), "and no longer top-left")
+    }
+
     private fun ByteArray.contains(text: String) = String(this, Charsets.ISO_8859_1).contains(text)
 
     @Test

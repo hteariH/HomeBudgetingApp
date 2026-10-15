@@ -188,6 +188,18 @@
             <artifactId>imageio-webp</artifactId>
             <version>3.12.0</version>
         </dependency>
+        <!-- A more forgiving JPEG decoder than the JDK's (CMYK, slightly broken files), and the
+             EXIF reader that tells which way up a phone photo is. -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>3.12.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-metadata</artifactId>
+            <version>3.12.0</version>
+        </dependency>
     </dependencies>
 
     <build>

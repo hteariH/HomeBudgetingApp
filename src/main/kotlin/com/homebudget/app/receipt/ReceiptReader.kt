@@ -12,6 +12,8 @@ import com.homebudget.app.repository.CurrencyRepository
 import com.homebudget.app.repository.UserCurrencySettingRepository
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.TransactionTemplate
@@ -48,6 +50,7 @@ class ReceiptReader(
 ) {
     companion object {
         const val NO_PROVIDER = "No model is set up to read receipts"
+        const val INTERRUPTED = "Reading was interrupted — scan again"
 
         /** NUMERIC(14,3): eleven digits before the point. */
         private val MAX_QUANTITY = BigDecimal("99999999999.999")
@@ -57,6 +60,9 @@ class ReceiptReader(
     private val tx = TransactionTemplate(transactionManager)
     private val inFlight = AtomicInteger()
     private val threadNumber = AtomicInteger()
+
+    /** Anything PENDING from before this was queued by a previous run and will never be read. */
+    private val startedAt: Instant = Instant.now(clock)
 
     private val executor = settings.concurrency.coerceAtLeast(1).let { n ->
         ThreadPoolExecutor(n, n, 60, TimeUnit.SECONDS, LinkedBlockingQueue()) { task ->
@@ -96,6 +102,16 @@ class ReceiptReader(
             Thread.sleep(20)
         }
         return true
+    }
+
+    /**
+     * The queue lives in memory, so a restart loses what was waiting in it. Those receipts
+     * are failed rather than left PENDING, where a client polling them would wait forever.
+     */
+    @EventListener(ApplicationReadyEvent::class)
+    fun failInterrupted() {
+        val failed = tx.execute { receipts.failPendingBefore(startedAt, INTERRUPTED, Instant.now(clock)) } ?: 0
+        if (failed > 0) log.info("Marked {} receipts interrupted by a restart as failed", failed)
     }
 
     @PreDestroy
