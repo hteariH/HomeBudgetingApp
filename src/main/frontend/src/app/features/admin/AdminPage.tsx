@@ -49,10 +49,11 @@ const AdminPage: React.FC = () => {
                         <Switch
                             checked={registration.data?.open ?? false}
                             onChange={(open) => toggle.mutate(open)}
+                            disabled={registration.isPending || registration.isError || registration.data?.lockedByEnvironment}
                             label={t('admin_registration_open')}
                             description={t(registration.data?.lockedByEnvironment ? 'admin_registration_locked' : 'admin_registration_hint')}
                         />
-                        <ErrorBanner error={toggle.error} />
+                        <ErrorBanner error={registration.error ?? toggle.error} />
                     </div>
                 </Card>
 

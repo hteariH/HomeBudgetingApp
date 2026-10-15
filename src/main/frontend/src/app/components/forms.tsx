@@ -55,13 +55,16 @@ export const Switch: React.FC<{
     description?: string;
     /** Just the toggle, with the label kept for screen readers - for a switch at a row's end. */
     compact?: boolean;
-}> = ({ checked, onChange, label, description, compact = false }) => (
+    /** Shown dimmed and ignores clicks - for a setting that cannot be changed right now. */
+    disabled?: boolean;
+}> = ({ checked, onChange, label, description, compact = false, disabled = false }) => (
     <button
         type="button"
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`flex items-center gap-4 py-2 text-left ${compact ? '' : 'w-full'}`}
+        className={`flex items-center gap-4 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50 ${compact ? '' : 'w-full'}`}
     >
         <span className={compact ? 'sr-only' : 'flex-1'}>
             <span className="block text-sm font-medium text-ink">{label}</span>

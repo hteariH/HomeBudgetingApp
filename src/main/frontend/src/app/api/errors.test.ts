@@ -37,3 +37,8 @@ it("a body that is not the server's error shape yields nothing", async () => {
 it('a non-HTTP failure has no server message', () => {
     expect(new ApiError(0, null).serverMessage).toBeNull();
 });
+
+it('a conflict says what conflicts', async () => {
+    const e = await apiErrorFrom(res(409, '{"message":"Registration is set by the REGISTRATION environment variable"}'));
+    expect(e.serverMessage).toBe('Registration is set by the REGISTRATION environment variable');
+});
