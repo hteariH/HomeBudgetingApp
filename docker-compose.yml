@@ -14,14 +14,28 @@ services:
     restart: unless-stopped
     ports:
       - "${PERSONALMONEY_PORT:-8080}:8080"
-    # Optional settings come from .env when there is one. Without it (Portainer, TrueNAS)
-    # DB_PASSWORD below is still required, and optional settings go under environment:.
-    env_file:
-      - path: .env
-        required: false
+    # Every setting is interpolated here rather than read with env_file, so the same file
+    # works with a .env next to it, with Portainer's stack variables and with TrueNAS's
+    # "Install via YAML" - and with Compose versions older than 2.24, which NAS bundles
+    # often ship. Defaults repeat the application's own: a variable set to an empty
+    # string would otherwise replace them.
     environment:
       DB_HOST: db
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      REGISTRATION: ${REGISTRATION:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      CRYPTO_SECRET: ${CRYPTO_SECRET:-}
+      APP_BASE_URL: ${APP_BASE_URL:-}
+      SERVER_FORWARD_HEADERS_STRATEGY: ${SERVER_FORWARD_HEADERS_STRATEGY:-none}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@localhost}
+      MONOBANK_KEY_ID: ${MONOBANK_KEY_ID:-}
+      MONOBANK_PRIVATE_KEY: ${MONOBANK_PRIVATE_KEY:-}
+      HOMEMONEY_CLIENT_ID: ${HOMEMONEY_CLIENT_ID:-5}
+      HOMEMONEY_CLIENT_SECRET: ${HOMEMONEY_CLIENT_SECRET:-demo}
     volumes:
       # Generated secrets live here (and, later, receipt images). Back it up.
       - ./data:/data

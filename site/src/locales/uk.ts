@@ -69,10 +69,10 @@ export const uk: Record<keyof typeof en, string> = {
     'install.unraid.2': 'Додайте стек із файлом compose та .env, у якому задано DB_PASSWORD.',
     'install.unraid.3': 'Натисніть Compose Up, відкрийте порт 8080 і створіть обліковий запис адміністратора.',
     'install.truenas.1': 'Відкрийте Apps → Discover → Custom App і виберіть «Install via YAML».',
-    'install.truenas.2': 'Вставте файл compose і впишіть пароль бази даних замість кожного ${DB_PASSWORD:?Set DB_PASSWORD}; необов’язкові налаштування додайте в environment: сервісу app.',
+    'install.truenas.2': 'Вставте файл compose і впишіть пароль бази даних замість кожного ${DB_PASSWORD:?Set DB_PASSWORD}; необов’язкові налаштування впишіть замість їхніх записів ${…}.',
     'install.truenas.3': 'Запустіть, відкрийте порт 8080 і створіть обліковий запис адміністратора.',
     'install.portainer.1': 'Відкрийте Stacks → Add stack і завантажте файл compose.',
-    'install.portainer.2': 'Додайте DB_PASSWORD до Environment variables; необов’язкові налаштування додайте в редакторі до environment: сервісу app.',
+    'install.portainer.2': 'Додайте DB_PASSWORD до Environment variables разом із потрібними необов’язковими налаштуваннями; файл compose підхопить їх усі.',
     'install.portainer.3': 'Розгорніть стек, відкрийте порт 8080 і створіть обліковий запис адміністратора.',
     'install.https.title': 'Доступ ззовні',
     'install.https.body':

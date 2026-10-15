@@ -40,10 +40,11 @@ Your data stays in `./data` and `./postgres` next to the compose file. The admin
 is at `/app/admin`, and `/actuator/health` answers once the server is up.
 
 Step-by-step guides for Synology, Unraid, TrueNAS and Portainer are on
-[personalmoney.app](https://personalmoney.app/#install). Where there is no `.env` file, as in
-Portainer and TrueNAS, give `DB_PASSWORD` in the stack's environment variables (Portainer) or
-type it in place of `${DB_PASSWORD:?Set DB_PASSWORD}` in the YAML (TrueNAS), and put any
-optional setting under the `app` service's `environment:`.
+[personalmoney.app](https://personalmoney.app/#install). The compose file reads every setting
+through variable interpolation, so it works without a `.env` file too: in Portainer give
+`DB_PASSWORD` (and any optional setting) as the stack's environment variables; in TrueNAS type
+the values straight into the YAML in place of `${DB_PASSWORD:?Set DB_PASSWORD}` and the other
+`${…}` entries. It needs no particular Docker Compose version.
 
 ## Configuration
 

@@ -212,9 +212,11 @@ services:
   app:
     image: ghcr.io/htearih/personalmoney:latest
     ports: ["8080:8080"]
-    env_file: .env
     environment:
       DB_HOST: db
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      # …every optional setting the same way, with the application's default:
+      MAIL_PORT: ${MAIL_PORT:-587}
     volumes: ["./data:/data"]
     depends_on:
       db: { condition: service_healthy }
@@ -231,6 +233,9 @@ services:
     restart: unless-stopped
 ```
 
+Settings reach the app by interpolation rather than `env_file`, so one file serves a `.env`,
+Portainer stack variables and TrueNAS's YAML, on any Docker Compose version (the long
+`env_file` form with `required: false` needs Compose 2.24+, which NAS bundles often lack).
 `.env.example` has `DB_PASSWORD` as the only required value, then the optional settings
 in commented groups. The current VPS compose file with the external `edge` network moves
 to `deploy/` and is used only for the landing site.

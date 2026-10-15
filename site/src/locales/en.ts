@@ -67,10 +67,10 @@ export const en = {
     'install.unraid.2': 'Add a stack with the compose file and a .env that holds DB_PASSWORD.',
     'install.unraid.3': 'Press Compose Up, open port 8080 and create the administrator account.',
     'install.truenas.1': 'Open Apps → Discover → Custom App and choose “Install via YAML”.',
-    'install.truenas.2': 'Paste the compose file and type your database password in place of each ${DB_PASSWORD:?Set DB_PASSWORD}; optional settings go under the app’s environment:.',
+    'install.truenas.2': 'Paste the compose file and type your database password in place of each ${DB_PASSWORD:?Set DB_PASSWORD}; any optional setting is typed in place of its ${…} entry.',
     'install.truenas.3': 'Start it, open port 8080 and create the administrator account.',
     'install.portainer.1': 'Open Stacks → Add stack and upload the compose file.',
-    'install.portainer.2': 'Add DB_PASSWORD under Environment variables; optional settings go under the app’s environment: in the editor.',
+    'install.portainer.2': 'Add DB_PASSWORD under Environment variables, together with any optional setting you want; the compose file picks them all up.',
     'install.portainer.3': 'Deploy it, open port 8080 and create the administrator account.',
     'install.https.title': 'Reaching it from outside',
     'install.https.body':
