@@ -8,6 +8,7 @@ import ForgotPassword from './landing/ForgotPassword';
 import ResetPassword from './landing/ResetPassword';
 import Login from './landing/Login';
 import Register from './landing/Register';
+import Join from './landing/Join';
 import { AppRoutes } from './app/lib/routes';
 import { PageLoading } from './app/shell/Page';
 
@@ -48,6 +49,7 @@ const App: React.FC = () => (
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/join" element={<Join />} />
                     <Route path="/setup" element={<Register setup />} />
                     <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />

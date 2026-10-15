@@ -19,6 +19,10 @@ export function saveSession(res: AuthResponse): void {
 // its own `#`, a control character - is dropped rather than repaired.
 const APP_PATH_SHAPE = /^\/app(\/[A-Za-z0-9/?&=_.,:%-]*)?$/;
 
+// An invitation link: nothing but the token, so it can neither leave the origin nor carry
+// anything else along.
+const JOIN_PATH_SHAPE = /^\/join\?token=[A-Za-z0-9_-]{1,100}$/;
+
 /**
  * Where to go after signing in: the screen the visitor was sent away from.
  *
@@ -29,6 +33,7 @@ const APP_PATH_SHAPE = /^\/app(\/[A-Za-z0-9/?&=_.,:%-]*)?$/;
 export function nextPath(search: string): string {
     const next = new URLSearchParams(search).get('next');
     if (!next || next.length > 200) return AppRoutes.dashboard;
+    if (JOIN_PATH_SHAPE.test(next)) return next;
     if (APP_PATH_SHAPE.test(next) && !next.includes('..')) return next;
     return legacyFragmentToPath(next) ?? AppRoutes.dashboard;
 }

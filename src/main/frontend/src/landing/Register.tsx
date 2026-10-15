@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi } from './authApi';
 import { AlertTriangle, UserPlus, Mail, Lock, User } from 'lucide-react';
 import { useT } from '../i18n';
@@ -11,6 +11,7 @@ const Register: React.FC<{ setup?: boolean }> = ({ setup = false }) => {
     const t = useT();
     const navigate = useNavigate();
     const location = useLocation();
+    const inviteToken = useSearchParams()[0].get('invite');
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -24,21 +25,23 @@ const Register: React.FC<{ setup?: boolean }> = ({ setup = false }) => {
     useEffect(() => {
         if (!setup && instance?.setupRequired) navigate('/setup' + location.search, { replace: true });
     }, [setup, instance, navigate, location.search]);
-    const closed = !setup && instance !== null && !instance.registrationOpen;
+    // An invitation is let through on a closed instance, so there is nothing to refuse.
+    const closed = !setup && !inviteToken && instance !== null && !instance.registrationOpen;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
         try {
-            await authApi.register(formData);
+            await authApi.register(inviteToken ? { ...formData, inviteToken } : formData);
             // Registration does not return tokens, so sign in straight away rather than
             // sending someone who has just typed their password to a form asking for it
             // again. This is what the Compose client's AuthRepository.register already did;
             // the web was the odd one out.
             const res = await authApi.login({ email: formData.email, password: formData.password });
             saveSession(res);
-            navigate(nextPath(location.search), { replace: true });
+            // The invitation was accepted by registering; the household is already theirs.
+            navigate(inviteToken ? '/app' : nextPath(location.search), { replace: true });
         } catch (err: any) {
             setError(err.message || t('register.failed'));
         } finally {
@@ -50,7 +53,7 @@ const Register: React.FC<{ setup?: boolean }> = ({ setup = false }) => {
         <AuthShell
             wide
             title={t(setup ? 'setup.title' : 'register.title')}
-            subtitle={t(setup ? 'setup.subtitle' : 'register.subtitle')}
+            subtitle={t(setup ? 'setup.subtitle' : inviteToken ? 'join.registerSubtitle' : 'register.subtitle')}
             footer={
                 <p className="text-ink-dim">
                     {t('register.hasAccount')}{' '}

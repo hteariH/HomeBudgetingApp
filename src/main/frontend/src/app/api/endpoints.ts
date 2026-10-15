@@ -134,4 +134,9 @@ export const endpoints = {
         api<T.RegistrationSettingDto>('/admin/registration', { method: 'PUT', json: { open } }),
     adminResetLink: (userId: number) => api<T.ResetLinkDto>(`/admin/users/${userId}/reset-link`, { method: 'POST' }),
     adminDeleteUser: (userId: number) => api<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
+
+    // ── households ──────────────────────────────────────────────────────────
+    /** Moves the caller's books into the household the invitation belongs to. */
+    acceptInvite: (token: string) =>
+        api<{ householdId: number; householdName: string }>(`/invites/${encodeURIComponent(token)}/accept`, { method: 'POST' }),
 };

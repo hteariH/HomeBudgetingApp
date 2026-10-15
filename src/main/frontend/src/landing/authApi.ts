@@ -9,6 +9,20 @@
 
 const BASE = '/api';
 
+export interface InvitePreview {
+    householdName: string;
+    invitedBy?: string | null;
+    expiresAt: string;
+}
+
+/** A refusal from the server, with the status so a page can tell "unknown" from "expired". */
+export class AuthApiError extends Error {
+    constructor(message: string, public readonly status: number) {
+        super(message);
+        this.name = 'AuthApiError';
+    }
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
     const res = await fetch(BASE + url, {
         headers: {
@@ -19,7 +33,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(err.message || res.statusText);
+        throw new AuthApiError(err.message || res.statusText, res.status);
     }
     if (res.status === 204) return undefined as unknown as T;
     return res.json();
@@ -28,6 +42,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 // ─── Auth ───────────────────────────────────────────────────────────────────
 export const authApi = {
     login: (data: any) => request<any>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+    /** `data.inviteToken` lets the registration through on a closed instance, into that household. */
     register: (data: any) => request<any>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 
     verifyEmail: (token: string) =>
@@ -41,4 +56,7 @@ export const authApi = {
         request<{ message: string }>('/auth/reset-password', {
             method: 'POST', body: JSON.stringify({ token, newPassword }),
         }),
+
+    /** Public: what an invitation link is for, shown before anyone has signed in. */
+    invitePreview: (token: string) => request<InvitePreview>(`/invites/${encodeURIComponent(token)}`),
 };

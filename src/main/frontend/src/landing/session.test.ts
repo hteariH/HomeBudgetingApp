@@ -13,3 +13,11 @@ it('never leaves the app', () => {
     expect(nextPath('?next=/apple')).toBe('/app');
     expect(nextPath('')).toBe('/app');
 });
+it('returns to an invitation link', () => {
+    expect(nextPath('?next=%2Fjoin%3Ftoken%3Dabc_DEF-1')).toBe('/join?token=abc_DEF-1');
+});
+it('refuses an invitation path that is not just a token', () => {
+    expect(nextPath('?next=%2Fjoin%3Ftoken%3Da%2F..')).toBe('/app');
+    expect(nextPath('?next=%2Fjoin%3Ftoken%3Dabc_DEF-1%26x%3D1')).toBe('/app');
+    expect(nextPath('?next=%2Fjoin%3Ftoken%3D')).toBe('/app');
+});
