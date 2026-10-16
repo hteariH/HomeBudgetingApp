@@ -210,11 +210,51 @@ class ExtractorsTest {
 
     @ParameterizedTest
     @EnumSource(AiProviderType::class)
-    fun `other errors say the model could not be reached`(type: AiProviderType) {
+    fun `a refused key says so`(type: AiProviderType) {
         server.reply(401, """{"error":{"message":"Invalid API key"}}""")
+        server.reply(403, """{"error":{"message":"This key may not use image input"}}""")
+
+        val unauthorized = assertThrows<ExtractionException> { extractor(type).extract(jpeg, context) }
+        val forbidden = assertThrows<ExtractionException> { extractor(type).extract(jpeg, context) }
+        assertEquals("The model refused the API key", unauthorized.reason)
+        assertEquals("The model refused the API key", forbidden.reason)
+    }
+
+    @ParameterizedTest
+    @EnumSource(AiProviderType::class)
+    fun `other errors say the model could not be reached`(type: AiProviderType) {
+        server.reply(404, """{"error":{"message":"model not found"}}""")
 
         val e = assertThrows<ExtractionException> { extractor(type).extract(jpeg, context) }
         assertEquals("Could not reach the model at 127.0.0.1", e.reason)
+    }
+
+    @ParameterizedTest
+    @EnumSource(AiProviderType::class)
+    fun `a complaint about the image that is not about reading images is not reported as one`(type: AiProviderType) {
+        server.reply(400, """{"error":{"message":"image exceeds 5 MB maximum"}}""")
+        server.reply(429, """{"error":{"message":"Too many image requests"}}""")
+
+        repeat(2) {
+            val e = assertThrows<ExtractionException> { extractor(type).extract(jpeg, context) }
+            assertEquals("Could not reach the model at 127.0.0.1", e.reason)
+        }
+    }
+
+    @Test
+    fun `the ways servers say a model takes no images are recognised`() {
+        listOf(
+            "This model does not support image input",
+            "Invalid content type. image_url is only supported by certain models.",
+            "llava: model doesn't support images",
+            "image input is not supported - hint: if this is unexpected, you may need to provide the mmproj",
+            "Multimodal input is not supported by this model",
+            "The model is not a multimodal model"
+        ).forEach { message ->
+            server.reply(400, json.writeValueAsString(mapOf("error" to mapOf("message" to message))))
+            val e = assertThrows<ExtractionException> { extractor(AiProviderType.OPENAI_COMPATIBLE).extract(jpeg, context) }
+            assertEquals("This model cannot read images", e.reason, message)
+        }
     }
 
     @ParameterizedTest
@@ -274,6 +314,24 @@ class ExtractorsTest {
     }
 
     @Test
+    fun `a server without response_format support is not offered it again on the next receipt`() {
+        server.reply(400, """{"error":{"message":"Unrecognized request argument supplied: response_format"}}""")
+        server.reply(200, envelope(AiProviderType.OPENAI_COMPATIBLE, receiptJson))
+        server.reply(200, envelope(AiProviderType.OPENAI_COMPATIBLE, receiptJson))
+
+        extractor(AiProviderType.OPENAI_COMPATIBLE).extract(jpeg, context)
+        assertGoodReceipt(extractor(AiProviderType.OPENAI_COMPATIBLE).extract(jpeg, context))
+
+        assertEquals(3, server.requests.size)
+        assertFalse(json.readTree(server.requests[2].body).has("response_format"))
+
+        // Another model on the same server is still offered JSON mode.
+        server.reply(200, envelope(AiProviderType.OPENAI_COMPATIBLE, receiptJson))
+        extractor(AiProviderType.OPENAI_COMPATIBLE, model = "vision-2").extract(jpeg, context)
+        assertTrue(json.readTree(server.requests[3].body).has("response_format"))
+    }
+
+    @Test
     fun `a local model without a key gets no authorization header`() {
         server.reply(200, envelope(AiProviderType.OPENAI_COMPATIBLE, receiptJson))
         extractor(AiProviderType.OPENAI_COMPATIBLE, key = null).extract(jpeg, context)
@@ -318,6 +376,21 @@ class ReceiptPromptTest {
         assertEquals(0, BigDecimal("1234.50").compareTo(r.items[0].price))
         assertEquals(0, BigDecimal("3.1").compareTo(r.items[1].price))
         assertEquals(0, BigDecimal("1234.50").compareTo(r.items[2].price))
+    }
+
+    @Test
+    fun `thousands separators are not read as a decimal point`() {
+        val r = ReceiptPrompt.parse(
+            """{"total":"1,234","items":[{"name":"A","price":"1,234,567.89"},{"name":"B","price":"1.234.567"},""" +
+                """{"name":"C","price":"12,5"},{"name":"D","price":"0,125"},{"name":"E","price":"1.234"},{"name":"F","price":"-1,234.5"}]}"""
+        )
+        assertEquals(0, BigDecimal("1234").compareTo(r.total))
+        assertEquals(0, BigDecimal("1234567.89").compareTo(r.items[0].price))
+        assertEquals(0, BigDecimal("1234567").compareTo(r.items[1].price))
+        assertEquals(0, BigDecimal("12.5").compareTo(r.items[2].price))
+        assertEquals(0, BigDecimal("0.125").compareTo(r.items[3].price), "a leading zero is a decimal, not a thousand")
+        assertEquals(0, BigDecimal("1.234").compareTo(r.items[4].price), "a dot is the decimal point the prompt asks for")
+        assertEquals(0, BigDecimal("-1234.5").compareTo(r.items[5].price))
     }
 
     @Test

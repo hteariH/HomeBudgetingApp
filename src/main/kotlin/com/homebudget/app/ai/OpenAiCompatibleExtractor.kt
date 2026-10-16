@@ -11,18 +11,22 @@ import java.time.Duration
  * `POST {base}/chat/completions` - OpenAI, OpenRouter, Ollama, LM Studio, vLLM.
  *
  * JSON mode (`response_format`) is asked for; a server that rejects the field gets the
- * same request once more without it, and later requests from this extractor omit it.
+ * same request once more without it, and is remembered in [withoutJsonMode] - shared by
+ * every extractor the factory makes - so later receipts for that model go without it at once.
  */
 class OpenAiCompatibleExtractor(
     http: HttpClient,
     json: ObjectMapper,
     provider: ResolvedProvider,
-    timeout: Duration
+    timeout: Duration,
+    private val withoutJsonMode: MutableSet<String> = mutableSetOf()
 ) : HttpReceiptExtractor(http, json, provider, timeout) {
 
     override val endpoint: URI = URI.create(provider.baseUrl.trimEnd('/') + "/chat/completions")
 
-    @Volatile private var jsonMode = true
+    private val memoryKey = "$endpoint ${provider.model}"
+
+    private val jsonMode: Boolean get() = memoryKey !in withoutJsonMode
 
     override fun headers(): Map<String, String> =
         provider.apiKey?.takeIf { it.isNotEmpty() }?.let { mapOf("Authorization" to "Bearer $it") } ?: emptyMap()
@@ -33,7 +37,7 @@ class OpenAiCompatibleExtractor(
             if (response.statusCode() != 400 || !(response.body() ?: "").contains("response_format", ignoreCase = true)) {
                 return answerOf(response)
             }
-            jsonMode = false
+            withoutJsonMode += memoryKey
         }
         return answerOf(post(body(image, prompt, reply)))
     }

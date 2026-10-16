@@ -80,14 +80,26 @@ object ReceiptPrompt {
         else -> null
     }
 
-    /** "12,40 €" → 12.40, "1 234.50" → 1234.50; with both separators the last one is the decimal point. */
+    /**
+     * "12,40 €" → 12.40, "1 234.50" → 1234.50, "1,234" → 1234. With both separators the last
+     * one is the decimal point; one that repeats separates thousands, and so does a single
+     * comma before exactly three digits that do not follow a lone zero. A single dot is
+     * always the decimal point - the prompt asks for one.
+     */
     private fun decimalOf(raw: String): BigDecimal? {
         val s = raw.filter { it.isDigit() || it == '.' || it == ',' || it == '-' }
+        val commas = s.count { it == ',' }
+        val dots = s.count { it == '.' }
         val normal = when {
-            s.contains('.') && s.contains(',') ->
+            commas > 0 && dots > 0 ->
                 if (s.lastIndexOf(',') > s.lastIndexOf('.')) s.replace(".", "").replace(',', '.') else s.replace(",", "")
+            commas > 1 -> s.replace(",", "")
+            dots > 1 -> s.replace(".", "")
+            THOUSANDS.matches(s) -> s.replace(",", "")
             else -> s.replace(',', '.')
         }
         return normal.toBigDecimalOrNull()
     }
+
+    private val THOUSANDS = Regex("""-?[1-9]\d{0,2},\d{3}""")
 }

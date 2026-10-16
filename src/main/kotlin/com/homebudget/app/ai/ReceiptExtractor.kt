@@ -35,6 +35,7 @@ data class ExtractedReceipt(
 class ExtractionException(val reason: String) : RuntimeException(reason) {
     companion object {
         const val CANNOT_READ_IMAGES = "This model cannot read images"
+        const val KEY_REFUSED = "The model refused the API key"
         const val UNREADABLE = "The model's answer could not be read"
         /** The server stopped while the model was reading. */
         const val INTERRUPTED = "Reading was interrupted — scan again"
@@ -138,7 +139,8 @@ abstract class HttpReceiptExtractor(
         val status = response.statusCode()
         if (status !in 200..299) {
             log.warn("The model at {} answered HTTP {}", host, status)
-            if (status in 400..499 && IMAGE_COMPLAINT.containsMatchIn(response.body() ?: "")) {
+            if (status == 401 || status == 403) throw ExtractionException(ExtractionException.KEY_REFUSED)
+            if (status in IMAGE_REFUSAL_STATUSES && NO_IMAGES.any { it.containsMatchIn(response.body() ?: "") }) {
                 throw ExtractionException(ExtractionException.CANNOT_READ_IMAGES)
             }
             throw ExtractionException.unreachable(host)
@@ -149,7 +151,20 @@ abstract class HttpReceiptExtractor(
     }
 
     private companion object {
-        val IMAGE_COMPLAINT = Regex("image|vision|multimodal", RegexOption.IGNORE_CASE)
+        /** A request the server understood and turned down; not a key, size or rate problem. */
+        val IMAGE_REFUSAL_STATUSES = setOf(400, 415, 422)
+
+        /**
+         * How servers say a model takes no images - "does not support image input" (OpenAI,
+         * Anthropic), "image_url is only supported by certain models", "model doesn't support
+         * images" (Ollama), "image input is not supported" (llama.cpp). An error that merely
+         * mentions an image, such as one too large, is not one of these.
+         */
+        val NO_IMAGES = listOf(
+            Regex("""(does not|doesn't|do not|don't|cannot|can't|unable to) (support|accept|read|process|handle)\w* (image|vision|multimodal)""", RegexOption.IGNORE_CASE),
+            Regex("""(image|vision|multimodal)\w*( input| content| inputs)? (is |are )?(not supported|unsupported|only supported by)""", RegexOption.IGNORE_CASE),
+            Regex("""not an? (multimodal|vision)""", RegexOption.IGNORE_CASE)
+        )
     }
 }
 

@@ -169,6 +169,7 @@ is 400.
 | Case | Result |
 | --- | --- |
 | Model unreachable | `FAILED`: "Could not reach the model at {host}" |
+| Model refuses the key (HTTP 401/403) | `FAILED`: "The model refused the API key" |
 | Model rejects images | `FAILED`: "This model cannot read images" |
 | Not JSON / wrong shape after one retry | `FAILED`: "The model's answer could not be read" |
 | Timeout | `FAILED`: "The model took longer than {timeout}" |
