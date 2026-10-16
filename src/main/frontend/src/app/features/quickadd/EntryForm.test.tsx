@@ -173,3 +173,23 @@ it('shows item prices as money in the receipt currency', async () => {
     expect(await screen.findByText(/3\.00/)).toBeInTheDocument();
     expect(screen.getByText(/3\.00/).textContent).toMatch(/€|EUR/);
 });
+
+it('fills in a total held back for a transfer once the entry is back on an account in its currency', async () => {
+    const server = stubSlowServer();
+    renderForm();
+    await pickPhoto();
+    await screen.findByText(appEn.receipt_reading);
+
+    // A transfer from the euro card: the dollar total does not fit its source.
+    fireEvent.click(screen.getByRole('tab', { name: appEn.transfer_mode }));
+    fireEvent.click(screen.getAllByText('Cash · USD')[0]);
+    fireEvent.click(await screen.findByText('Euro card'));
+    server.ready();
+    await waitFor(() => expect(screen.getByDisplayValue('Corner Shop')).toBeInTheDocument(), { timeout: 5000 });
+    expect(screen.queryByDisplayValue('12.50')).not.toBeInTheDocument();
+
+    // Back on the dollar expense, the receipt fits: the total is filled in rather than missing without a word.
+    fireEvent.click(screen.getByRole('tab', { name: appEn.dashboard_add_expense }));
+    await waitFor(() => expect(screen.getByDisplayValue('12.50')).toBeInTheDocument());
+    expect(screen.queryByText(/but this account is in/)).not.toBeInTheDocument();
+});

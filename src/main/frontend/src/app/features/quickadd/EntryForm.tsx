@@ -118,6 +118,10 @@ export const EntryForm: React.FC<{
     const canScan = !!provider && provider.source !== 'NONE';
     const scan = useReceiptScan();
     const [receipt, setReceipt] = useState<ReceiptDto | null>(null);
+    // A total that arrived while the form was on an account in another currency - a transfer's
+    // source, say. Held until the entry is on an account in the receipt's currency, where no
+    // note explains an empty amount, and filled in then if the amount is still empty.
+    const [heldTotal, setHeldTotal] = useState<string | null>(null);
 
     // ── ledger entry ────────────────────────────────────────────────────────
     const [accountId, setAccountId] = useState<number | null>(null);
@@ -159,6 +163,7 @@ export const EntryForm: React.FC<{
         setShowFee(false);
         setTransferError(null);
         setReceipt(null);
+        setHeldTotal(null);
         scan.reset();
         if (!initialCategoryId) setCategoryId(null);
     };
@@ -174,7 +179,9 @@ export const EntryForm: React.FC<{
         const now = latest.current;
         const target = now.mode === 'TRANSFER' ? now.from : now.account;
         setReceipt(read);
-        if (read.total && (!read.currency || read.currency === target?.currency.code)) setAmount(read.total);
+        const fits = !read.currency || read.currency === target?.currency.code;
+        if (read.total && fits) setAmount(read.total);
+        setHeldTotal(read.total && !fits ? read.total : null);
         if (read.date) setDay(read.date);
         if (read.merchant) setNote(read.merchant);
         const suggested = read.suggestedCategoryId;
@@ -182,6 +189,12 @@ export const EntryForm: React.FC<{
             setCategoryId(suggested);
         }
     };
+
+    useEffect(() => {
+        if (heldTotal === null || mode === 'TRANSFER' || receipt?.currency !== account?.currency.code) return;
+        if (amount === '') setAmount(heldTotal);
+        setHeldTotal(null);
+    }, [heldTotal, mode, receipt, account, amount]);
 
     const afterSave = async () => {
         await invalidateLedger();
