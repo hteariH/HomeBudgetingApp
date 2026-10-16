@@ -415,8 +415,8 @@ class SyncService(
             entity.transferFeeMinor = record.transferFee?.let { MinorUnits.toMinor(it, decimals) }
             entity.deleted = record.deleted
             entity.updatedAt = now
-            val discardedReceipt = if (record.deleted) entity.receipt else null
-            if (record.deleted) entity.receipt = null else if (receipt != null) entity.receipt = receipt
+            val discardedReceipt = if (record.deleted) entity.receiptId else null
+            if (record.deleted) entity.linkReceipt(null) else if (receipt != null) entity.linkReceipt(receipt)
             transactionRepo.save(entity)
             discardedReceipt?.let(receiptService::deleteWithPhoto)
             applied++
@@ -509,6 +509,6 @@ class SyncService(
         transferCounterpartAccountUuid = transferCounterpartAccountId?.let { accountUuids[it] },
         transferFee = transferFeeMinor?.let { MinorUnits.toDecimal(it, account.currency.decimals) },
         createdByUserId = createdBy?.id,
-        receiptUuid = receipt?.uuid
+        receiptUuid = receiptUuid
     )
 }

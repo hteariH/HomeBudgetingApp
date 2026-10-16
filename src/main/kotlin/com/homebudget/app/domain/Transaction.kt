@@ -1,6 +1,7 @@
 package com.homebudget.app.domain
 
 import jakarta.persistence.*
+import org.hibernate.annotations.Formula
 import org.hibernate.annotations.SQLRestriction
 import java.math.BigDecimal
 import java.time.Instant
@@ -98,12 +99,16 @@ data class Transaction(
     var externalId: String? = null,
 
     /**
-     * The receipt this entry was saved from. Eager because responses are built outside
-     * the session (open-in-view is off); it goes when the entry is deleted.
+     * The receipt this entry was saved from; it goes when the entry is deleted. An id, not
+     * an association: entities are final classes here, so a lazy one would still load
+     * every receipt, one select per row, while responses need only [receiptUuid].
      */
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "receipt_id")
-    var receipt: com.homebudget.app.receipt.Receipt? = null,
+    @Column(name = "receipt_id")
+    var receiptId: Long? = null,
+
+    /** The linked receipt's uuid, read in the same select as the row; set with [linkReceipt]. */
+    @Formula("(select r.uuid from receipts r where r.id = receipt_id)")
+    var receiptUuid: String? = null,
 
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
@@ -113,4 +118,9 @@ data class Transaction(
 
     @Column(nullable = false)
     override var deleted: Boolean = false
-) : Syncable
+) : Syncable {
+    fun linkReceipt(receipt: com.homebudget.app.receipt.Receipt?) {
+        receiptId = receipt?.id
+        receiptUuid = receipt?.uuid
+    }
+}

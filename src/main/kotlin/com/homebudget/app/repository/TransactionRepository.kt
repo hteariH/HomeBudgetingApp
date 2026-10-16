@@ -77,14 +77,23 @@ interface TransactionRepository : JpaRepository<Transaction, Long> {
     // ── Sync access ─────────────────────────────────────────────────────────
     // Native SQL on purpose: @SQLRestriction hides tombstones from every JPQL query,
     // and sync is the one place that must see them - a deletion the client never
-    // learns about would be pushed straight back.
+    // learns about would be pushed straight back. Each also selects what the entity's
+    // @Formula reads - the receipt's uuid - under the property's name.
 
     @Query(
-        value = "SELECT * FROM transactions WHERE household_id = :householdId AND updated_at > :since ORDER BY updated_at, id LIMIT :limit",
+        value = "SELECT t.*, $RECEIPT_UUID FROM transactions t WHERE t.household_id = :householdId AND t.updated_at > :since " +
+            "ORDER BY t.updated_at, t.id LIMIT :limit",
         nativeQuery = true
     )
     fun findChangedSince(householdId: Long, since: Instant, limit: Int): List<Transaction>
 
-    @Query(value = "SELECT * FROM transactions WHERE uuid = :uuid AND household_id = :householdId", nativeQuery = true)
+    @Query(
+        value = "SELECT t.*, $RECEIPT_UUID FROM transactions t WHERE t.uuid = :uuid AND t.household_id = :householdId",
+        nativeQuery = true
+    )
     fun findByUuidIncludingDeleted(uuid: String, householdId: Long): Transaction?
+
+    companion object {
+        const val RECEIPT_UUID = "(SELECT r.uuid FROM receipts r WHERE r.id = t.receipt_id) AS receiptUuid"
+    }
 }

@@ -10,6 +10,8 @@ import com.homebudget.app.dto.SyncTransaction
 import com.homebudget.app.security.UserPrincipal
 import com.homebudget.app.service.AccountService
 import com.homebudget.app.service.SyncService
+import jakarta.persistence.EntityManagerFactory
+import org.hibernate.SessionFactory
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,6 +32,7 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -58,6 +61,7 @@ class ReceiptLinkTest {
                 "jdbc:h2:mem:receipt-link;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH"
             }
             registry.add("app.data-dir") { dataDir.toString() }
+            registry.add("spring.jpa.properties.hibernate.generate_statistics") { "true" }
         }
 
         @JvmStatic
@@ -73,6 +77,7 @@ class ReceiptLinkTest {
     @Autowired private lateinit var images: ReceiptImages
     @Autowired private lateinit var syncService: SyncService
     @Autowired private lateinit var accountService: AccountService
+    @Autowired private lateinit var entityManagerFactory: EntityManagerFactory
 
     private val json = ObjectMapper()
     private lateinit var owner: UserPrincipal
@@ -255,5 +260,25 @@ class ReceiptLinkTest {
 
         assertEquals(1, pushed.applied, "rejections: ${pushed.rejected}")
         assertNull(syncService.pull(Instant.EPOCH, 500).changes.transactions.single { it.uuid == txUuid }.receiptUuid)
+    }
+
+    @Test
+    fun `lists and pulls name each entry's receipt without loading the receipts`() {
+        val linked = List(3) { UUID.randomUUID().toString() to newReceipt() }
+        assertTrue(push(*linked.map { (tx, r) -> syncTx(tx, r.uuid) }.toTypedArray()).rejected.isEmpty())
+        val statistics = entityManagerFactory.unwrap(SessionFactory::class.java).statistics
+        statistics.clear()
+
+        val pulled = syncService.pull(Instant.EPOCH, 500).changes.transactions.associate { it.uuid to it.receiptUuid }
+        val listed = json.readTree(
+            mvc.perform(get("/api/transactions?size=100").with(asUser(owner))).andExpect(status().isOk)
+                .andReturn().response.contentAsString
+        )["content"].associate { it["uuid"].asText() to it["receiptUuid"]?.takeUnless { n -> n.isNull }?.asText() }
+
+        linked.forEach { (tx, r) ->
+            assertEquals(r.uuid, pulled[tx])
+            assertEquals(r.uuid, listed[tx])
+        }
+        assertEquals(0, statistics.getEntityStatistics(Receipt::class.java.name).loadCount, "no receipt row is loaded")
     }
 }

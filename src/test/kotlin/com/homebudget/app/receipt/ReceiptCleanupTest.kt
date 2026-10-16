@@ -72,7 +72,7 @@ class ReceiptCleanupTest {
         transactions.save(
             Transaction(household = p.household, account = account, amountMinor = 100, currencyCode = "USD",
                 accountAmountMinor = 100, type = TransactionType.EXPENSE, occurredAt = Instant.now(),
-                receipt = receipt, deleted = deleted)
+                receiptId = receipt.id, deleted = deleted)
         )
     }
 
@@ -93,6 +93,6 @@ class ReceiptCleanupTest {
         assertTrue(gone(oldOnTombstone), "a receipt held only by a deleted transaction counts as unsaved")
         assertTrue(kept(oldLinked), "a receipt saved with a transaction stays")
         assertTrue(kept(fresh), "an unsaved receipt younger than a day stays")
-        assertFalse(transactions.findAll().any { it.receipt?.id == oldOnTombstone.id })
+        assertFalse(transactions.findAll().any { it.receiptId == oldOnTombstone.id })
     }
 }

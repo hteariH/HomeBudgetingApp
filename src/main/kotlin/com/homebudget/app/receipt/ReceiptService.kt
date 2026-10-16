@@ -117,6 +117,11 @@ class ReceiptService(
         images.deleteAfterCommit(path)
     }
 
+    /** [deleteWithPhoto] by id; a receipt already gone is fine. */
+    fun deleteWithPhoto(receiptId: Long) {
+        receipts.findById(receiptId).ifPresent(::deleteWithPhoto)
+    }
+
     private fun find(uuid: String, household: Household): Receipt =
         receipts.findByUuidAndHouseholdId(uuid, household.id) ?: throw NoSuchElementException("Receipt not found: $uuid")
 

@@ -73,21 +73,20 @@ class TransactionService(
 
         // No balance bookkeeping here on purpose - the balance is derived from these
         // rows, so inserting the row *is* the balance update.
-        return transactionRepo.save(
-            Transaction(
-                household = household,
-                createdBy = user,
-                account = account,
-                category = category,
-                amountMinor = amountMinor,
-                currencyCode = account.currency.code,
-                accountAmountMinor = amountMinor,
-                type = req.type,
-                occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant(),
-                description = req.description,
-                receipt = receipt
-            )
+        val transaction = Transaction(
+            household = household,
+            createdBy = user,
+            account = account,
+            category = category,
+            amountMinor = amountMinor,
+            currencyCode = account.currency.code,
+            accountAmountMinor = amountMinor,
+            type = req.type,
+            occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant(),
+            description = req.description
         )
+        transaction.linkReceipt(receipt)
+        return transactionRepo.save(transaction)
     }
 
     fun update(id: Long, req: UpdateTransactionRequest): Transaction {
@@ -106,7 +105,7 @@ class TransactionService(
         req.occurredAt?.let { transaction.occurredAt = it }
         req.description?.let { transaction.description = it }
         req.receiptUuid?.let {
-            transaction.receipt = receiptService.linkable(it, securityUtils.getCurrentHousehold(), transaction.uuid)
+            transaction.linkReceipt(receiptService.linkable(it, securityUtils.getCurrentHousehold(), transaction.uuid))
         }
         transaction.updatedAt = Instant.now()
 
@@ -128,11 +127,11 @@ class TransactionService(
     /** Tombstones [rows]; a receipt saved with one of them is deleted, photo and all. */
     private fun tombstoneAll(rows: List<Transaction>) {
         val now = Instant.now()
-        val receipts = rows.mapNotNull { it.receipt }
+        val receipts = rows.mapNotNull { it.receiptId }
         rows.forEach {
             it.deleted = true
             it.updatedAt = now
-            it.receipt = null
+            it.linkReceipt(null)
         }
         transactionRepo.saveAll(rows)
         receipts.forEach(receiptService::deleteWithPhoto)
