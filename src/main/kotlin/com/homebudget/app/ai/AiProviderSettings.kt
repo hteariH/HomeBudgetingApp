@@ -2,8 +2,11 @@ package com.homebudget.app.ai
 
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.net.URI
 import java.time.Duration
 import java.time.Instant
@@ -36,7 +39,8 @@ class AiProviderSettings(
     @Value("\${app.ai.model:}") private val envModel: String,
     @Value("\${app.ai.api-key:}") private val envApiKey: String,
     @Value("\${app.ai.timeout:5m}") val timeout: Duration,
-    @Value("\${app.ai.concurrency:2}") val concurrency: Int
+    @Value("\${app.ai.concurrency:2}") val concurrency: Int,
+    transactionManager: PlatformTransactionManager
 ) {
     companion object {
         const val ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
@@ -73,6 +77,7 @@ class AiProviderSettings(
     }
 
     private val log = LoggerFactory.getLogger(javaClass)
+    private val tx = TransactionTemplate(transactionManager)
 
     private val environment: ResolvedProvider? = buildEnvironmentProvider()
 
@@ -125,13 +130,14 @@ class AiProviderSettings(
     @Transactional(readOnly = true)
     fun instanceView(): ProviderView = view(instanceProvider())
 
-    @Transactional
     fun saveHousehold(householdId: Long, req: ProviderRequest): ProviderView {
         validate(req, administrator = false)
-        val row = providers.findByHouseholdId(householdId)
-            ?: AiProviderEntity(scope = AiProviderScope.HOUSEHOLD, householdId = householdId, type = req.type, model = req.model)
-        apply(row, req)
-        providers.save(row)
+        upsert {
+            val row = providers.findByHouseholdId(householdId)
+                ?: AiProviderEntity(scope = AiProviderScope.HOUSEHOLD, householdId = householdId, type = req.type, model = req.model)
+            apply(row, req)
+            providers.saveAndFlush(row)
+        }
         return viewFor(householdId)
     }
 
@@ -140,16 +146,29 @@ class AiProviderSettings(
         providers.findByHouseholdId(householdId)?.let(providers::delete)
     }
 
-    @Transactional
     fun saveInstance(req: ProviderRequest): ProviderView {
         if (lockedByEnvironment) throw AiProviderLockedException()
         validate(req, administrator = true)
-        // One row, kept that way here: H2 (the test database) has no partial unique index.
-        val row = providers.findFirstByScope(AiProviderScope.INSTANCE)
-            ?: AiProviderEntity(scope = AiProviderScope.INSTANCE, type = req.type, model = req.model)
-        apply(row, req)
-        providers.save(row)
+        upsert {
+            val row = providers.findFirstByScope(AiProviderScope.INSTANCE)
+                ?: AiProviderEntity(scope = AiProviderScope.INSTANCE, type = req.type, model = req.model)
+            apply(row, req)
+            providers.saveAndFlush(row)
+        }
         return instanceView()
+    }
+
+    /**
+     * Runs [write] - find the row or make it, then save - in a transaction of its own. Two
+     * first saves at once both make a row and the database's unique constraint refuses the
+     * second; that one runs again, finds the row the other committed and updates it.
+     */
+    private fun upsert(write: () -> Unit) {
+        try {
+            tx.executeWithoutResult { write() }
+        } catch (e: DataIntegrityViolationException) {
+            tx.executeWithoutResult { write() }
+        }
     }
 
     @Transactional

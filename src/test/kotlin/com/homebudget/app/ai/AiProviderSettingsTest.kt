@@ -12,6 +12,9 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import java.time.Duration
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -222,6 +225,60 @@ class AiProviderSettingsTest {
         assertEquals(Duration.ofMinutes(5), settings.timeout)
         assertEquals(2, settings.concurrency)
     }
+
+    /** Runs [save] from [n] threads at once; returns what each threw, if anything. */
+    private fun together(n: Int, save: () -> Unit): List<Throwable> {
+        val start = CyclicBarrier(n)
+        val pool = Executors.newFixedThreadPool(n)
+        try {
+            return List(n) { pool.submit<Throwable?> { start.await(); runCatching(save).exceptionOrNull() } }
+                .mapNotNull { it.get(30, TimeUnit.SECONDS) }
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    private fun rows(where: String, vararg args: Any) =
+        jdbc.queryForObject("SELECT COUNT(*) FROM ai_providers WHERE $where", Int::class.java, *args)
+
+    @Test
+    fun `administrators saving the first provider together leave one instance row`() {
+        settings.deleteInstance()
+        try {
+            repeat(5) {
+                settings.deleteInstance()
+                val failures = together(6) {
+                    settings.saveInstance(ProviderRequest(AiProviderType.ANTHROPIC, null, "claude-x", "sk-instance"))
+                }
+                assertEquals(emptyList<Throwable>(), failures)
+                assertEquals(1, rows("scope = 'INSTANCE'"))
+            }
+        } finally {
+            settings.deleteInstance()
+        }
+    }
+
+    @Test
+    fun `the database refuses a second instance row`() {
+        settings.saveInstance(ProviderRequest(AiProviderType.ANTHROPIC, null, "claude-x", null))
+        try {
+            assertThrows<org.springframework.dao.DataIntegrityViolationException> {
+                jdbc.update("INSERT INTO ai_providers (scope, type, model, instance_slot) VALUES ('INSTANCE', 'GEMINI', 'g', 1)")
+            }
+        } finally {
+            settings.deleteInstance()
+        }
+    }
+
+    @Test
+    fun `members saving their household's first provider together get no error`() {
+        repeat(5) { round ->
+            val household = identity.newMember("together-$round").household
+            val failures = together(6) { settings.saveHousehold(household.id, openai) }
+            assertEquals(emptyList<Throwable>(), failures)
+            assertEquals(1, rows("household_id = ?", household.id))
+        }
+    }
 }
 
 @SpringBootTest
@@ -273,7 +330,8 @@ class AiProviderEnvironmentKeyTest {
 
     private fun settingsWithKey(key: String) = AiProviderSettings(
         org.mockito.Mockito.mock(AiProviderRepository::class.java),
-        "ANTHROPIC", "", "claude-env", key, Duration.ofMinutes(5), 2
+        "ANTHROPIC", "", "claude-env", key, Duration.ofMinutes(5), 2,
+        org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager::class.java)
     )
 
     @Test

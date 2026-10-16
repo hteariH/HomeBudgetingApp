@@ -23,6 +23,10 @@ class AiProviderEntity(
     @Column(name = "household_id")
     val householdId: Long? = null,
 
+    /** 1 for the instance row, null for a household's: its unique constraint keeps one instance row. */
+    @Column(name = "instance_slot", updatable = false)
+    val instanceSlot: Short? = if (scope == AiProviderScope.INSTANCE) 1 else null,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     var type: AiProviderType,
