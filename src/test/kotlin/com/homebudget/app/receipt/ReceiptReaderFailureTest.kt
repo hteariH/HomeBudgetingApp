@@ -34,6 +34,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -139,5 +140,32 @@ class ReceiptReaderFailureTest {
 
         assertTrue(reader.awaitIdle(Duration.ofSeconds(20)))
         expectFailed(uuid, ReceiptReader.INTERRUPTED)
+    }
+
+    @Test
+    fun `an interrupt that lands after a successful read keeps what was read`() {
+        extractors.script = {
+            Thread.currentThread().interrupt()
+            ExtractedReceipt("SHOP", null, null, BigDecimal("2.00"), emptyList(), null)
+        }
+
+        val uuid = upload()
+
+        assertTrue(reader.awaitIdle(Duration.ofSeconds(20)))
+        mvc.perform(get("/api/receipts/$uuid").with(asUser(owner)))
+            .andExpect(jsonPath("$.status").value("READY"))
+            .andExpect(jsonPath("$.merchant").value("SHOP"))
+    }
+
+    @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    fun `a receipt the reader cannot take is failed rather than left pending`() {
+        reader.shutdown()
+
+        val body = mvc.perform(
+            multipart("/api/receipts").file(MockMultipartFile("image", "receipt.png", "image/png", pngBytes())).with(asUser(owner))
+        ).andExpect(status().isAccepted).andExpect(jsonPath("$.status").value("FAILED")).andReturn().response.contentAsString
+
+        expectFailed(ObjectMapper().readTree(body)["uuid"].asText(), ReceiptReader.INTERRUPTED)
     }
 }

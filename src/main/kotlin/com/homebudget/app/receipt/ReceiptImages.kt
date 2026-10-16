@@ -63,6 +63,25 @@ class ReceiptImages(@Value("\${app.data-dir:/data}") dataDir: String) {
         // Inside a Spring Boot jar the WebP reader sits in a nested jar that ImageIO's
         // first scan (with the system class loader) does not see.
         ImageIO.scanForPlugins()
+        sweepPartials()
+    }
+
+    /**
+     * Deletes the `*.part` files a crash or a kill left halfway through [store]. Runs before
+     * the server takes requests, so none of them belongs to an upload still being written.
+     */
+    private fun sweepPartials() {
+        val receipts = root.resolve("receipts")
+        if (!Files.isDirectory(receipts)) return
+        try {
+            val partials = Files.walk(receipts).use { paths ->
+                paths.filter { it.fileName.toString().endsWith(".part") && Files.isRegularFile(it) }.toList()
+            }
+            partials.forEach(Files::deleteIfExists)
+            if (partials.isNotEmpty()) log.info("Deleted {} half-written receipt photos", partials.size)
+        } catch (e: IOException) {
+            log.warn("Could not sweep half-written receipt photos: {}", e.javaClass.simpleName)
+        }
     }
 
     /** Compresses [upload] and writes it; returns the path to store on the receipt. */

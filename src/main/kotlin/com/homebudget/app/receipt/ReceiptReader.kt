@@ -77,8 +77,12 @@ class ReceiptReader(
         data class Failed(val reason: String) : Outcome
     }
 
-    /** Queues [receiptId]; call once its row is committed. */
-    fun submit(receiptId: Long) {
+    /**
+     * Queues [receiptId]; call once its row is committed. Returns false when the reader
+     * would not take it - it is shutting down - and the receipt has been failed instead of
+     * being left PENDING with nobody to read it.
+     */
+    fun submit(receiptId: Long): Boolean {
         inFlight.incrementAndGet()
         try {
             executor.execute {
@@ -88,9 +92,12 @@ class ReceiptReader(
                     inFlight.decrementAndGet()
                 }
             }
+            return true
         } catch (e: RuntimeException) {
             inFlight.decrementAndGet()
-            throw e
+            log.warn("Could not queue receipt {} for reading: {}", receiptId, e.javaClass.simpleName)
+            save(receiptId, Outcome.Failed(INTERRUPTED))
+            return false
         }
     }
 
@@ -134,12 +141,13 @@ class ReceiptReader(
             log.warn("Reading receipt {} failed unexpectedly: {}", receiptId, e.javaClass.name)
             Outcome.Failed(ExtractionException.UNREADABLE)
         }
-        // A shutdown interrupts the read; whatever it surfaced as, that is the reason. The flag
-        // is cleared for the write - an interrupted thread cannot borrow a database connection -
-        // and set again after it.
+        // A shutdown interrupts the read; whatever a failed read surfaced as, that is the reason.
+        // One that landed after the model had answered changes nothing: the answer is kept.
+        // The flag is cleared for the write - an interrupted thread cannot borrow a database
+        // connection - and set again after it.
         val interrupted = Thread.interrupted()
         try {
-            save(receiptId, if (interrupted) Outcome.Failed(INTERRUPTED) else outcome)
+            save(receiptId, if (interrupted && outcome is Outcome.Failed) Outcome.Failed(INTERRUPTED) else outcome)
         } finally {
             if (interrupted) Thread.currentThread().interrupt()
         }

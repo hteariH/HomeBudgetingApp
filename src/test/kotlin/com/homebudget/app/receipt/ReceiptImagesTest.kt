@@ -165,4 +165,21 @@ class ReceiptImagesTest {
         assertNull(images.read(relative))
         images.delete(relative) // twice is fine
     }
+
+    @Test
+    fun `half-written photos left by a crash are swept away at startup`() {
+        val dir = Files.createDirectories(dataDir.resolve("receipts/household"))
+        val photo = Files.write(dir.resolve("kept.jpg"), byteArrayOf(1))
+        val partial = Files.write(dir.resolve("abc-123.part"), byteArrayOf(2))
+
+        ReceiptImages(dataDir.toString())
+
+        assertTrue(Files.exists(photo))
+        assertFalse(Files.exists(partial))
+    }
+
+    @Test
+    fun `a data directory without receipts starts fine`() {
+        ReceiptImages(dataDir.resolve("missing").toString())
+    }
 }

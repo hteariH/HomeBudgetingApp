@@ -72,8 +72,8 @@ class ReceiptService(
             images.delete(path)
             throw e
         }
-        reader.submit(receipt.id)
-        return receipt
+        // Refused, the reader has failed the receipt; the answer says so rather than PENDING.
+        return if (reader.submit(receipt.id)) receipt else receipts.findById(receipt.id).orElse(receipt)
     }
 
     @Transactional(readOnly = true)
