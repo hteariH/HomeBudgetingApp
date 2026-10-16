@@ -59,10 +59,10 @@ data class QuickAddUiState(
         get() = isAmountValid && selectedAccount != null && selectedCategory != null && !saving && !saved
 }
 
-/** Something a scan has to tell the user, once. */
 /** A receipt in [receipt] currency, read into a form on an account in [account] currency. */
 data class CurrencyDiffers(val receipt: String, val account: String)
 
+/** Something a scan has to tell the user, once. */
 sealed interface ScanNotice {
     /**
      * The form was filled. [withMerchant]: the note was too, so the screen shows it.

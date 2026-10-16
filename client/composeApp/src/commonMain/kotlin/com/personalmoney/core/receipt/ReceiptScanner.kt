@@ -1,15 +1,13 @@
 package com.personalmoney.core.receipt
 
 import com.personalmoney.core.network.HomeBudgetApi
+import com.personalmoney.core.network.bodyMessage
 import com.personalmoney.core.network.ReceiptDto
 import io.ktor.client.plugins.ResponseException
-import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDate
 import kotlinx.io.IOException
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -138,21 +136,10 @@ private fun ReceiptDto.toDraft() = ReceiptDraft(
 /** Consecutive polls that may fail to reach the server before the scan counts as offline. */
 private const val MAX_FAILED_POLLS = 3
 
-@Serializable
-private data class ErrorBody(val message: String? = null)
-
-private val errorJson = Json { ignoreUnknownKeys = true; isLenient = true }
-
 /**
  * The server's `message` for a refused upload - 409 no provider, 413 too large, 415 not an
  * image it can read - all written for the user. 5xx carries an exception message meant for
  * a log, so it is not shown.
  */
-private suspend fun ResponseException.userMessage(): String? {
-    if (response.status.value >= 500) return null
-    val body = runCatching { response.bodyAsText() }.getOrNull() ?: return null
-    return runCatching { errorJson.decodeFromString<ErrorBody>(body) }
-        .getOrNull()
-        ?.message
-        ?.takeIf { it.isNotBlank() }
-}
+private suspend fun ResponseException.userMessage(): String? =
+    if (response.status.value >= 500) null else bodyMessage()

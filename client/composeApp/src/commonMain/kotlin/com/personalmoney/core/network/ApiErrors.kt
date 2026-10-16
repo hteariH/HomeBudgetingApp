@@ -37,8 +37,16 @@ private val USER_FACING = setOf(
  * language anyway.
  */
 suspend fun Throwable.serverMessage(): String? {
-    val response = (this as? ResponseException)?.response ?: return null
-    if (response.status !in USER_FACING) return null
+    val e = this as? ResponseException ?: return null
+    if (e.response.status !in USER_FACING) return null
+    return e.bodyMessage()
+}
+
+/**
+ * The `message` in an error response's body whatever its status, or null when there is not
+ * one - for a caller that knows which statuses of its own endpoint are written for the user.
+ */
+suspend fun ResponseException.bodyMessage(): String? {
     // The response Ktor's validator saved, so reading it here is safe and repeatable.
     val body = runCatching { response.bodyAsText() }.getOrNull() ?: return null
     return runCatching { errorJson.decodeFromString<ApiErrorBody>(body) }
