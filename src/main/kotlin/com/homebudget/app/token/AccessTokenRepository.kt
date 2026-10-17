@@ -1,6 +1,7 @@
 package com.homebudget.app.token
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
@@ -11,7 +12,18 @@ interface AccessTokenRepository : JpaRepository<AccessToken, Long> {
 
     fun findByIdAndUserIdAndKind(id: Long, userId: Long, kind: AccessTokenKind): AccessToken?
 
-    /** Whether the OAuth grant behind a token still stands. Native: the grant has no entity yet. */
-    @Query(value = "SELECT COUNT(*) FROM oauth_grants WHERE id = :id AND revoked_at IS NULL", nativeQuery = true)
+    /** Whether the OAuth grant behind a token still stands. */
+    @Query("SELECT COUNT(g) FROM OAuthGrant g WHERE g.id = :id AND g.revokedAt IS NULL")
     fun countLiveGrants(@Param("id") grantId: Long): Long
+
+    @Query("SELECT t.id FROM AccessToken t WHERE t.oauthGrantId = :grantId")
+    fun findIdsByGrant(@Param("grantId") grantId: Long): List<Long>
+
+    @Query("SELECT MAX(t.lastUsedAt) FROM AccessToken t WHERE t.oauthGrantId = :grantId")
+    fun lastUsedByGrant(@Param("grantId") grantId: Long): java.time.Instant?
+
+    /** Marks a refresh token rotated unless it already was; 0 means someone got there first. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE AccessToken t SET t.usedAt = :now WHERE t.id = :id AND t.usedAt IS NULL")
+    fun markUsed(@Param("id") id: Long, @Param("now") now: java.time.Instant): Int
 }

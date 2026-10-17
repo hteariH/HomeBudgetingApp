@@ -69,6 +69,10 @@ class SecurityConfig(
                     // personal and OAuth tokens; this chain never accepts those, so they open
                     // nothing under /api.
                     .requestMatchers("/mcp").permitAll()
+                    // The OAuth server that web connectors use to obtain those tokens: its
+                    // clients are public and carry no session. The consent page's own calls,
+                    // under /api/oauth/**, need the signed-in user like the rest of /api.
+                    .requestMatchers("/oauth/**", "/.well-known/oauth-*", "/.well-known/oauth-*/**").permitAll()
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
             }

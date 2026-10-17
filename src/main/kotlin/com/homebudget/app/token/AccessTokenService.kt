@@ -1,6 +1,8 @@
 package com.homebudget.app.token
 
 import com.homebudget.app.domain.User
+import com.homebudget.app.oauth.OAuthGrant
+import com.homebudget.app.oauth.OAuthGrantRepository
 import com.homebudget.app.security.SecurityUtils
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -10,15 +12,17 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * Personal access tokens, and the check every token presented on `/mcp` goes through.
+ * Personal access tokens, the OAuth grants listed beside them, and the check every token
+ * presented on `/mcp` goes through.
  *
- * The raw token exists only in the response to [createPersonal]; afterwards it is matched by
+ * The raw token exists only in the response that hands it out; afterwards it is matched by
  * its SHA-256.
  */
 @Service
 @Transactional
 class AccessTokenService(
     private val repo: AccessTokenRepository,
+    private val grants: OAuthGrantRepository,
     private val securityUtils: SecurityUtils,
     private val clock: Clock,
     private val events: ApplicationEventPublisher
@@ -58,18 +62,49 @@ class AccessTokenService(
         return CreatedToken(raw, saved.toView())
     }
 
-    /** The user's personal tokens, newest first. */
+    /** The user's personal tokens and live OAuth grants, newest first. */
     @Transactional(readOnly = true)
-    fun listFor(user: User): List<TokenView> =
-        repo.findAllByUserIdAndKindOrderByCreatedAtDescIdDesc(user.id, AccessTokenKind.PERSONAL).map { it.toView() }
+    fun listFor(user: User): List<TokenView> {
+        val personal = repo.findAllByUserIdAndKindOrderByCreatedAtDescIdDesc(user.id, AccessTokenKind.PERSONAL).map { it.toView() }
+        val oauth = grants.findAllByUserIdAndRevokedAtIsNull(user.id).map { grant ->
+            TokenView(
+                id = grant.uuid,
+                kind = TokenKind.OAUTH,
+                name = grant.client.clientName,
+                prefix = null,
+                createdAt = grant.createdAt,
+                lastUsedAt = repo.lastUsedByGrant(grant.id),
+                expiresAt = null
+            )
+        }
+        return (personal + oauth).sortedByDescending { it.createdAt }
+    }
 
-    /** Deletes one of the signed-in user's tokens; anyone else's is reported as not found. */
+    /**
+     * Revokes one of the signed-in user's items: a personal token (numeric id) is deleted, an
+     * OAuth grant (uuid) is marked revoked. Anyone else's is reported as not found.
+     */
     fun revoke(id: String) {
-        val token = id.toLongOrNull()?.let {
-            repo.findByIdAndUserIdAndKind(it, securityUtils.getCurrentUser().id, AccessTokenKind.PERSONAL)
-        } ?: throw NoSuchElementException("Token not found")
+        val userId = securityUtils.getCurrentUser().id
+        val numeric = id.toLongOrNull()
+        if (numeric == null) {
+            revokeGrant(grants.findByUuidAndUserIdAndRevokedAtIsNull(id, userId) ?: throw NoSuchElementException("Token not found"))
+            return
+        }
+        val token = repo.findByIdAndUserIdAndKind(numeric, userId, AccessTokenKind.PERSONAL)
+            ?: throw NoSuchElementException("Token not found")
         repo.delete(token)
         events.publishEvent(TokenRevokedEvent(token.id))
+    }
+
+    /**
+     * Stops an OAuth grant and with it every token it issued, closing whatever they hold open.
+     * Revoking a revoked grant changes nothing but closes again, which is harmless.
+     */
+    fun revokeGrant(grant: OAuthGrant) {
+        val managed = grants.findById(grant.id).orElse(null) ?: return
+        if (managed.revokedAt == null) managed.revokedAt = Instant.now(clock)
+        repo.findIdsByGrant(managed.id).forEach { events.publishEvent(TokenRevokedEvent(it)) }
     }
 
     /**
