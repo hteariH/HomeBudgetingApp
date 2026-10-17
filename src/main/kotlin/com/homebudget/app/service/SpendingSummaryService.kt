@@ -129,14 +129,16 @@ class SpendingSummaryService(
             grand.merge(currency, sum, Long::plus)
         }
 
-        // The database sums; the JVM only sees one row per (group, currency).
-        fun grouped(select: String, groupBy: String, start: LocalDate, end: LocalDate): List<Array<Any?>> =
-            em.createQuery(
-                "SELECT $select, t.currencyCode, SUM(t.amountMinor) " +
+        // The database sums; the JVM only sees one row per (group, currency). [keys] are the
+        // grouping columns, selected first; null groups by currency alone.
+        fun grouped(keys: String?, start: LocalDate, end: LocalDate): List<Array<Any?>> {
+            val lead = keys?.let { "$it, " }.orEmpty()
+            return em.createQuery(
+                "SELECT ${lead}t.currencyCode, SUM(t.amountMinor) " +
                     "FROM Transaction t JOIN t.account a LEFT JOIN t.category c " +
                     "WHERE t.household = :household AND t.type = :type " +
                     "AND t.occurredAt >= :from AND t.occurredAt < :until " +
-                    "GROUP BY $groupBy, t.currencyCode",
+                    "GROUP BY ${lead}t.currencyCode",
                 Array<Any?>::class.java
             )
                 .setParameter("household", household)
@@ -144,23 +146,24 @@ class SpendingSummaryService(
                 .setParameter("from", startOf(start))
                 .setParameter("until", startOf(end.plusDays(1)))
                 .resultList
+        }
 
         when (groupBy) {
-            GroupBy.CATEGORY -> grouped("c.uuid, c.name", "c.uuid, c.name", from, to).forEach {
+            GroupBy.CATEGORY -> grouped("c.uuid, c.name", from, to).forEach {
                 add((it[0] as String?).orEmpty(), it[0] as String?, (it[1] as String?) ?: "Uncategorised", null,
                     it[2] as String, it[3] as Long)
             }
-            GroupBy.ACCOUNT -> grouped("a.uuid, a.name", "a.uuid, a.name", from, to).forEach {
+            GroupBy.ACCOUNT -> grouped("a.uuid, a.name", from, to).forEach {
                 add(it[0] as String, it[0] as String, it[1] as String, null, it[2] as String, it[3] as Long)
             }
-            // One grouped query per calendar month (UTC), so no database time-zone function is involved.
+            // One query per calendar month (UTC), so no database time-zone function is involved.
             GroupBy.MONTH -> {
                 var month = java.time.YearMonth.from(from)
                 while (!month.isAfter(java.time.YearMonth.from(to))) {
                     val start = maxOf(from, month.atDay(1))
                     val end = minOf(to, month.atEndOfMonth())
-                    grouped("1", "1", start, end).forEach {
-                        add(month.toString(), null, month.toString(), month.toString(), it[1] as String, it[2] as Long)
+                    grouped(null, start, end).forEach {
+                        add(month.toString(), null, month.toString(), month.toString(), it[0] as String, it[1] as Long)
                     }
                     month = month.plusMonths(1)
                 }

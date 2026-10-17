@@ -16,6 +16,9 @@ interface AccessTokenRepository : JpaRepository<AccessToken, Long> {
     @Query("SELECT COUNT(g) FROM OAuthGrant g WHERE g.id = :id AND g.revokedAt IS NULL")
     fun countLiveGrants(@Param("id") grantId: Long): Long
 
+    @Query("SELECT t.id FROM AccessToken t WHERE t.user.id = :userId")
+    fun findIdsByUser(@Param("userId") userId: Long): List<Long>
+
     @Query("SELECT t.id FROM AccessToken t WHERE t.oauthGrantId = :grantId")
     fun findIdsByGrant(@Param("grantId") grantId: Long): List<Long>
 

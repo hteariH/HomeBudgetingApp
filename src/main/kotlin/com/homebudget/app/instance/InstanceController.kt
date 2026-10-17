@@ -30,6 +30,7 @@ class InstanceController(
     @GetMapping
     fun get(): InstanceInfo {
         val mcpEnabled = mcp.enabled()
+        val oauthAvailable = mcpEnabled && baseUrl.isNotBlank()
         return InstanceInfo(
             name = "PersonalMoney",
             version = build.ifAvailable?.version ?: "dev",
@@ -44,7 +45,8 @@ class InstanceController(
                 (if (baseUrl.isNotBlank()) listOf("HOMEMONEY") else emptyList()),
             receiptScan = ai.instanceProvider() != null,
             mcpEnabled = mcpEnabled,
-            oauthAvailable = mcpEnabled && baseUrl.isNotBlank()
+            oauthAvailable = oauthAvailable,
+            baseUrl = if (oauthAvailable) baseUrl.trim().trimEnd('/') else null
         )
     }
 }

@@ -71,6 +71,9 @@ class OAuthFlowTest {
     @Autowired private lateinit var grants: OAuthGrantRepository
     @Autowired private lateinit var tokenRepo: AccessTokenRepository
     @Autowired private lateinit var events: ApplicationEvents
+    @Autowired private lateinit var accessTokens: com.homebudget.app.token.AccessTokenService
+    @Autowired private lateinit var authFlow: com.homebudget.app.service.AuthFlowService
+    @Autowired private lateinit var sessions: com.homebudget.app.mcp.McpSessions
 
     private val http = HttpClient.newHttpClient()
     private lateinit var me: UserPrincipal
@@ -146,6 +149,25 @@ class OAuthFlowTest {
 
     private fun initialize(token: String): HttpResponse<String> = mcp(token,
         """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}""")
+
+    /** Opens the session's SSE stream; the future completes once the stream has ended. */
+    private fun openStream(token: String): java.util.concurrent.CompletableFuture<ByteArray> {
+        val session = initialize(token).headers().firstValue("Mcp-Session-Id").get()
+        mcp(token, """{"jsonrpc":"2.0","method":"notifications/initialized"}""", session)
+        val before = sessions.openStreams()
+        val future = http.sendAsync(
+            HttpRequest.newBuilder(URI.create("http://localhost:$port/mcp"))
+                .header("Accept", "text/event-stream").header("Authorization", "Bearer $token")
+                .header("Mcp-Session-Id", session).GET().build(),
+            HttpResponse.BodyHandlers.ofInputStream()
+        ).thenApply { response -> response.body().use { it.readAllBytes() } }
+        val deadline = System.currentTimeMillis() + 5000
+        while (sessions.openStreams() == before) {
+            check(System.currentTimeMillis() < deadline) { "the stream never opened" }
+            Thread.sleep(20)
+        }
+        return future
+    }
 
     private fun authorizeUrl(
         redirect: String = REDIRECT, client: String = clientId, method: String? = "S256",
@@ -455,5 +477,54 @@ class OAuthFlowTest {
         mvc.perform(post("/oauth/revoke").contentType(MediaType.APPLICATION_FORM_URLENCODED).param("token", "pma_nonsense"))
             .andExpect(status().isOk)
         mvc.perform(post("/oauth/revoke").contentType(MediaType.APPLICATION_FORM_URLENCODED)).andExpect(status().isOk)
+    }
+
+    @Test
+    fun `a password reset stops personal and OAuth tokens and closes their streams`() {
+        identity.signIn(me)
+        val personal = try { accessTokens.createPersonal("Desktop", null).token } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext()
+        }
+        val issued = tokens()
+        val access = issued["access_token"].asText()
+        val personalStream = openStream(personal)
+        val oauthStream = openStream(access)
+
+        val link = authFlow.issueAdminResetLink(me.user)
+        authFlow.resetPassword(link.path.substringAfter("token="), "a brand new password")
+
+        personalStream.get(5, java.util.concurrent.TimeUnit.SECONDS)
+        oauthStream.get(5, java.util.concurrent.TimeUnit.SECONDS)
+        assertEquals(401, initialize(personal).statusCode())
+        assertEquals(401, initialize(access).statusCode())
+        refresh(issued["refresh_token"].asText()).andExpect(jsonPath("$.error").value("invalid_grant"))
+        val list = json(mvc.perform(get("/api/assistants/tokens").with(asUser())).andExpect(status().isOk))
+        assertEquals(0, list.size(), list.toString())
+    }
+
+    @Test
+    fun `an OAuth access token is refused outside the MCP endpoint`() {
+        val access = tokens()["access_token"].asText()
+        mvc.perform(get("/api/accounts").header("Authorization", "Bearer $access")).andExpect(status().isUnauthorized)
+        mvc.perform(
+            post("/api/oauth/authorize").header("Authorization", "Bearer $access").contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(mapOf(
+                    "clientId" to clientId, "redirectUri" to REDIRECT, "codeChallenge" to challenge,
+                    "state" to "s", "scope" to "ledger:write", "approve" to true
+                )))
+        ).andExpect(status().isUnauthorized)
+        mvc.perform(
+            post("/api/assistants/tokens").header("Authorization", "Bearer $access").contentType(MediaType.APPLICATION_JSON)
+                .content("""{"name":"sneaky"}""")
+        ).andExpect(status().isUnauthorized)
+        assertEquals(1, grants.findAll().count { it.user.id == me.user.id })
+        assertTrue(tokenRepo.findAll().none { it.user.id == me.user.id && it.kind == AccessTokenKind.PERSONAL })
+    }
+
+    @Test
+    fun `the instance reports its base URL without a trailing slash`() {
+        mvc.perform(get("/api/instance"))
+            .andExpect(jsonPath("$.oauthAvailable").value(true))
+            .andExpect(jsonPath("$.baseUrl").value(BASE))
     }
 }

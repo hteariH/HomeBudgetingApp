@@ -7,6 +7,7 @@ import com.homebudget.app.dto.CreateTransactionRequest
 import com.homebudget.app.dto.UpdateTransactionRequest
 import com.homebudget.app.household.HouseholdChangedException
 import com.homebudget.app.receipt.ReceiptService
+import com.homebudget.app.repository.HouseholdMemberRepository
 import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.security.SecurityUtils
@@ -28,6 +29,7 @@ class TransactionService(
     private val securityUtils: SecurityUtils,
     private val receiptService: ReceiptService,
     private val householdRepo: HouseholdRepository,
+    private val memberRepo: HouseholdMemberRepository,
     private val syncClock: SyncClock
 ) {
     fun findFiltered(
@@ -64,6 +66,9 @@ class TransactionService(
         // is, so a device whose cursor is the latest stamp still pulls this row.
         householdRepo.lockById(household.id) ?: throw HouseholdChangedException()
         val user = securityUtils.getCurrentUser()
+        // The caller was authenticated into this household; a join, leave or removal may have
+        // moved them since, and their entry must not land in a household they have left.
+        if (memberRepo.currentHouseholdIdOf(user.id) != listOf(household.id)) throw HouseholdChangedException()
         val account = accountService.findById(req.accountId)
         val category = req.categoryId?.let { categoryService.findById(it) }
 

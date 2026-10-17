@@ -1,6 +1,7 @@
 package com.homebudget.app.mcp
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.homebudget.app.household.HouseholdChangedException
 import com.homebudget.app.security.CustomUserDetailsService
 import com.homebudget.app.security.UserPrincipal
 import com.homebudget.app.token.AccessTokenService
@@ -31,11 +32,13 @@ class McpServerConfig {
         const val ENDPOINT = "/mcp"
         const val SERVER_NAME = "personalmoney"
         const val SERVER_ERROR = "Something went wrong on the server"
+        const val HOUSEHOLD_CHANGED = "Your household changed — try again"
         private val log = LoggerFactory.getLogger(McpServerConfig::class.java)
 
         /**
          * Runs [tool] as [principal] and turns what happens into a tool result: the tool's own
-         * answer, a [ToolInputException]'s message, or a fixed message for anything else.
+         * answer, a [ToolInputException]'s message, a retry hint when the user's household
+         * changed under the call, or a fixed message for anything else.
          * Logs the tool, the user and the time taken - never arguments or results.
          */
         fun invoke(tool: McpTool, principal: UserPrincipal?, args: Map<String, Any?>): CallToolResult {
@@ -47,6 +50,9 @@ class McpServerConfig {
                     McpPrincipalScope.runAs(principal) { tool.call(args) }
                 } catch (e: ToolInputException) {
                     error(e.message ?: "Invalid input")
+                } catch (e: HouseholdChangedException) {
+                    // A join or leave landed after the token check; the next call sees the new household.
+                    error(HOUSEHOLD_CHANGED)
                 } catch (e: Exception) {
                     log.warn("mcp tool={} user={} failed: {}", tool.name, principal.getId(), e.javaClass.name)
                     error(SERVER_ERROR)

@@ -43,6 +43,8 @@ class OAuthGrant(
 interface OAuthGrantRepository : JpaRepository<OAuthGrant, Long> {
     fun findByUuidAndUserIdAndRevokedAtIsNull(uuid: String, userId: Long): OAuthGrant?
 
+    fun findAllByUserIdAndRevokedAtIsNull(userId: Long): List<OAuthGrant>
+
     /** The user's live grants that obtained tokens; an approval never exchanged is not a connection. */
     @Query(
         "SELECT g FROM OAuthGrant g WHERE g.user.id = :userId AND g.revokedAt IS NULL " +

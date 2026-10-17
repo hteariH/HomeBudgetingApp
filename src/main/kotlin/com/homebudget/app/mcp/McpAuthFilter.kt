@@ -63,6 +63,8 @@ class McpAuthFilter(
                 userDetails.loadUserByUsername(it.user.email)
             } catch (e: UsernameNotFoundException) {
                 null // deleted after the token check; the cascade has taken the token too
+            } catch (e: IllegalStateException) {
+                null // in no household, which signing in cannot resolve either
             }
         }
         if (authenticated == null || principal == null) {

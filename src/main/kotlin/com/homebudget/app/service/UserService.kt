@@ -10,7 +10,10 @@ import com.homebudget.app.repository.HouseholdMemberRepository
 import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.SecurityUtils
+import com.homebudget.app.token.AccessTokenRepository
+import com.homebudget.app.token.TokenRevokedEvent
 import jakarta.persistence.EntityManager
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -24,7 +27,9 @@ class UserService(
     private val currencyService: CurrencyService,
     private val securityUtils: SecurityUtils,
     private val em: EntityManager,
-    private val receiptImages: ReceiptImages
+    private val receiptImages: ReceiptImages,
+    private val accessTokens: AccessTokenRepository,
+    private val events: ApplicationEventPublisher
 ) {
     fun getCurrentUser(): User = securityUtils.getCurrentUser()
 
@@ -76,6 +81,8 @@ class UserService(
         if (membership != null && memberRepository.countByHouseholdId(membership.household.id) == 1L) {
             deleteHousehold(membership.household.id)
         }
+        // The cascade takes their assistant tokens; the streams those hold open close after the commit.
+        accessTokens.findIdsByUser(user.id).forEach { events.publishEvent(TokenRevokedEvent(it)) }
         listOf(
             "DELETE FROM household_members WHERE user_id = :id",
             "DELETE FROM refresh_tokens WHERE user_id = :id",

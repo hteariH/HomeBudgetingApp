@@ -26,7 +26,9 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -82,17 +84,34 @@ class McpSwitchTest {
     private fun asUser(p: UserPrincipal) = authentication(UsernamePasswordAuthenticationToken(p, null, p.authorities))
 
     @Test
-    fun `off by default - the endpoint and the token API answer 404`() {
+    fun `off by default - the endpoint and token creation answer 404`() {
         val response = postMcp(port)
         assertEquals(404, response.statusCode())
         assertTrue(response.body().isEmpty(), "empty body: ${response.body()}")
-        mvc.perform(get("/api/assistants/tokens").with(asUser(admin))).andExpect(status().isNotFound)
+        mvc.perform(
+            post("/api/assistants/tokens").with(asUser(admin)).contentType(MediaType.APPLICATION_JSON).content("""{"name":"t"}""")
+        ).andExpect(status().isNotFound)
         mvc.perform(get("/api/instance"))
             .andExpect(jsonPath("$.mcpEnabled").value(false))
             .andExpect(jsonPath("$.oauthAvailable").value(false))
+            .andExpect(jsonPath("$.baseUrl").doesNotExist())
         mvc.perform(get("/api/admin/mcp").with(asUser(admin)))
             .andExpect(jsonPath("$.enabled").value(false))
             .andExpect(jsonPath("$.lockedByEnvironment").value(false))
+    }
+
+    @Test
+    fun `while off, tokens made earlier can still be listed and revoked`() {
+        identity.signIn(admin)
+        val made = try { tokens.createPersonal("Left over", null) } finally { SecurityContextHolder.clearContext() }
+
+        mvc.perform(get("/api/assistants/tokens").with(asUser(admin)))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$[0].name").value("Left over"))
+        mvc.perform(delete("/api/assistants/tokens/${made.item.id}").with(asUser(admin))).andExpect(status().isNoContent)
+        mvc.perform(get("/api/assistants/tokens").with(asUser(admin)))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(0))
     }
 
     @Test
@@ -105,6 +124,7 @@ class McpSwitchTest {
             .andExpect(jsonPath("$.mcpEnabled").value(true))
             // OAuth needs APP_BASE_URL, which is not set here.
             .andExpect(jsonPath("$.oauthAvailable").value(false))
+            .andExpect(jsonPath("$.baseUrl").doesNotExist())
         mvc.perform(get("/api/assistants/tokens").with(asUser(admin))).andExpect(status().isOk)
         // On, so a bad token is now a 401 rather than a 404, with a plain challenge.
         val response = postMcp(port)
@@ -193,6 +213,8 @@ class McpSwitchLockedTest {
         mvc.perform(get("/api/instance"))
             .andExpect(jsonPath("$.mcpEnabled").value(false))
             .andExpect(jsonPath("$.oauthAvailable").value(false))
+            // Set, but of no use while MCP is off.
+            .andExpect(jsonPath("$.baseUrl").doesNotExist())
         mvc.perform(get("/api/admin/mcp").with(asAdmin))
             .andExpect(jsonPath("$.enabled").value(false))
             .andExpect(jsonPath("$.lockedByEnvironment").value(true))

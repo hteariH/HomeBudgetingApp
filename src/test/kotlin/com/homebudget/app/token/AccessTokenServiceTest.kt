@@ -37,6 +37,7 @@ import java.time.Instant
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestIdentity::class)
+@org.springframework.test.context.event.RecordApplicationEvents
 @TestPropertySource(properties = [
     "spring.datasource.url=jdbc:h2:mem:access-tokens;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
     "app.mcp.enabled=true"
@@ -48,6 +49,7 @@ class AccessTokenServiceTest {
     @Autowired private lateinit var tokens: AccessTokenService
     @Autowired private lateinit var repo: AccessTokenRepository
     @Autowired private lateinit var userService: UserService
+    @Autowired private lateinit var events: org.springframework.test.context.event.ApplicationEvents
 
     private lateinit var me: UserPrincipal
 
@@ -159,7 +161,14 @@ class AccessTokenServiceTest {
     @Test
     fun `deleting the user deletes their tokens`() {
         val created = tokens.createPersonal("t", null)
+        val second = tokens.createPersonal("u", 30)
         userService.deleteUser(me.user)
+
+        // Their open streams close too.
+        assertEquals(
+            setOf(created.item.id.toLong(), second.item.id.toLong()),
+            events.stream(TokenRevokedEvent::class.java).map { it.tokenId }.toList().toSet()
+        )
 
         assertTrue(repo.findAll().none { it.user.id == me.user.id })
         assertNull(tokens.authenticate(created.token))

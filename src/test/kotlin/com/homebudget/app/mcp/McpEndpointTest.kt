@@ -60,6 +60,9 @@ class McpEndpointTest {
     @Autowired private lateinit var categoryService: CategoryService
     @Autowired private lateinit var sessions: McpSessions
     @Autowired private lateinit var jwt: JwtUtils
+    @Autowired private lateinit var membership: com.homebudget.app.household.MembershipService
+    @Autowired private lateinit var householdService: com.homebudget.app.service.HouseholdService
+    @Autowired private lateinit var members: com.homebudget.app.repository.HouseholdMemberRepository
 
     private val http = HttpClient.newHttpClient()
     private lateinit var me: UserPrincipal
@@ -310,5 +313,29 @@ class McpEndpointTest {
             "Category \"Nope\" not found — list_categories shows the categories",
             assertThrows<ToolInputException> { McpPrincipalScope.runAs(me) { references.category(" Nope") } }.message
         )
+    }
+
+    @Test
+    fun `a session follows its user into a new household`() {
+        val member = identity.joinAs("mover", me.household)
+        val memberToken = tokenFor(member)
+        val session = initialize(memberToken)
+        assertEquals(listOf("Card", "Cash"), toolJson(callTool(memberToken, session, "list_accounts")).map { it["name"].asText() })
+
+        identity.signIn(member)
+        try { membership.leave() } finally { SecurityContextHolder.clearContext() }
+        val moved = UserPrincipal(member.user, householdService.householdOf(member.user))
+        account(moved, "Own wallet", "EUR")
+
+        val listed = toolJson(callTool(memberToken, session, "list_accounts", id = 4))
+        assertEquals(listOf("Own wallet"), listed.map { it["name"].asText() })
+    }
+
+    @Test
+    fun `a user who belongs to no household is refused, not failed`() {
+        members.delete(members.findFirstByUserId(me.user.id)!!)
+
+        val response = post(token, """{"jsonrpc":"2.0","id":1,"method":"tools/list"}""")
+        assertEquals(401, response.statusCode())
     }
 }

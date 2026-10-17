@@ -47,6 +47,7 @@ class AuthFlowServiceTest {
     @Autowired private lateinit var tokenRepository: AuthTokenRepository
     @Autowired private lateinit var clock: Clock
     @Autowired private lateinit var transactions: PlatformTransactionManager
+    @Autowired private lateinit var accessTokens: com.homebudget.app.token.AccessTokenService
 
     @Autowired private lateinit var mailer: RecordingMailService
 
@@ -123,7 +124,7 @@ class AuthFlowServiceTest {
         // not retire the link the administrator handed over - nothing could replace it.
         val withoutMail = AuthFlowService(
             userRepository, tokenRepository, refreshTokenService, mailer, passwordEncoder, clock,
-            MailAvailability(host = "", logOnly = false, baseUrl = "")
+            MailAvailability(host = "", logOnly = false, baseUrl = ""), accessTokens
         )
         val user = newUser()
         val adminLink = service.issueAdminResetLink(user).path.substringAfter("token=")

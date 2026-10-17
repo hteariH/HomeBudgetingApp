@@ -336,4 +336,20 @@ class McpCreateToolsTest {
             err(mapOf("fromAccount" to "Card", "toAccount" to "Savings", "amount" to "1", "note" to "x".repeat(501))))
         assertEquals(before, transactions.count())
     }
+
+    @Test
+    fun `a create for a household the user has left is refused with a retry hint`() {
+        // Authenticated while in my household, moved elsewhere before the write.
+        val elsewhere = identity.newMember("moved")
+        val stale = UserPrincipal(elsewhere.user, me.household)
+        val before = transactions.findAll().count { it.household.id == me.household.id }
+
+        assertEquals("Your household changed — try again", errorText(call(createTransaction, mapOf(
+            "account" to "Card", "type" to "EXPENSE", "amount" to "5", "date" to "2026-10-01"
+        ), stale)))
+        assertEquals("Your household changed — try again", errorText(call(createTransfer, mapOf(
+            "fromAccount" to "Card", "toAccount" to "Savings", "amount" to "5", "date" to "2026-10-01"
+        ), stale)))
+        assertEquals(before, transactions.findAll().count { it.household.id == me.household.id })
+    }
 }

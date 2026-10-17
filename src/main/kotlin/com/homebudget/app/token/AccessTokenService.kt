@@ -108,6 +108,18 @@ class AccessTokenService(
     }
 
     /**
+     * Ends every assistant's access for [user]: their personal tokens are deleted and their
+     * live OAuth grants revoked, closing whatever those tokens hold open. A password reset
+     * does this, since the point of a reset is that control was lost.
+     */
+    fun revokeAllFor(user: User) {
+        val personal = repo.findAllByUserIdAndKindOrderByCreatedAtDescIdDesc(user.id, AccessTokenKind.PERSONAL)
+        repo.deleteAll(personal)
+        personal.forEach { events.publishEvent(TokenRevokedEvent(it.id)) }
+        grants.findAllByUserIdAndRevokedAtIsNull(user.id).forEach(::revokeGrant)
+    }
+
+    /**
      * The owner of a token presented on `/mcp`, or null when it is unknown, expired, used,
      * revoked, or a refresh token (which only buys access tokens and never reaches `/mcp`).
      */
