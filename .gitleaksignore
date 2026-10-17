@@ -1,0 +1,15 @@
+# Gitleaks findings reviewed and judged harmless (fingerprint = commit:file:rule:line).
+# - CreateTokenDialog.tsx: translation keys (assistants_expiry_*), not secrets.
+# - AssistantsCard.test.tsx, snippets.test.ts: made-up pm_ tokens used as test fixtures.
+# - GoogleAccessTokens.kt: the literal PEM header string stripped from a key read at runtime.
+# - MonobankCorporateApiTest.kt: a deliberately invalid key (base64 of "not a key") for a failure test.
+# - application-test.yml: the JWT signing secret of the test profile only.
+# Never add a finding here without checking it is not a real credential.
+07274019a940100c654c0cf4450de440f70509b1:src/main/kotlin/com/homebudget/app/billing/GoogleAccessTokens.kt:private-key:127
+447728042fd174ad71481d1e97ec93df220d9fdf:src/test/kotlin/com/homebudget/app/bank/MonobankCorporateApiTest.kt:private-key:98
+4e65a025ab163b1b0d0b9a32cac8eb582f7b273d:src/main/frontend/src/app/features/assistants/AssistantsCard.test.tsx:generic-api-key:11
+4e65a025ab163b1b0d0b9a32cac8eb582f7b273d:src/main/frontend/src/app/features/assistants/CreateTokenDialog.tsx:generic-api-key:14
+4e65a025ab163b1b0d0b9a32cac8eb582f7b273d:src/main/frontend/src/app/features/assistants/CreateTokenDialog.tsx:generic-api-key:15
+4e65a025ab163b1b0d0b9a32cac8eb582f7b273d:src/main/frontend/src/app/features/assistants/CreateTokenDialog.tsx:generic-api-key:16
+4e65a025ab163b1b0d0b9a32cac8eb582f7b273d:src/main/frontend/src/app/features/assistants/snippets.test.ts:generic-api-key:5
+ae484e249bafd538234af269c07bf9404abc1520:src/test/resources/application-test.yml:generic-api-key:22
