@@ -50,7 +50,8 @@ class TransactionService(
     fun findById(id: Long): Transaction = transactionRepo.findByIdAndHousehold(id, securityUtils.getCurrentHousehold())
         ?: throw NoSuchElementException("Transaction not found: $id")
 
-    fun create(req: CreateTransactionRequest): Transaction {
+    /** [source] is [Transaction.SOURCE_MCP] only for the assistant's create tool. */
+    fun create(req: CreateTransactionRequest, source: String = Transaction.SOURCE_APP): Transaction {
         require(req.type != TransactionType.TRANSFER) {
             "Transfers are created through /api/transfers so that both legs are written together"
         }
@@ -83,7 +84,8 @@ class TransactionService(
             accountAmountMinor = amountMinor,
             type = req.type,
             occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant(),
-            description = req.description
+            description = req.description,
+            source = source
         )
         transaction.linkReceipt(receipt)
         return transactionRepo.save(transaction)

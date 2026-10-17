@@ -76,8 +76,8 @@ class ReceiptCleanupTest {
         )
     }
 
-    private fun kept(r: Receipt) = receipts.findById(r.id).isPresent && Files.exists(images.resolve(r.imagePath))
-    private fun gone(r: Receipt) = receipts.findById(r.id).isEmpty && !Files.exists(images.resolve(r.imagePath))
+    private fun kept(r: Receipt) = receipts.findById(r.id).isPresent && Files.exists(images.resolve(r.imagePath!!))
+    private fun gone(r: Receipt) = receipts.findById(r.id).isEmpty && !Files.exists(images.resolve(r.imagePath!!))
 
     @Test
     fun `an unsaved receipt goes after a day, with its photo, and the rest stay`() {

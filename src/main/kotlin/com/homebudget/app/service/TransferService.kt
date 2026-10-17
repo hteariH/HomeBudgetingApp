@@ -56,7 +56,8 @@ class TransferService(
             ?: throw IllegalStateException("Transfer group $groupId is missing its credit leg")
     }
 
-    fun create(req: CreateTransferRequest): Transaction {
+    /** [source] is [Transaction.SOURCE_MCP] only for the assistant's create tool. */
+    fun create(req: CreateTransferRequest, source: String = Transaction.SOURCE_APP): Transaction {
         val household = securityUtils.getCurrentHousehold()
         val user = securityUtils.getCurrentUser()
         val fromAccount = accountService.findById(req.fromAccountId)
@@ -91,7 +92,8 @@ class TransferService(
             description = req.description,
             transferGroupId = groupId,
             transferCounterpartAccountId = toAccount.id,
-            transferFeeMinor = feeMinor
+            transferFeeMinor = feeMinor,
+            source = source
         )
 
         val credit = Transaction(
@@ -107,7 +109,8 @@ class TransferService(
             occurredAt = occurredAt,
             description = req.description,
             transferGroupId = groupId,
-            transferCounterpartAccountId = fromAccount.id
+            transferCounterpartAccountId = fromAccount.id,
+            source = source
         )
 
         // Both legs in one transaction: a half-written transfer is a corrupted balance.

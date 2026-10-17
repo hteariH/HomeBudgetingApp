@@ -5,20 +5,28 @@ import com.homebudget.app.domain.Household
 import com.homebudget.app.domain.MinorUnits
 import com.homebudget.app.repository.CategoryRepository
 import com.homebudget.app.repository.CurrencyRepository
+import com.homebudget.app.repository.HouseholdRepository
+import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.SecurityUtils
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.multipart.MultipartFile
 import java.time.Clock
+import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /** No model is configured for this household, nor for the instance. */
 class ReceiptScanUnavailableException : RuntimeException("Receipt recognition is not set up")
 
 class ReceiptTooLargeException : RuntimeException("The photo is larger than 15 MB")
+
+/** One line of a receipt an assistant read, in the receipt currency's minor units. */
+data class AssistantReceiptItem(val name: String, val quantity: BigDecimal?, val priceMinor: Long)
 
 /** The receipt belongs to another transaction already: one receipt, one transaction. */
 class ReceiptAlreadyLinkedException : IllegalArgumentException("This receipt is already saved with another transaction")
@@ -31,6 +39,8 @@ class ReceiptService(
     private val settings: AiProviderSettings,
     private val categories: CategoryRepository,
     private val currencies: CurrencyRepository,
+    private val households: HouseholdRepository,
+    private val users: UserRepository,
     private val securityUtils: SecurityUtils,
     private val clock: Clock,
     transactionManager: PlatformTransactionManager
@@ -76,6 +86,42 @@ class ReceiptService(
         return if (reader.submit(receipt.id)) receipt else receipts.findById(receipt.id).orElse(receipt)
     }
 
+    /**
+     * A receipt an assistant read itself: `READY`, without a photo, its total checked against
+     * its items as a scanned one's is. [totalMinor] null means the items' sum. Only inside the
+     * caller's transaction, which links it to the transaction it is created for - so it is
+     * never left unlinked for [ReceiptCleanup].
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun createFromAssistant(
+        householdId: Long,
+        userId: Long,
+        merchant: String?,
+        date: LocalDate,
+        currency: String,
+        totalMinor: Long?,
+        items: List<AssistantReceiptItem>
+    ): Receipt {
+        val now = Instant.now(clock)
+        val receipt = Receipt(
+            household = households.getReferenceById(householdId),
+            createdBy = users.getReferenceById(userId),
+            status = ReceiptStatus.READY,
+            merchant = merchant,
+            receiptDate = date,
+            currencyCode = currency,
+            imagePath = null,
+            createdAt = now,
+            updatedAt = now
+        )
+        items.forEachIndexed { i, item ->
+            receipt.items += ReceiptItem(receipt = receipt, position = i, name = item.name, quantity = item.quantity, priceMinor = item.priceMinor)
+        }
+        receipt.totalMinor = totalMinor ?: items.fold(0L) { sum, it -> Math.addExact(sum, it.priceMinor) }
+        receipt.checkTotal()
+        return receipts.save(receipt)
+    }
+
     @Transactional(readOnly = true)
     fun get(uuid: String): ReceiptResponse {
         val household = securityUtils.getCurrentHousehold()
@@ -85,7 +131,7 @@ class ReceiptService(
     @Transactional(readOnly = true)
     fun image(uuid: String): ByteArray {
         val receipt = find(uuid, securityUtils.getCurrentHousehold())
-        return images.read(receipt.imagePath) ?: throw NoSuchElementException("Receipt photo not found")
+        return receipt.imagePath?.let(images::read) ?: throw NoSuchElementException("Receipt photo not found")
     }
 
     /** The household's receipt, or null - for sync, which reports rather than throws. */
@@ -110,11 +156,11 @@ class ReceiptService(
         return receipt
     }
 
-    /** Deletes the row now and its photo once that is committed. */
+    /** Deletes the row now and its photo, if it has one, once that is committed. */
     fun deleteWithPhoto(receipt: Receipt) {
         val path = receipt.imagePath
         receipts.delete(receipt)
-        images.deleteAfterCommit(path)
+        path?.let(images::deleteAfterCommit)
     }
 
     /** [deleteWithPhoto] by id; a receipt already gone is fine. */
@@ -147,7 +193,8 @@ class ReceiptService(
                     quantity = it.quantity?.stripTrailingZeros()?.toPlainString(),
                     price = decimal(it.priceMinor)
                 )
-            }
+            },
+            hasImage = receipt.imagePath != null
         )
     }
 }

@@ -43,7 +43,6 @@ class SpendingSummaryService(
     data class Entry(
         val transaction: Transaction,
         val credit: Transaction?,
-        val source: String,
         val receipt: Receipt?
     )
 
@@ -186,7 +185,11 @@ class SpendingSummaryService(
         return (c.minAmount == null || value >= c.minAmount) && (c.maxAmount == null || value <= c.maxAmount)
     }
 
-    private fun entries(page: List<Transaction>): List<Entry> {
+    /**
+     * [page] as the assistant sees it: each transfer's other leg and each receipt with its
+     * items. Pass a transfer by its debit leg (what [com.homebudget.app.service.TransferService.create] returns).
+     */
+    fun entries(page: List<Transaction>): List<Entry> {
         if (page.isEmpty()) return emptyList()
         val household = securityUtils.getCurrentHousehold()
         val groupIds = page.mapNotNull { if (it.type == TransactionType.TRANSFER) it.transferGroupId else null }
@@ -201,16 +204,7 @@ class SpendingSummaryService(
             "SELECT DISTINCT r FROM Receipt r LEFT JOIN FETCH r.items WHERE r.id IN :ids AND r.household = :household",
             Receipt::class.java
         ).setParameter("ids", receiptIds).setParameter("household", household).resultList.associateBy { it.id }
-        // TEMPORARY until Task 3 adds `source` to the Transaction entity: then read the field and drop this query.
-        val sources = em.createNativeQuery("SELECT id, source FROM transactions WHERE id IN (:ids)")
-            .setParameter("ids", page.map { it.id }).resultList
-            .associate { row ->
-                val r = row as Array<*>
-                (r[0] as Number).toLong() to r[1] as String
-            }
-        return page.map {
-            Entry(it, it.transferGroupId?.let(credits::get), sources[it.id] ?: "APP", it.receiptId?.let(receipts::get))
-        }
+        return page.map { Entry(it, it.transferGroupId?.let(credits::get), it.receiptId?.let(receipts::get)) }
     }
 
     private fun startOf(day: LocalDate): Instant = day.atStartOfDay(ZoneOffset.UTC).toInstant()

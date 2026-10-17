@@ -121,13 +121,13 @@ class DeleteUserTest {
                 receiptUuid = receipts[0].uuid
             )
         )
-        receipts.forEach { assertTrue(java.nio.file.Files.exists(receiptImages.resolve(it.imagePath))) }
+        receipts.forEach { assertTrue(java.nio.file.Files.exists(receiptImages.resolve(it.imagePath!!))) }
 
         userService.deleteUser(owner.user)
 
         assertEquals(0L, count("SELECT COUNT(*) FROM receipts WHERE household_id = ?", owner.household.id))
         receipts.forEach {
-            assertFalse(java.nio.file.Files.exists(receiptImages.resolve(it.imagePath)), "photo ${it.imagePath} is deleted")
+            assertFalse(java.nio.file.Files.exists(receiptImages.resolve(it.imagePath!!)), "photo ${it.imagePath} is deleted")
         }
     }
 }

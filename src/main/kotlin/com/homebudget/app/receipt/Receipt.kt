@@ -10,7 +10,8 @@ import java.util.UUID
 enum class ReceiptStatus { PENDING, READY, FAILED }
 
 /**
- * A photo of a receipt and what the household's model read off it.
+ * A photo of a receipt and what the household's model read off it - or, without a photo,
+ * what an assistant read off one itself (see [ReceiptService.createFromAssistant]).
  *
  * It lives until a transaction is saved with it (then it goes when that transaction is
  * deleted) or, unlinked, for a day - see [ReceiptCleanup]. Amounts are minor units in
@@ -60,9 +61,12 @@ class Receipt(
     @Column(name = "suggested_category_id")
     var suggestedCategoryId: Long? = null,
 
-    /** Relative to `app.data-dir`, so moving the data directory keeps the photos. */
-    @Column(name = "image_path", nullable = false, length = 500)
-    var imagePath: String,
+    /**
+     * Relative to `app.data-dir`, so moving the data directory keeps the photos. Null for a
+     * receipt an assistant read itself and sent as text.
+     */
+    @Column(name = "image_path", length = 500)
+    var imagePath: String?,
 
     @OneToMany(mappedBy = "receipt", cascade = [CascadeType.ALL], orphanRemoval = true)
     @OrderBy("position")
@@ -73,4 +77,11 @@ class Receipt(
 
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now()
-)
+) {
+    /** Sets [totalMismatch] from [items] and [totalMinor]; call after changing either. */
+    fun checkTotal() {
+        val total = totalMinor
+        totalMismatch = items.isNotEmpty() && total != null &&
+            Math.abs(items.fold(0L) { sum, it -> Math.addExact(sum, it.priceMinor) } - total) > items.size
+    }
+}

@@ -40,6 +40,18 @@ class References(
     }
 
     /**
+     * An account that can take a new entry. An archived one is refused by name
+     * ("Account "Old card" is archived") rather than reported as missing.
+     */
+    fun accountForNewEntry(reference: String): Account = try {
+        account(reference)
+    } catch (e: ToolInputException) {
+        val archived = runCatching { account(reference, includeArchived = true) }.getOrNull()?.takeIf { it.archived }
+            ?: throw e
+        throw ToolInputException("Account \"${archived.name}\" is archived")
+    }
+
+    /**
      * A non-archived category (or any, with [includeArchived], for reading history). With a [type], one of the other type is refused by name
      * ("Category "Salary" is an income category") rather than reported as missing.
      */

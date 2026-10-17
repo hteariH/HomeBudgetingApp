@@ -33,6 +33,7 @@ class SyncServiceTest {
 
     @Autowired private lateinit var syncService: SyncService
     @Autowired private lateinit var accountService: AccountService
+    @Autowired private lateinit var transactionService: TransactionService
     @Autowired private lateinit var identity: TestIdentity
 
     private lateinit var alice: UserPrincipal
@@ -324,5 +325,40 @@ class SyncServiceTest {
 
         val pulled = syncService.pull(Instant.EPOCH, 500).changes.transactions.single()
         assertEquals(alice.user.id, pulled.createdByUserId)
+    }
+
+    @Test
+    fun `a pull carries the source, and a push can never set or change it`() {
+        val accountUuid = uuid()
+        val pushedUuid = uuid()
+        fun tx(uuid: String, source: String?, base: Instant? = null, amount: String = "5.00") = SyncTransaction(
+            uuid = uuid, baseUpdatedAt = base, accountUuid = accountUuid, amount = BigDecimal(amount),
+            currencyCode = "USD", accountAmount = BigDecimal(amount),
+            type = TransactionType.EXPENSE, occurredAt = Instant.parse("2026-04-01T10:00:00Z"), source = source
+        )
+        syncService.push(SyncPushRequest(SyncPayload(
+            accounts = listOf(SyncAccount(uuid = accountUuid, name = "Cash", currencyCode = "USD")),
+            // A client cannot claim an assistant wrote its row.
+            transactions = listOf(tx(pushedUuid, "MCP"))
+        )))
+        val account = accountService.findAll().single { it.uuid == accountUuid }
+        val mcp = transactionService.create(
+            CreateTransactionRequest(accountId = account.id, amount = BigDecimal("7.00"), type = TransactionType.EXPENSE,
+                date = java.time.LocalDate.parse("2026-04-02")),
+            source = "MCP"
+        )
+
+        val pulled = syncService.pull(Instant.EPOCH, 500).changes.transactions.associateBy { it.uuid }
+        assertEquals("APP", pulled.getValue(pushedUuid).source)
+        assertEquals("MCP", pulled.getValue(mcp.uuid).source)
+
+        // Editing the assistant's row from a phone keeps it the assistant's.
+        val edit = syncService.push(SyncPushRequest(SyncPayload(
+            transactions = listOf(tx(mcp.uuid, "APP", base = pulled.getValue(mcp.uuid).updatedAt, amount = "8.00"))
+        )))
+        assertTrue(edit.rejected.isEmpty(), "unexpected rejections: ${edit.rejected}")
+        val after = syncService.pull(Instant.EPOCH, 500).changes.transactions.single { it.uuid == mcp.uuid }
+        assertEquals(BigDecimal("8.00"), after.amount)
+        assertEquals("MCP", after.source)
     }
 }

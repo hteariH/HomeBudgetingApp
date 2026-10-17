@@ -111,39 +111,42 @@ class SearchTransactionsTool(
         return toolResult(mapper, Output(page.entries.map { item(it, decimals) }, page.nextCursor))
     }
 
-    private fun ref(a: Account) = Ref(a.uuid, a.name)
+    companion object {
+        private fun ref(a: Account) = Ref(a.uuid, a.name)
 
-    private fun item(e: Entry, decimals: Map<String, Int>): Item {
-        val t = e.transaction
-        fun money(minor: Long, currency: String, fallback: Int) =
-            MinorUnits.toDecimal(minor, decimals[currency] ?: fallback).toPlainString()
-        val transfer = t.type == TransactionType.TRANSFER
-        val receipt = e.receipt?.let { r ->
-            val code = r.currencyCode ?: t.currencyCode
-            val d = decimals[code] ?: 2
-            ReceiptOut(
-                merchant = r.merchant,
-                total = r.totalMinor?.let { MinorUnits.toDecimal(it, d).toPlainString() },
-                items = r.items.map {
-                    ItemOut(it.name, it.quantity?.stripTrailingZeros()?.toPlainString(), MinorUnits.toDecimal(it.priceMinor, d).toPlainString())
-                }
+        /** One entry in the shape every tool that answers with transactions uses. */
+        fun item(e: Entry, decimals: Map<String, Int>): Item {
+            val t = e.transaction
+            fun money(minor: Long, currency: String, fallback: Int) =
+                MinorUnits.toDecimal(minor, decimals[currency] ?: fallback).toPlainString()
+            val transfer = t.type == TransactionType.TRANSFER
+            val receipt = e.receipt?.let { r ->
+                val code = r.currencyCode ?: t.currencyCode
+                val d = decimals[code] ?: 2
+                ReceiptOut(
+                    merchant = r.merchant,
+                    total = r.totalMinor?.let { MinorUnits.toDecimal(it, d).toPlainString() },
+                    items = r.items.map {
+                        ItemOut(it.name, it.quantity?.stripTrailingZeros()?.toPlainString(), MinorUnits.toDecimal(it.priceMinor, d).toPlainString())
+                    }
+                )
+            }
+            return Item(
+                uuid = t.uuid,
+                date = t.occurredAt.atZone(ZoneOffset.UTC).toLocalDate().toString(),
+                type = t.type,
+                account = ref(t.account),
+                toAccount = if (transfer) e.credit?.account?.let(::ref) else null,
+                category = t.category?.let { Ref(it.uuid, it.name) },
+                amount = money(Math.abs(t.amountMinor), t.currencyCode, t.account.currency.decimals),
+                currency = t.currencyCode,
+                toAmount = e.credit?.let { money(it.amountMinor, it.currencyCode, it.account.currency.decimals) },
+                toCurrency = e.credit?.currencyCode,
+                note = t.description,
+                author = t.createdBy?.let { "${it.firstName} ${it.lastName}".trim() },
+                source = t.source,
+                receipt = receipt
             )
         }
-        return Item(
-            uuid = t.uuid,
-            date = t.occurredAt.atZone(ZoneOffset.UTC).toLocalDate().toString(),
-            type = t.type,
-            account = ref(t.account),
-            toAccount = if (transfer) e.credit?.account?.let(::ref) else null,
-            category = t.category?.let { Ref(it.uuid, it.name) },
-            amount = money(Math.abs(t.amountMinor), t.currencyCode, t.account.currency.decimals),
-            currency = t.currencyCode,
-            toAmount = e.credit?.let { money(it.amountMinor, it.currencyCode, it.account.currency.decimals) },
-            toCurrency = e.credit?.currencyCode,
-            note = t.description,
-            author = t.createdBy?.let { "${it.firstName} ${it.lastName}".trim() },
-            source = e.source,
-            receipt = receipt
-        )
     }
 }

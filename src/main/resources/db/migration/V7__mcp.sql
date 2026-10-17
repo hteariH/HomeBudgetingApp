@@ -47,3 +47,6 @@ CREATE TABLE access_tokens (
 CREATE INDEX idx_access_tokens_user ON access_tokens (user_id);
 
 ALTER TABLE transactions ADD COLUMN source VARCHAR(8) NOT NULL DEFAULT 'APP';
+
+-- A receipt an assistant read itself comes without a photo.
+ALTER TABLE receipts ALTER COLUMN image_path DROP NOT NULL;

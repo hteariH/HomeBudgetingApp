@@ -177,7 +177,7 @@ class McpEndpointTest {
         val session = initialize(token)
 
         val list = rpcResult(post(token, """{"jsonrpc":"2.0","id":2,"method":"tools/list"}""", session.id))
-        assertEquals(setOf("list_accounts", "list_categories", "search_transactions", "summarize_spending"), list["tools"].map { it["name"].asText() }.toSet())
+        assertEquals(setOf("list_accounts", "list_categories", "search_transactions", "summarize_spending", "create_transaction", "create_transfer"), list["tools"].map { it["name"].asText() }.toSet())
 
         val listed = toolJson(callTool(token, session, "list_accounts"))
         assertEquals(listOf("Card", "Cash"), listed.map { it["name"].asText() })

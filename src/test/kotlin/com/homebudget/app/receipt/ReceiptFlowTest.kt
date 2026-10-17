@@ -153,7 +153,7 @@ class ReceiptFlowTest {
         assertEquals(LocalDate.parse("2026-10-14"), stored.receiptDate)
         assertEquals("receipts/${owner.household.uuid}/$uuid.jpg", stored.imagePath)
 
-        val photo = images.read(stored.imagePath)!!
+        val photo = images.read(stored.imagePath!!)!!
         val sent = server.requests.single().body
         assertTrue(sent.contains(Base64.getEncoder().encodeToString(photo)), "the model got the stored JPEG")
         assertTrue(sent.contains("Groceries"), "the model was offered the household's categories")
