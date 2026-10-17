@@ -427,6 +427,14 @@ private fun TransactionRow(
                         Spacer(Modifier.width(6.dp))
                     }
                     Text(text = title, style = MaterialTheme.typography.titleSmall)
+                    if (tx.source == "MCP") {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(Res.string.transaction_via_assistant),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
                 Text(
                     text = subtitle,

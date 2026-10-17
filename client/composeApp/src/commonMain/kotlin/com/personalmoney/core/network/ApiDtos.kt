@@ -182,7 +182,9 @@ data class SyncTransactionDto(
      * The receipt the entry was saved from. Pushed as the phone has it; the server reads a
      * null as "leave the link alone", so there is no way - and no need - to detach one.
      */
-    val receiptUuid: String? = null
+    val receiptUuid: String? = null,
+    /** `APP` or `MCP`. Server-assigned and read-only: the push never sends it. */
+    val source: String? = null
 )
 
 @Serializable
@@ -281,6 +283,8 @@ data class ReceiptDto(
     /** Decimal string, `"249.90"`. */
     val total: String? = null,
     val totalMismatch: Boolean = false,
+    /** False for a receipt an assistant recorded: there is no photo to fetch. */
+    val hasImage: Boolean = true,
     val suggestedCategoryId: Long? = null,
     /** The category to offer, by uuid - this client knows categories by uuid, not server id. */
     val suggestedCategoryUuid: String? = null,

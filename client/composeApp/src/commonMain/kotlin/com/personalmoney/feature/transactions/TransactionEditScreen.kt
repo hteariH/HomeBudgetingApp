@@ -254,6 +254,16 @@ fun TransactionEditScreen(
                 )
             }
 
+            // Entries an assistant recorded say so; the author is not shown here, so this stands alone.
+            if (state.original?.source == "MCP") {
+                Text(
+                    text = stringResource(Res.string.transaction_via_assistant),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
             // The receipt the entry was scanned from. Opening it needs the server - the phone
             // keeps only the uuid.
             state.original?.receiptUuid?.let { receiptUuid ->

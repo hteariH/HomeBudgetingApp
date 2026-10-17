@@ -108,6 +108,12 @@ class TransactionsViewModelTest {
         coVerify { txRepo.insert(match { it.createdByUserId == null }) }
     }
 
+    @Test fun `duplicate of an assistant entry is an app entry`() = runTest {
+        val vm = vm()
+        vm.duplicate(txCoffee.copy(source = "MCP"))
+        coVerify { txRepo.insert(match { it.source == "APP" }) }
+    }
+
     @Test fun `author initials appear once the household has two people`() = runTest {
         val vm = vm()
         vm.uiState.test {

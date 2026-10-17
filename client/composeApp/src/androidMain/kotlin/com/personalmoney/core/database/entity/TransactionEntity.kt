@@ -62,6 +62,9 @@ data class TransactionEntity(
     // The server-side receipt this entry was saved from (v6). The photo and the items live
     // on the server; the row keeps only the uuid, and sync pushes it.
     @ColumnInfo(name = "receipt_uuid") val receiptUuid: String? = null,
+    // Where the entry was recorded (v7): "APP", or "MCP" for an assistant. The server owns it;
+    // it is only ever read from a pull.
+    @ColumnInfo(name = "source", defaultValue = "APP") val source: String = "APP",
     // ── Sync metadata ───────────────────────────────────────────────────────
     // uuid is the identity the server keys on; it is minted here so a row created
     // offline can be referenced before the server has ever seen it.

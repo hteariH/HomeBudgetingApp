@@ -51,7 +51,11 @@ class RoomTransactionRepository(
             transaction.toEntity(
                 createdAt = existing?.createdAt ?: Clock.System.now(),
                 createdByUserId = existing?.createdByUserId,
-            ).copy(receiptUuid = transaction.receiptUuid ?: existing?.receiptUuid)
+            ).copy(
+                receiptUuid = transaction.receiptUuid ?: existing?.receiptUuid,
+                // Server-owned, like the author: an edit must not turn an assistant's entry into the app's.
+                source = existing?.source ?: transaction.source,
+            )
         )
     }
 
@@ -81,6 +85,7 @@ private fun TransactionEntity.toTransaction() = Transaction(
     transferFeeMinor = transferFeeMinor,
     createdByUserId = createdByUserId,
     receiptUuid = receiptUuid,
+    source = source,
 )
 
 private fun Transaction.toEntity(createdAt: Instant, createdByUserId: Long? = this.createdByUserId) = TransactionEntity(
@@ -102,5 +107,6 @@ private fun Transaction.toEntity(createdAt: Instant, createdByUserId: Long? = th
     transferFeeMinor = transferFeeMinor,
     createdByUserId = createdByUserId,
     receiptUuid = receiptUuid,
+    source = source,
     uuid = uuid,
 )
