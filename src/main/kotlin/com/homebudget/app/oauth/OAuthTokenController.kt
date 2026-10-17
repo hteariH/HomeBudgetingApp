@@ -14,6 +14,8 @@ class OAuthTokenController(private val oauth: OAuthService) {
     @PostMapping("/oauth/token")
     fun token(@RequestParam params: Map<String, String>): ResponseEntity<Map<String, Any>> {
         requireAvailable()
+        // Before the grant is looked at, so a wrong resource spends no code.
+        oauth.checkResource(params["resource"])
         val issued = when (params["grant_type"]) {
             "authorization_code" -> oauth.exchangeCode(
                 params["code"], params["redirect_uri"], params["client_id"], params["code_verifier"]

@@ -3,6 +3,8 @@ package com.homebudget.app.oauth
 import com.homebudget.app.domain.User
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.time.Instant
 
 /**
@@ -41,5 +43,10 @@ class OAuthGrant(
 interface OAuthGrantRepository : JpaRepository<OAuthGrant, Long> {
     fun findByUuidAndUserIdAndRevokedAtIsNull(uuid: String, userId: Long): OAuthGrant?
 
-    fun findAllByUserIdAndRevokedAtIsNull(userId: Long): List<OAuthGrant>
+    /** The user's live grants that obtained tokens; an approval never exchanged is not a connection. */
+    @Query(
+        "SELECT g FROM OAuthGrant g WHERE g.user.id = :userId AND g.revokedAt IS NULL " +
+            "AND EXISTS (SELECT t.id FROM AccessToken t WHERE t.oauthGrantId = g.id)"
+    )
+    fun findConnectedByUser(@Param("userId") userId: Long): List<OAuthGrant>
 }

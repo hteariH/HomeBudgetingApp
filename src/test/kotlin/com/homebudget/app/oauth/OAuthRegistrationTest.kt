@@ -105,6 +105,8 @@ class OAuthRegistrationTest {
             uris("https:///nohost"),
             uris("https://claude.ai/" + "a".repeat(1000)),
             uris(*Array(11) { "https://claude.ai/cb$it" }),
+            // Ten long ones pass one by one but not together: the column holds 4000.
+            uris(*Array(10) { "https://claude.ai/$it".padEnd(999, 'a') }),
             uris(),
             """{"client_name":"x"}"""
         )) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.homebudget.app.TestIdentity
 import com.homebudget.app.security.UserPrincipal
+import com.homebudget.app.token.AccessTokenKind
 import com.homebudget.app.token.AccessTokenRepository
 import com.homebudget.app.token.TokenRevokedEvent
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -102,16 +103,16 @@ class OAuthFlowTest {
         UriComponentsBuilder.fromUriString(location).build().queryParams.toSingleValueMap()
             .mapValues { java.net.URLDecoder.decode(it.value ?: "", Charsets.UTF_8) }
 
-    private fun approve(approve: Boolean = true, state: String = "xyz"): String = json(
-        mvc.perform(
-            post("/api/oauth/authorize").with(asUser()).contentType(MediaType.APPLICATION_JSON).content(
-                mapper.writeValueAsString(mapOf(
-                    "clientId" to clientId, "redirectUri" to REDIRECT, "codeChallenge" to challenge,
-                    "state" to state, "scope" to "ledger:write", "approve" to approve
-                ))
-            )
-        ).andExpect(status().isOk)
-    )["redirect"].asText()
+    private fun decision(approve: Boolean = true, state: String = "xyz", resource: String? = null) =
+        post("/api/oauth/authorize").with(asUser()).contentType(MediaType.APPLICATION_JSON).content(
+            mapper.writeValueAsString(mapOf(
+                "clientId" to clientId, "redirectUri" to REDIRECT, "codeChallenge" to challenge,
+                "state" to state, "scope" to "ledger:write", "approve" to approve, "resource" to resource
+            ))
+        )
+
+    private fun approve(approve: Boolean = true, state: String = "xyz", resource: String? = null): String =
+        json(mvc.perform(decision(approve, state, resource)).andExpect(status().isOk))["redirect"].asText()
 
     private fun code(): String {
         val redirect = approve()
@@ -119,10 +120,11 @@ class OAuthFlowTest {
         return query(redirect)["code"]!!
     }
 
-    private fun exchange(code: String, verifier: String = this.verifier) = mvc.perform(
+    private fun exchange(code: String, verifier: String = this.verifier, resource: String? = null) = mvc.perform(
         post("/oauth/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .param("grant_type", "authorization_code").param("code", code).param("redirect_uri", REDIRECT)
             .param("client_id", clientId).param("code_verifier", verifier)
+            .apply { resource?.let { param("resource", it) } }
     )
 
     private fun refresh(refreshToken: String) = mvc.perform(
@@ -166,17 +168,17 @@ class OAuthFlowTest {
         assertEquals("st 1", forwarded["state"])
         assertEquals("$BASE/mcp", forwarded["resource"])
 
-        mvc.perform(get("/api/oauth/clients/$clientId").with(asUser()))
+        mvc.perform(get("/api/oauth/clients/$clientId").param("redirectUri", REDIRECT).with(asUser()))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.clientName").value("Claude"))
             .andExpect(jsonPath("$.redirectHost").value("claude.ai"))
 
-        val redirect = approve(state = "st 1")
+        val redirect = approve(state = "st 1", resource = "$BASE/mcp")
         assertTrue(redirect.startsWith("$REDIRECT?code="), redirect)
         assertEquals("st 1", query(redirect)["state"])
 
         val first = json(
-            exchange(query(redirect)["code"]!!)
+            exchange(query(redirect)["code"]!!, resource = "$BASE/mcp")
                 .andExpect(status().isOk)
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.token_type").value("Bearer"))
@@ -257,11 +259,101 @@ class OAuthFlowTest {
                 .param("grant_type", "authorization_code").param("code", code).param("redirect_uri", REDIRECT)
                 .param("client_id", other).param("code_verifier", verifier)
         ).andExpect(status().isBadRequest).andExpect(jsonPath("$.error").value("invalid_grant"))
+        exchange(code, resource = "https://other.example.com/mcp")
+            .andExpect(status().isBadRequest).andExpect(jsonPath("$.error").value("invalid_target"))
+        // Neither the wrong client nor the wrong resource used the code up.
+        exchange(code).andExpect(status().isOk)
+    }
+
+    @Test
+    fun `a failed exchange by the right client uses the code up`() {
+        val code = code()
         mvc.perform(
             post("/oauth/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grant_type", "authorization_code").param("code", code).param("redirect_uri", "$REDIRECT/x")
                 .param("client_id", clientId).param("code_verifier", verifier)
         ).andExpect(status().isBadRequest).andExpect(jsonPath("$.error").value("invalid_grant"))
+        exchange(code).andExpect(status().isBadRequest).andExpect(jsonPath("$.error").value("invalid_grant"))
+    }
+
+    @Test
+    fun `a refresh naming another resource is invalid_target`() {
+        val issued = tokens()
+        mvc.perform(
+            post("/oauth/token").contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("grant_type", "refresh_token").param("refresh_token", issued["refresh_token"].asText())
+                .param("client_id", clientId).param("resource", "$BASE/other")
+        ).andExpect(status().isBadRequest).andExpect(jsonPath("$.error").value("invalid_target"))
+        refresh(issued["refresh_token"].asText()).andExpect(status().isOk)
+    }
+
+    @Test
+    fun `the same code exchanged twice at once - one wins, then the grant is revoked`() {
+        val code = code()
+        val body = "grant_type=authorization_code&code=" + java.net.URLEncoder.encode(code, Charsets.UTF_8) +
+            "&redirect_uri=" + java.net.URLEncoder.encode(REDIRECT, Charsets.UTF_8) +
+            "&client_id=$clientId&code_verifier=$verifier"
+        val start = java.util.concurrent.CountDownLatch(1)
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(2)
+        try {
+            val futures = (1..2).map {
+                pool.submit<HttpResponse<String>> {
+                    start.await()
+                    http.send(
+                        HttpRequest.newBuilder(URI.create("http://localhost:$port/oauth/token"))
+                            .header("Content-Type", "application/x-www-form-urlencoded")
+                            .POST(HttpRequest.BodyPublishers.ofString(body)).build(),
+                        HttpResponse.BodyHandlers.ofString()
+                    )
+                }
+            }
+            start.countDown()
+            val responses = futures.map { it.get(20, java.util.concurrent.TimeUnit.SECONDS) }
+            assertEquals(listOf(200, 400), responses.map { it.statusCode() }.sorted(), responses.map { it.body() }.toString())
+            val loser = responses.single { it.statusCode() == 400 }
+            assertEquals("invalid_grant", mapper.readTree(loser.body())["error"].asText())
+            val winner = mapper.readTree(responses.single { it.statusCode() == 200 }.body())
+            assertNotNull(grants.findAll().single { it.user.id == me.user.id }.revokedAt)
+            assertEquals(401, initialize(winner["access_token"].asText()).statusCode())
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `a resource other than the MCP endpoint is invalid_target`() {
+        val location = mvc.perform(authorizeUrl().param("resource", "https://evil.example/mcp"))
+            .andExpect(status().isFound).andReturn().response.getHeader("Location")!!
+        assertTrue(location.startsWith("$REDIRECT?error=invalid_target"), location)
+        assertEquals("st 1", query(location)["state"])
+        mvc.perform(decision(resource = "$BASE/mcp/")).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("invalid_target"))
+        assertTrue(grants.findAll().none { it.user.id == me.user.id })
+    }
+
+    @Test
+    fun `the consent page must name a registered redirect URI`() {
+        mvc.perform(get("/api/oauth/clients/$clientId").with(asUser())).andExpect(status().isBadRequest)
+        mvc.perform(get("/api/oauth/clients/$clientId").param("redirectUri", "https://evil.example/cb").with(asUser()))
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `a grant that never obtained tokens is not listed`() {
+        code()
+        val list = json(mvc.perform(get("/api/assistants/tokens").with(asUser())).andExpect(status().isOk))
+        assertTrue(list.none { it["kind"].asText() == "OAUTH" }, list.toString())
+    }
+
+    @Test
+    fun `last used survives the pruning of old access tokens`() {
+        val issued = tokens()
+        assertEquals(200, initialize(issued["access_token"].asText()).statusCode())
+        refresh(issued["refresh_token"].asText()).andExpect(status().isOk)
+        tokenRepo.deleteAll(tokenRepo.findAll().filter { it.user.id == me.user.id && it.kind == AccessTokenKind.OAUTH_ACCESS })
+        val list = json(mvc.perform(get("/api/assistants/tokens").with(asUser())).andExpect(status().isOk))
+        val item = list.single { it["kind"].asText() == "OAUTH" }
+        assertTrue(item["lastUsedAt"].isTextual, item.toString())
     }
 
     @Test
@@ -320,7 +412,10 @@ class OAuthFlowTest {
             authorizeUrl(method = "plain"),
             authorizeUrl(method = null),
             authorizeUrl(responseType = "token"),
-            authorizeUrl(scope = "admin")
+            authorizeUrl(scope = "admin"),
+            authorizeUrl(challenge = challenge + "A"),
+            authorizeUrl(challenge = challenge.dropLast(1) + "."),
+            authorizeUrl(challenge = challenge.dropLast(1))
         )) {
             val location = mvc.perform(request).andExpect(status().isFound).andReturn().response.getHeader("Location")!!
             assertTrue(location.startsWith("$REDIRECT?error=invalid_request"), location)

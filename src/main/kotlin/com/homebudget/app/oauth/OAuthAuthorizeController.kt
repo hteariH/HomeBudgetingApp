@@ -15,6 +15,7 @@ data class AuthorizeDecision(
     val codeChallenge: String? = null,
     val state: String? = null,
     val scope: String? = null,
+    val resource: String? = null,
     val approve: Boolean = false
 )
 
@@ -51,7 +52,8 @@ class OAuthAuthorizeController(
             responseType = p("response_type"),
             codeChallenge = p("code_challenge"),
             codeChallengeMethod = p("code_challenge_method"),
-            scope = p("scope")
+            scope = p("scope"),
+            resource = p("resource")
         )
         try {
             oauth.check(authorization)
@@ -70,8 +72,8 @@ class OAuthAuthorizeController(
     fun client(@PathVariable clientId: String, @RequestParam(required = false) redirectUri: String?): ConsentClient {
         requireAvailable()
         val client = oauth.client(clientId)
-        val shown = redirectUri?.takeIf(client::allowsRedirect) ?: client.redirectUriList().first()
-        return ConsentClient(client.clientName, URI(shown).host)
+        require(client.allowsRedirect(redirectUri)) { "The redirect URI is not registered for this assistant" }
+        return ConsentClient(client.clientName, URI(redirectUri!!).host)
     }
 
     @PostMapping("/api/oauth/authorize")
@@ -83,7 +85,8 @@ class OAuthAuthorizeController(
             responseType = "code",
             codeChallenge = body.codeChallenge,
             codeChallengeMethod = "S256",
-            scope = body.scope
+            scope = body.scope,
+            resource = body.resource
         )
         return mapOf("redirect" to oauth.decide(securityUtils.getCurrentUser(), request, body.state, body.approve))
     }

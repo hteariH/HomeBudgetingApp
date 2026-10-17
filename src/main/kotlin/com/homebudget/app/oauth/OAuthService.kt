@@ -41,7 +41,9 @@ data class AuthorizationRequest(
     val responseType: String?,
     val codeChallenge: String?,
     val codeChallengeMethod: String?,
-    val scope: String?
+    val scope: String?,
+    /** RFC 8707; when present it must name the MCP endpoint. */
+    val resource: String? = null
 )
 
 /**
@@ -75,9 +77,13 @@ class OAuthService(
         const val MAX_CLIENT_NAME = 200
         const val MAX_REDIRECT_URIS = 10
         const val MAX_REDIRECT_URI_LENGTH = 1000
+        /** `oauth_clients.redirect_uris`, newline-joined. */
+        const val MAX_REDIRECT_URIS_STORED = 4000
         private val LOOPBACK_HOSTS = setOf("localhost", "127.0.0.1")
-        /** RFC 7636 §4.1: the verifier's alphabet and length; a challenge is drawn from the same. */
-        private val PKCE_VALUE = Regex("[A-Za-z0-9._~-]{43,128}")
+        /** RFC 7636 §4.1: the verifier's alphabet and length. */
+        private val PKCE_VERIFIER = Regex("[A-Za-z0-9._~-]{43,128}")
+        /** An S256 challenge: BASE64URL of a SHA-256, unpadded, so exactly 43 characters. */
+        private val S256_CHALLENGE = Regex("[A-Za-z0-9_-]{43}")
         private val random = SecureRandom()
     }
 
@@ -87,6 +93,16 @@ class OAuthService(
     /** OAuth exists only while MCP is on and the instance knows its own address. */
     fun available(): Boolean = base.isNotEmpty() && mcp.enabled()
 
+    /** The one protected resource; what tokens are good for. */
+    val resource: String get() = "$base/mcp"
+
+    /** RFC 8707: a `resource` parameter, when given, must name [resource] exactly. */
+    fun checkResource(resource: String?) {
+        if (resource != null && resource != this.resource) {
+            throw OAuthException("invalid_target", "The only resource is ${this.resource}")
+        }
+    }
+
     // ---- registration -------------------------------------------------------------------
 
     /** Registers a public client; [OAuthException] with `invalid_redirect_uri` or `invalid_client_metadata`. */
@@ -95,6 +111,10 @@ class OAuthService(
             throw OAuthException("invalid_redirect_uri", "Give 1 to $MAX_REDIRECT_URIS redirect_uris")
         }
         redirectUris.forEach(::checkRedirectUri)
+        val stored = redirectUris.distinct().joinToString("\n")
+        if (stored.length > MAX_REDIRECT_URIS_STORED) {
+            throw OAuthException("invalid_redirect_uri", "The redirect URIs are longer than $MAX_REDIRECT_URIS_STORED characters together")
+        }
         val name = clientName?.trim()?.takeIf { it.isNotEmpty() } ?: DEFAULT_CLIENT_NAME
         if (name.length > MAX_CLIENT_NAME) {
             throw OAuthException("invalid_client_metadata", "client_name is longer than $MAX_CLIENT_NAME characters")
@@ -103,7 +123,7 @@ class OAuthService(
             OAuthClient(
                 clientId = newToken(""),
                 clientName = name,
-                redirectUris = redirectUris.distinct().joinToString("\n"),
+                redirectUris = stored,
                 createdAt = Instant.now(clock)
             )
         )
@@ -146,9 +166,10 @@ class OAuthService(
         fun invalid(why: String): Nothing = throw OAuthException("invalid_request", why)
         if (request.responseType != "code") invalid("response_type must be code")
         if (request.codeChallengeMethod != "S256") invalid("PKCE with code_challenge_method S256 is required")
-        if (request.codeChallenge == null || !PKCE_VALUE.matches(request.codeChallenge)) invalid("code_challenge is missing or malformed")
+        if (request.codeChallenge == null || !S256_CHALLENGE.matches(request.codeChallenge)) invalid("code_challenge is missing or malformed")
         val scopes = request.scope?.split(' ')?.filter { it.isNotEmpty() }.orEmpty()
         if (scopes.any { it != SCOPE }) invalid("The only scope is $SCOPE")
+        checkResource(request.resource)
         return client
     }
 
@@ -206,19 +227,21 @@ class OAuthService(
         }
         val client = clients.findByClientId(clientId) ?: throw OAuthException("invalid_client", "Unknown client")
         val stored = codes.findByCodeHash(sha256Hex(code)) ?: throw invalidGrant()
+        val grant = stored.grant
+        // Another client cannot use the code, nor use it up.
+        if (grant.client.id != client.id) throw invalidGrant()
         val now = Instant.now(clock)
-        // Marked before anything else is checked, so a second presentation is caught even when
-        // two arrive at once: whoever finds the code already used revokes what it bought.
+        // Used up before anything else is checked: OAuth 2.1 codes are single use, so even a
+        // failed exchange by the right client spends it. The conditional update also catches
+        // two presentations arriving at once: whoever finds it already used revokes what it bought.
         if (stored.usedAt != null || codes.markUsed(stored.id, now) == 0) {
-            tokens.revokeGrant(stored.grant)
+            tokens.revokeGrant(grant)
             throw invalidGrant()
         }
-        val grant = stored.grant
-        if (grant.client.id != client.id) throw invalidGrant()
         if (!stored.expiresAt.isAfter(now)) throw invalidGrant()
         if (grant.revokedAt != null) throw invalidGrant()
         if (stored.redirectUri != redirectUri) throw invalidGrant()
-        if (!PKCE_VALUE.matches(verifier) || !challengeMatches(verifier, stored.codeChallenge)) throw invalidGrant()
+        if (!PKCE_VERIFIER.matches(verifier) || !challengeMatches(verifier, stored.codeChallenge)) throw invalidGrant()
         client.lastUsedAt = now
         return issue(grant, now)
     }
@@ -256,7 +279,10 @@ class OAuthService(
     private fun issue(grant: OAuthGrant, now: Instant): TokenResponse {
         val access = newToken(ACCESS_PREFIX)
         val refresh = newToken(REFRESH_PREFIX)
-        fun save(raw: String, kind: AccessTokenKind, lifetime: Duration) = tokenRepo.save(
+        // The grant has no last-used column; Settings shows the latest among its tokens. The new
+        // refresh token carries that forward, so it outlives the pruning of old access tokens.
+        val lastUsed = tokenRepo.lastUsedByGrant(grant.id)
+        fun save(raw: String, kind: AccessTokenKind, lifetime: Duration, lastUsedAt: Instant? = null) = tokenRepo.save(
             AccessToken(
                 user = grant.user,
                 kind = kind,
@@ -265,11 +291,12 @@ class OAuthService(
                 prefix = raw.take(AccessTokenService.SHOWN_PREFIX_LENGTH),
                 oauthGrantId = grant.id,
                 createdAt = now,
-                expiresAt = now.plus(lifetime)
+                expiresAt = now.plus(lifetime),
+                lastUsedAt = lastUsedAt
             )
         )
         save(access, AccessTokenKind.OAUTH_ACCESS, ACCESS_LIFETIME)
-        save(refresh, AccessTokenKind.OAUTH_REFRESH, REFRESH_LIFETIME)
+        save(refresh, AccessTokenKind.OAUTH_REFRESH, REFRESH_LIFETIME, lastUsed)
         return TokenResponse(access, refresh, ACCESS_LIFETIME.seconds, grant.scope)
     }
 

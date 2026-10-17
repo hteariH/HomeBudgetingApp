@@ -42,11 +42,11 @@ class OAuthClient(
 interface OAuthClientRepository : JpaRepository<OAuthClient, Long> {
     fun findByClientId(clientId: String): OAuthClient?
 
-    /** Clients registered before [cutoff] that no one ever approved. */
+    /**
+     * Clients registered before [cutoff] that never obtained a token ([OAuthClient.lastUsedAt]
+     * is set on every issue). Their grants and codes go with them (ON DELETE CASCADE).
+     */
     @Modifying
-    @Query(
-        "DELETE FROM OAuthClient c WHERE c.createdAt < :cutoff " +
-            "AND NOT EXISTS (SELECT g.id FROM OAuthGrant g WHERE g.client = c)"
-    )
+    @Query("DELETE FROM OAuthClient c WHERE c.createdAt < :cutoff AND c.lastUsedAt IS NULL")
     fun deleteUnusedBefore(@Param("cutoff") cutoff: Instant): Int
 }

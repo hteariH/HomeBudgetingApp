@@ -66,7 +66,7 @@ class AccessTokenService(
     @Transactional(readOnly = true)
     fun listFor(user: User): List<TokenView> {
         val personal = repo.findAllByUserIdAndKindOrderByCreatedAtDescIdDesc(user.id, AccessTokenKind.PERSONAL).map { it.toView() }
-        val oauth = grants.findAllByUserIdAndRevokedAtIsNull(user.id).map { grant ->
+        val oauth = grants.findConnectedByUser(user.id).map { grant ->
             TokenView(
                 id = grant.uuid,
                 kind = TokenKind.OAUTH,

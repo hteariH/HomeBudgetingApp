@@ -22,6 +22,17 @@ interface AccessTokenRepository : JpaRepository<AccessToken, Long> {
     @Query("SELECT MAX(t.lastUsedAt) FROM AccessToken t WHERE t.oauthGrantId = :grantId")
     fun lastUsedByGrant(@Param("grantId") grantId: Long): java.time.Instant?
 
+    /**
+     * OAuth tokens that expired before [cutoff], and every token of a grant revoked before it.
+     * A rotated refresh token stays until it expires: presenting it again must still revoke.
+     */
+    @Modifying
+    @Query(
+        "DELETE FROM AccessToken t WHERE t.oauthGrantId IS NOT NULL AND (t.expiresAt < :cutoff " +
+            "OR t.oauthGrantId IN (SELECT g.id FROM OAuthGrant g WHERE g.revokedAt < :cutoff))"
+    )
+    fun deleteStaleOAuth(@Param("cutoff") cutoff: java.time.Instant): Int
+
     /** Marks a refresh token rotated unless it already was; 0 means someone got there first. */
     @Modifying(flushAutomatically = true)
     @Query("UPDATE AccessToken t SET t.usedAt = :now WHERE t.id = :id AND t.usedAt IS NULL")
