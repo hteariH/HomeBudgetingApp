@@ -45,3 +45,27 @@ fun Map<String, Any?>.optionalString(key: String): String? = when (val v = this[
     is String -> v.takeIf { it.isNotBlank() }
     else -> throw ToolInputException("\"$key\" must be a string")
 }
+
+/** An optional `YYYY-MM-DD` argument. */
+fun Map<String, Any?>.optionalDate(key: String): java.time.LocalDate? =
+    optionalString(key)?.let {
+        try {
+            java.time.LocalDate.parse(it.trim())
+        } catch (e: java.time.format.DateTimeParseException) {
+            throw ToolInputException("\"$key\" must be a date like 2026-03-31")
+        }
+    }
+
+fun Map<String, Any?>.requiredDate(key: String): java.time.LocalDate =
+    optionalDate(key) ?: throw ToolInputException("\"$key\" is required (YYYY-MM-DD)")
+
+/** An optional money argument as a decimal string (a JSON number is accepted too). */
+fun Map<String, Any?>.optionalDecimal(key: String): java.math.BigDecimal? = when (val v = this[key]) {
+    null -> null
+    is Number, is String -> try {
+        java.math.BigDecimal(v.toString().trim())
+    } catch (e: NumberFormatException) {
+        throw ToolInputException("\"$key\" must be a decimal number like 12.50")
+    }
+    else -> throw ToolInputException("\"$key\" must be a decimal number like 12.50")
+}
