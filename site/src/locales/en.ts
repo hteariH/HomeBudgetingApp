@@ -12,7 +12,7 @@ export const en = {
     'hero.title': 'Know where your money',
     'hero.accent': 'actually goes',
     'hero.subtitle':
-        'PersonalMoney is open source (AGPL-3.0) and runs on your NAS or home server. Your accounts, transactions and transfers stay on your hardware, in as many currencies as you hold, and your data never leaves it. Bring your own AI model to read receipts — coming soon.',
+        'PersonalMoney is open source (AGPL-3.0) and runs on your NAS or home server. Your accounts, transactions and transfers stay on your hardware, in as many currencies as you hold, and your data never leaves it. Bring your own AI model to read receipts, and connect your AI assistant to your books.',
     'hero.ctaInstall': 'Install it',
     'hero.ctaSource': 'Source code',
 
@@ -93,7 +93,7 @@ export const en = {
 
     'ai.title': 'Bring your own AI model',
     'ai.body':
-        'Coming soon: connect any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, OpenRouter), Anthropic or Gemini to read your receipts.',
+        'Connect any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, OpenRouter), Anthropic or Gemini to read your receipts.',
 
     'footer.tagline': 'Personal finance, on your own hardware.',
     'footer.license': 'Open source under AGPL-3.0',

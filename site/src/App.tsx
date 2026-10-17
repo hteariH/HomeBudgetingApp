@@ -21,7 +21,7 @@ const FEATURES = [
     { n: 2, Icon: ArrowLeftRight, soon: false },
     { n: 3, Icon: FileSpreadsheet, soon: false },
     { n: 4, Icon: LineChart, soon: false },
-    { n: 5, Icon: Users, soon: true },
+    { n: 5, Icon: Users, soon: false },
     { n: 6, Icon: Receipt, soon: false },
     { n: 7, Icon: Plug, soon: false },
 ] as const;
@@ -462,9 +462,6 @@ function Ai() {
                     aria-hidden
                     className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-brand/15 via-transparent to-info/15"
                 />
-                <span className="mb-4 inline-block rounded-full border border-line px-2.5 py-0.5 text-[11px] font-semibold text-ink-soft">
-                    {t('features.soon')}
-                </span>
                 <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t('ai.title')}</h2>
                 <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-ink-soft">{t('ai.body')}</p>
             </div>

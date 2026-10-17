@@ -23,11 +23,10 @@ it('never offers a hosted account', () => {
     expect(document.body.innerHTML).not.toMatch(/\/register|\/login|Premium/);
 });
 
-it('marks only unshipped features as coming soon', () => {
+it('announces nothing as coming soon, since every feature on the page has shipped', () => {
     render(<App />);
-    const card = (n: number) => screen.getByText(en[`features.${n}.title` as keyof typeof en]).closest('article')!;
-    expect(card(6).textContent).not.toContain(en['features.soon']);
-    expect(card(7).textContent).not.toContain(en['features.soon']);
+    expect(document.body.textContent).not.toContain(en['features.soon']);
+    expect(document.body.textContent).not.toMatch(/coming soon/i);
 });
 
 it('lets the last feature card fill its row, so the grid has no empty cell', () => {
