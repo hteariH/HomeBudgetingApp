@@ -236,8 +236,33 @@ class McpCreateToolsTest {
         assertEquals("\"receipt.items[0].price\" is required",
             err(base + ("receipt" to mapOf("items" to listOf(mapOf("name" to "Milk"))))))
 
+        assertEquals("\"receipt.total\" must be greater than zero",
+            err(base + ("receipt" to mapOf("total" to "0", "items" to listOf(mapOf("name" to "Milk", "price" to "1"))))))
+        assertEquals("A receipt needs items or a total", err(base + ("receipt" to mapOf("merchant" to "Shop", "items" to emptyList<Any>()))))
+        val huge = "92233720368547758.07" // Long.MAX_VALUE minor units
+        assertEquals("\"receipt.items\" add up to more than an amount can hold",
+            err(base + ("receipt" to mapOf("items" to listOf(mapOf("name" to "A", "price" to huge), mapOf("name" to "B", "price" to huge))))))
+        assertEquals("\"receipt.items\" add up to more than an amount can hold",
+            err(base + ("receipt" to mapOf("total" to huge, "items" to listOf(mapOf("name" to "A", "price" to "-1.00"), mapOf("name" to "B", "price" to "-$huge"))))))
+
         assertEquals(before, transactions.count())
         assertEquals(receiptsBefore, receipts.count())
+    }
+
+    @Test
+    fun `a receipt takes a discount line, and a total alone without items`() {
+        val out = json(call(createTransaction, mapOf(
+            "account" to "Card", "type" to "EXPENSE", "amount" to "25.00",
+            "receipt" to mapOf("items" to listOf(mapOf("name" to "Cheese", "price" to "30.00"), mapOf("name" to "Discount", "price" to "-5.00")))
+        )))
+        assertEquals("25.00", out["receipt"]["total"].asText())
+        assertEquals("-5.00", out["receipt"]["items"][1]["price"].asText())
+        val totalOnly = json(call(createTransaction, mapOf(
+            "account" to "Card", "type" to "EXPENSE", "amount" to "12.00",
+            "receipt" to mapOf("merchant" to "Kiosk", "total" to "12.00", "items" to emptyList<Any>())
+        )))
+        assertEquals("12.00", totalOnly["receipt"]["total"].asText())
+        assertEquals(0, totalOnly["receipt"]["items"].size())
     }
 
     // ---- create_transfer ---------------------------------------------------------------

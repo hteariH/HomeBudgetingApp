@@ -87,8 +87,9 @@ class UserService(
     private fun deleteHousehold(householdId: Long) {
         // Receipt photos are files, which no cascade reaches. Their own paths, not the
         // household's directory: a receipt merged in from another household keeps its old path.
+        // A receipt an assistant sent as text has no photo.
         @Suppress("UNCHECKED_CAST")
-        val photos = em.createNativeQuery("SELECT image_path FROM receipts WHERE household_id = :id")
+        val photos = em.createNativeQuery("SELECT image_path FROM receipts WHERE household_id = :id AND image_path IS NOT NULL")
             .setParameter("id", householdId).resultList as List<String>
         listOf(
             "DELETE FROM category_mcc_codes WHERE category_id IN (SELECT id FROM categories WHERE household_id = :id)",

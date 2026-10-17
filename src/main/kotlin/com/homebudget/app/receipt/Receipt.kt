@@ -78,10 +78,13 @@ class Receipt(
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now()
 ) {
-    /** Sets [totalMismatch] from [items] and [totalMinor]; call after changing either. */
+    /**
+     * Sets [totalMismatch] from [items] and [totalMinor]; call after changing either.
+     * @throws ArithmeticException rather than wrap when the amounts are beyond a Long.
+     */
     fun checkTotal() {
         val total = totalMinor
         totalMismatch = items.isNotEmpty() && total != null &&
-            Math.abs(items.fold(0L) { sum, it -> Math.addExact(sum, it.priceMinor) } - total) > items.size
+            Math.absExact(Math.subtractExact(items.fold(0L) { sum, it -> Math.addExact(sum, it.priceMinor) }, total)) > items.size
     }
 }

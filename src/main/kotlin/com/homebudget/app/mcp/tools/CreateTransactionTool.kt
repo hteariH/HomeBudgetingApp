@@ -74,7 +74,7 @@ class CreateTransactionTool(
               "type": "object",
               "properties": {
                 "merchant": { "type": "string", "maxLength": $MAX_MERCHANT },
-                "total": { "type": "string", "description": "Decimal string; default the items' sum" },
+                "total": { "type": "string", "description": "Positive decimal string; default the items' sum. Items or a total are required" },
                 "items": {
                   "type": "array",
                   "maxItems": $MAX_ITEMS,
@@ -83,7 +83,7 @@ class CreateTransactionTool(
                     "properties": {
                       "name": { "type": "string", "minLength": 1, "maxLength": $MAX_ITEM_NAME },
                       "quantity": { "type": "string", "description": "Decimal string" },
-                      "price": { "type": "string", "description": "Decimal string: the line's price" }
+                      "price": { "type": "string", "description": "Decimal string: the line's price; negative for a discount" }
                     },
                     "required": ["name", "price"],
                     "additionalProperties": false
@@ -134,7 +134,7 @@ class CreateTransactionTool(
     private fun receiptInput(value: Any, currency: Currency): ReceiptInput {
         val receipt = value.asObject("receipt")
         val merchant = receipt.optionalText("merchant", MAX_MERCHANT, "receipt.merchant")
-        val total = receipt.optionalDecimal("total", "receipt.total")?.let { minorUnits("receipt.total", it, currency) }
+        val total = receipt.optionalDecimal("total", "receipt.total")?.let { positiveMinorUnits("receipt.total", it, currency) }
         val rawItems = receipt["items"] as? List<*>
             ?: throw ToolInputException(if (receipt["items"] == null) "\"receipt.items\" is required" else "\"receipt.items\" must be an array")
         if (rawItems.size > MAX_ITEMS) throw ToolInputException("\"receipt.items\" must have at most $MAX_ITEMS items")
@@ -153,6 +153,14 @@ class CreateTransactionTool(
             }
             val price = item.optionalDecimal("price", "$label.price") ?: throw ToolInputException("\"$label.price\" is required")
             AssistantReceiptItem(name, quantity, minorUnits("$label.price", price, currency))
+        }
+        if (items.isEmpty() && total == null) throw ToolInputException("A receipt needs items or a total")
+        // The receipt keeps the sum and its difference from the total (see Receipt.checkTotal); both must fit.
+        try {
+            val sum = items.fold(0L) { acc, it -> Math.addExact(acc, it.priceMinor) }
+            total?.let { Math.absExact(Math.subtractExact(sum, it)) }
+        } catch (e: ArithmeticException) {
+            throw ToolInputException("\"receipt.items\" add up to more than an amount can hold")
         }
         return ReceiptInput(merchant, total, items)
     }

@@ -4,6 +4,7 @@ import com.homebudget.app.domain.MinorUnits
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.CreateTransferRequest
+import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.security.SecurityUtils
 import org.springframework.data.domain.Page
@@ -33,7 +34,9 @@ import java.util.UUID
 class TransferService(
     private val transactionRepo: TransactionRepository,
     private val accountService: AccountService,
-    private val securityUtils: SecurityUtils
+    private val securityUtils: SecurityUtils,
+    private val householdRepo: HouseholdRepository,
+    private val syncClock: SyncClock
 ) {
 
     /** The debit leg of each transfer, newest first. */
@@ -74,6 +77,11 @@ class TransferService(
             BigDecimal.ONE
         }
 
+        // Both legs stamped after everything the household already has, under its lock as a
+        // sync push is, so a device whose cursor is the latest stamp still pulls them.
+        householdRepo.lockById(household.id)
+        val stamp = syncClock.next(household.id)
+
         val groupId = UUID.randomUUID().toString()
         val occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant()
 
@@ -93,7 +101,8 @@ class TransferService(
             transferGroupId = groupId,
             transferCounterpartAccountId = toAccount.id,
             transferFeeMinor = feeMinor,
-            source = source
+            source = source,
+            updatedAt = stamp
         )
 
         val credit = Transaction(
@@ -110,7 +119,8 @@ class TransferService(
             description = req.description,
             transferGroupId = groupId,
             transferCounterpartAccountId = fromAccount.id,
-            source = source
+            source = source,
+            updatedAt = stamp
         )
 
         // Both legs in one transaction: a half-written transfer is a corrupted balance.

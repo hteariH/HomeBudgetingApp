@@ -6,6 +6,7 @@ import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.CreateTransactionRequest
 import com.homebudget.app.dto.UpdateTransactionRequest
 import com.homebudget.app.receipt.ReceiptService
+import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.security.SecurityUtils
 import org.springframework.data.domain.Page
@@ -24,7 +25,9 @@ class TransactionService(
     private val accountService: AccountService,
     private val categoryService: CategoryService,
     private val securityUtils: SecurityUtils,
-    private val receiptService: ReceiptService
+    private val receiptService: ReceiptService,
+    private val householdRepo: HouseholdRepository,
+    private val syncClock: SyncClock
 ) {
     fun findFiltered(
         accountId: Long?,
@@ -70,6 +73,9 @@ class TransactionService(
 
         val amountMinor = MinorUnits.toMinor(req.amount, account.currency.decimals)
         val household = securityUtils.getCurrentHousehold()
+        // Stamped after everything the household already has, under its lock as a sync push
+        // is, so a device whose cursor is the latest stamp still pulls this row.
+        householdRepo.lockById(household.id)
         val receipt = req.receiptUuid?.let { receiptService.linkable(it, household, transactionUuid = null) }
 
         // No balance bookkeeping here on purpose - the balance is derived from these
@@ -85,7 +91,8 @@ class TransactionService(
             type = req.type,
             occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant(),
             description = req.description,
-            source = source
+            source = source,
+            updatedAt = syncClock.next(household.id)
         )
         transaction.linkReceipt(receipt)
         return transactionRepo.save(transaction)

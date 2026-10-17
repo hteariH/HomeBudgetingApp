@@ -34,6 +34,8 @@ class SyncServiceTest {
     @Autowired private lateinit var syncService: SyncService
     @Autowired private lateinit var accountService: AccountService
     @Autowired private lateinit var transactionService: TransactionService
+    @Autowired private lateinit var transferService: TransferService
+    @Autowired private lateinit var jdbc: org.springframework.jdbc.core.JdbcTemplate
     @Autowired private lateinit var identity: TestIdentity
 
     private lateinit var alice: UserPrincipal
@@ -360,5 +362,33 @@ class SyncServiceTest {
         val after = syncService.pull(Instant.EPOCH, 500).changes.transactions.single { it.uuid == mcp.uuid }
         assertEquals(BigDecimal("8.00"), after.amount)
         assertEquals("MCP", after.source)
+    }
+
+    @Test
+    fun `entries created over REST are stamped after the household's latest sync stamp`() {
+        val cashUuid = uuid()
+        val cardUuid = uuid()
+        syncService.push(SyncPushRequest(SyncPayload(accounts = listOf(
+            SyncAccount(uuid = cashUuid, name = "Cash", currencyCode = "USD"),
+            SyncAccount(uuid = cardUuid, name = "Card", currencyCode = "USD")
+        ))))
+        // A device has pulled up to the push's stamp. Put that stamp ahead of the wall clock, as a
+        // same-millisecond write or a stamp bumped by SyncClock would be: a create stamped with the
+        // bare clock would land at or before it, and that device would never see it.
+        val pushStamp = Instant.now().plusSeconds(3600).truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
+        jdbc.update("UPDATE accounts SET updated_at = ? WHERE uuid IN (?, ?)",
+            java.sql.Timestamp.from(pushStamp), cashUuid, cardUuid)
+        val cash = accountService.findAll().single { it.uuid == cashUuid }
+        val card = accountService.findAll().single { it.uuid == cardUuid }
+
+        val expense = transactionService.create(CreateTransactionRequest(accountId = cash.id, amount = BigDecimal("3.00"),
+            type = TransactionType.EXPENSE, date = java.time.LocalDate.parse("2026-04-03")))
+        val debit = transferService.create(CreateTransferRequest(fromAccountId = cash.id, toAccountId = card.id,
+            fromAmount = BigDecimal("1.00"), toAmount = BigDecimal("1.00"), date = java.time.LocalDate.parse("2026-04-03")))
+
+        val pulled = syncService.pull(pushStamp, 500).changes.transactions
+        assertTrue(pulled.any { it.uuid == expense.uuid }, "the REST expense is missing from the pull")
+        assertEquals(2, pulled.count { it.transferGroupId == debit.transferGroupId }, "a transfer leg is missing from the pull")
+        pulled.forEach { assertTrue(it.updatedAt.isAfter(pushStamp)) }
     }
 }
