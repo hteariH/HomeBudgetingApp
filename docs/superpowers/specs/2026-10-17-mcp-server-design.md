@@ -40,8 +40,8 @@ Money is a decimal string with an explicit ISO currency code, as in REST.
 | `list_categories` | `type?` (`INCOME`/`EXPENSE`) | uuid, name, type, parent uuid |
 | `search_transactions` | `from?`, `to?` (dates), `account?`, `category?`, `type?` (`INCOME`/`EXPENSE`/`TRANSFER`), `text?` (note or receipt merchant, case-insensitive), `minAmount?`, `maxAmount?`, `limit?` (default 50, max 100), `cursor?` | transactions newest first with account, category, amount, currency, date, note, author, source, receipt merchant and items when present; `nextCursor` |
 | `summarize_spending` | `from`, `to`, `groupBy` (`CATEGORY` default, `ACCOUNT`, `MONTH`), `type?` (`EXPENSE` default, `INCOME`) | groups with totals **per currency** (no conversion), plus per-currency grand totals |
-| `create_transaction` | `account`, `type` (`INCOME`/`EXPENSE`), `amount`, `date?` (today in the household's zone), `category?`, `note?`, `receipt?` `{ merchant?, total?, items: [{ name, quantity?, price }] }` | the created transaction |
-| `create_transfer` | `fromAccount`, `toAccount`, `amount`, `toAmount?` (required when currencies differ), `date?`, `note?` | the created transfer |
+| `create_transaction` | `account`, `type` (`INCOME`/`EXPENSE`), `amount`, `date?` (today in UTC; households have no time zone), `category?`, `note?`, `receipt?` `{ merchant?, total?, items: [{ name, quantity?, price }] }` | the created transaction |
+| `create_transfer` | `fromAccount`, `toAccount`, `amount`, `toAmount?` (required when currencies differ), `date?` (today in UTC), `note?` | the created transfer |
 
 - **References by uuid or name.** `account`, `category`, `fromAccount`, `toAccount` accept a
   uuid or an exact name (case-insensitive). An ambiguous or unknown name is a tool error
@@ -84,8 +84,8 @@ Money is a decimal string with an explicit ISO currency code, as in REST.
   `error=access_denied`), `POST /oauth/token` (`authorization_code`, `refresh_token`; form
   encoded), `POST /oauth/register`, `POST /oauth/revoke` (RFC 7009).
 - Authorization codes: 32 random bytes, stored hashed, single use, 60 s, bound to client,
-  redirect URI, code challenge, user and household. Reuse of a code revokes the grant it
-  produced.
+  redirect URI, code challenge and user (not household: tools act in the user's current
+  household). Reuse of a code revokes the grant it produced.
 - Dynamic client registration (RFC 7591) is open, as connectors require. Accepted redirect
   URIs: `https://…`, and `http://localhost` / `http://127.0.0.1` with any port. Clients that
   never obtained a token are deleted 24 h after registration.
@@ -123,14 +123,22 @@ Money is a decimal string with an explicit ISO currency code, as in REST.
 - Members and owners are equal: an assistant can do what its user can in the books, minus
   editing and deleting.
 - Rate limit: 60 tool calls per minute per token (429 above).
-- MCP disabled → `/mcp` and the OAuth endpoints answer 404.
-- Deleting a user deletes their tokens and grants; leaving or switching households keeps
-  them (they act in the current household).
+- MCP disabled → `/mcp` and the OAuth endpoints answer 404, and no token can be created;
+  existing tokens and grants can still be listed and revoked, so a user can cut an
+  assistant off during an incident.
+- Deleting a user deletes their tokens and grants and closes their open streams; leaving or
+  switching households keeps them (they act in the current household). A create that races a
+  household change is refused with the tool error "Your household changed — try again".
+- A password reset (mailed or an administrator's link) deletes the user's personal tokens and
+  revokes their OAuth grants, closing their open streams. Signing out does not: assistant
+  tokens are not device sessions.
 
 ## Web
 
 - **Settings → Assistants** (any user, shown when MCP is enabled):
-  - The endpoint URL `{APP_BASE_URL or window origin}/mcp` with a copy button.
+  - The endpoint URL `{APP_BASE_URL or window origin}/mcp` with a copy button. The web app
+    reads the base URL from `InstanceInfo.baseUrl`: `APP_BASE_URL` without a trailing slash,
+    present only when OAuth is available (MCP on and `APP_BASE_URL` set).
   - "Create token" → name + expiry → the token once, with ready-made snippets:
     Claude Code `claude mcp add --transport http personalmoney {url} --header
     "Authorization: Bearer {token}"`, Claude Desktop / Cursor JSON.
