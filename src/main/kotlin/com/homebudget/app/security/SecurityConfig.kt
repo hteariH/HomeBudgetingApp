@@ -6,12 +6,14 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
 @Configuration
@@ -64,9 +66,17 @@ class SecurityConfig(
                     // The join page reads an invitation's household and inviter before
                     // anyone has signed in; accepting it (a POST) still needs a session.
                     .requestMatchers(HttpMethod.GET, "/api/invites/*").permitAll()
+                    // Assistants. McpAuthFilter (registered for this path alone) checks their
+                    // personal and OAuth tokens; this chain never accepts those, so they open
+                    // nothing under /api.
+                    .requestMatchers("/mcp").permitAll()
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
             }
+            // A request without an accepted credential is a 401, as HTTP defines it. Without
+            // an entry point Spring answers 403, which reads as "signed in but not allowed" -
+            // and an assistant's token tried on the REST API is exactly "not signed in".
+            .exceptionHandling { it.authenticationEntryPoint(HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)) }
             .authenticationProvider(authenticationProvider())
             // Rate limiting sits ahead of authentication: a blocked request must not
             // reach the password check at all, or it is not a limit on guessing.

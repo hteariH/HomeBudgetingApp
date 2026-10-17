@@ -13,5 +13,9 @@ data class InstanceInfo(
     val mailEnabled: Boolean,
     val bankProviders: List<String>,
     /** An AI model is configured for the instance, so receipts can be scanned. */
-    val receiptScan: Boolean
+    val receiptScan: Boolean,
+    /** Assistants may connect over MCP; Settings shows Assistants. */
+    val mcpEnabled: Boolean,
+    /** MCP is on and APP_BASE_URL is set, so web connectors can sign in with OAuth. */
+    val oauthAvailable: Boolean
 )

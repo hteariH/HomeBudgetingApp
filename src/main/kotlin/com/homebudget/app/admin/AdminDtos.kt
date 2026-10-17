@@ -19,4 +19,8 @@ data class RegistrationSetting(val open: Boolean, val lockedByEnvironment: Boole
 
 data class SetRegistrationRequest(val open: Boolean)
 
+data class McpSetting(val enabled: Boolean, val lockedByEnvironment: Boolean)
+
+data class SetMcpRequest(val enabled: Boolean)
+
 data class ResetLinkResponse(val path: String, val expiresAt: Instant)

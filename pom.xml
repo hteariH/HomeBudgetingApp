@@ -29,6 +29,8 @@
         <node.version>v20.11.1</node.version>
         <npm.version>10.2.4</npm.version>
         <springdoc.version>2.8.5</springdoc.version>
+        <!-- The MCP Java SDK: the protocol and its servlet Streamable HTTP transport at /mcp. -->
+        <mcp-sdk.version>2.1.0</mcp-sdk.version>
         <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
         <frontend.src.dir>${project.basedir}/src/main/frontend</frontend.src.dir>
         <!-- `-Dfrontend.skip=true` runs backend-only builds without downloading Node
@@ -103,6 +105,18 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- MCP: lets a user's own AI assistant read the books and record entries. -->
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-core</artifactId>
+            <version>${mcp-sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-json-jackson2</artifactId>
+            <version>${mcp-sdk.version}</version>
         </dependency>
 
         <!-- Testing -->

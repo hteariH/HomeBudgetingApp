@@ -100,10 +100,9 @@ function send(path: string, opts: RequestOptions): Promise<Response> {
 }
 
 /**
- * Whether a refusal may just mean the access token has expired. The server has no
- * authentication entry point configured, so Spring answers an expired or garbled token with
- * 403, not 401 - and a client that refreshed on 401 only (the Ktor plugin did) never renewed
- * the session at all. A genuine 403 costs one refresh and still comes back as a 403.
+ * Whether a refusal may just mean the access token has expired. The server answers an
+ * expired or garbled token with 401; servers before the MCP release answered 403, so both
+ * still count. A genuine 403 costs one refresh and still comes back as a 403.
  */
 const mayBeExpired = (status: number, path: string) =>
     (status === 401 || status === 403) && !TOKEN_ENDPOINTS.includes(path) && session.get() !== null;
