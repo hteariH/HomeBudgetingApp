@@ -37,6 +37,7 @@ class DeleteUserTest {
     @Autowired private lateinit var identity: TestIdentity
     @Autowired private lateinit var syncService: SyncService
     @Autowired private lateinit var transactionService: TransactionService
+    @Autowired private lateinit var transferService: TransferService
     @Autowired private lateinit var userService: UserService
     @Autowired private lateinit var accountRepository: AccountRepository
     @Autowired private lateinit var users: UserRepository
@@ -155,5 +156,26 @@ class DeleteUserTest {
         assertFalse(users.existsById(owner.user.id))
         assertEquals(0L, count("SELECT COUNT(*) FROM receipts WHERE household_id = ?", owner.household.id))
         assertFalse(java.nio.file.Files.exists(receiptImages.resolve(photo.imagePath!!)), "the photo is deleted")
+    }
+
+    @Test
+    fun `a create for a household deleted meanwhile is refused as a sync push would be`() {
+        val owner = identity.newMember("stale")
+        identity.signIn(owner)
+        val accountUuid = UUID.randomUUID().toString()
+        syncService.push(SyncPushRequest(SyncPayload(accounts = listOf(SyncAccount(uuid = accountUuid, name = "Cash", currencyCode = "USD")))))
+        val accountId = accountRepository.findByUuidAndHousehold(accountUuid, owner.household)!!.id
+        userService.deleteUser(owner.user)
+
+        // The request authenticated before the deletion still carries the old household.
+        identity.signIn(owner)
+        org.junit.jupiter.api.assertThrows<com.homebudget.app.household.HouseholdChangedException> {
+            transactionService.create(CreateTransactionRequest(accountId = accountId, amount = BigDecimal("1.00"),
+                type = TransactionType.EXPENSE, date = LocalDate.now()))
+        }
+        org.junit.jupiter.api.assertThrows<com.homebudget.app.household.HouseholdChangedException> {
+            transferService.create(com.homebudget.app.dto.CreateTransferRequest(fromAccountId = accountId, toAccountId = accountId + 1,
+                fromAmount = BigDecimal("1.00"), toAmount = BigDecimal("1.00"), date = LocalDate.now()))
+        }
     }
 }

@@ -243,7 +243,9 @@ class McpCreateToolsTest {
         assertEquals("\"receipt.items\" add up to more than an amount can hold",
             err(base + ("receipt" to mapOf("items" to listOf(mapOf("name" to "A", "price" to huge), mapOf("name" to "B", "price" to huge))))))
         assertEquals("\"receipt.items\" add up to more than an amount can hold",
-            err(base + ("receipt" to mapOf("total" to huge, "items" to listOf(mapOf("name" to "A", "price" to "-1.00"), mapOf("name" to "B", "price" to "-$huge"))))))
+            err(base + ("receipt" to mapOf("total" to huge, "items" to listOf(mapOf("name" to "Refund", "price" to "-$huge"))))))
+        assertEquals("The receipt items add up to zero or less — pass a total",
+            err(base + ("receipt" to mapOf("items" to listOf(mapOf("name" to "Discount", "price" to "-5.00"))))))
 
         assertEquals(before, transactions.count())
         assertEquals(receiptsBefore, receipts.count())
@@ -263,6 +265,15 @@ class McpCreateToolsTest {
         )))
         assertEquals("12.00", totalOnly["receipt"]["total"].asText())
         assertEquals(0, totalOnly["receipt"]["items"].size())
+        val noItemsKey = json(call(createTransaction, mapOf(
+            "account" to "Card", "type" to "EXPENSE", "amount" to "7.00", "receipt" to mapOf("total" to "7.00")
+        )))
+        assertEquals("7.00", noItemsKey["receipt"]["total"].asText())
+        assertEquals("A receipt needs items or a total",
+            errorText(call(createTransaction, mapOf("account" to "Card", "type" to "EXPENSE", "amount" to "7.00",
+                "receipt" to mapOf("merchant" to "Kiosk")))))
+        val schema = mapper.readTree(createTransaction.inputSchema)["properties"]["receipt"]
+        assertTrue(schema["required"] == null || schema["required"].none { it.asText() == "items" }, "items must be optional")
     }
 
     // ---- create_transfer ---------------------------------------------------------------

@@ -4,6 +4,7 @@ import com.homebudget.app.repository.SyncCursorRepository
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /**
  * Stamps strictly later than everything already stored in the given households.
@@ -18,7 +19,9 @@ import java.time.Instant
 @Component
 class SyncClock(private val cursors: SyncCursorRepository, private val clock: Clock) {
     fun next(vararg householdIds: Long): Instant {
-        val now = Instant.now(clock)
+        // The columns keep milliseconds. A finer instant compares as later than a stamp in
+        // the same millisecond, then is stored as that very stamp.
+        val now = Instant.now(clock).truncatedTo(ChronoUnit.MILLIS)
         val latest = householdIds.asList().mapNotNull { cursors.latestUpdatedAt(it) }.maxOrNull() ?: return now
         return if (now.isAfter(latest)) now else latest.plusMillis(1)
     }

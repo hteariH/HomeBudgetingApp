@@ -4,6 +4,7 @@ import com.homebudget.app.domain.MinorUnits
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.CreateTransferRequest
+import com.homebudget.app.household.HouseholdChangedException
 import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.security.SecurityUtils
@@ -62,6 +63,9 @@ class TransferService(
     /** [source] is [Transaction.SOURCE_MCP] only for the assistant's create tool. */
     fun create(req: CreateTransferRequest, source: String = Transaction.SOURCE_APP): Transaction {
         val household = securityUtils.getCurrentHousehold()
+        // Both legs stamped after everything the household already has, under its lock as a
+        // sync push is, so a device whose cursor is the latest stamp still pulls them.
+        householdRepo.lockById(household.id) ?: throw HouseholdChangedException()
         val user = securityUtils.getCurrentUser()
         val fromAccount = accountService.findById(req.fromAccountId)
         val toAccount = accountService.findById(req.toAccountId)
@@ -77,9 +81,6 @@ class TransferService(
             BigDecimal.ONE
         }
 
-        // Both legs stamped after everything the household already has, under its lock as a
-        // sync push is, so a device whose cursor is the latest stamp still pulls them.
-        householdRepo.lockById(household.id)
         val stamp = syncClock.next(household.id)
 
         val groupId = UUID.randomUUID().toString()

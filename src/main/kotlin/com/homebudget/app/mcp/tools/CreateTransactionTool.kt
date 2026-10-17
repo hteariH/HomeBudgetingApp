@@ -6,6 +6,7 @@ import com.homebudget.app.domain.Currency
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.CreateTransactionRequest
+import com.homebudget.app.household.HouseholdChangedException
 import com.homebudget.app.mcp.McpTool
 import com.homebudget.app.mcp.ToolInputException
 import com.homebudget.app.mcp.minorUnits
@@ -19,6 +20,7 @@ import com.homebudget.app.mcp.requiredString
 import com.homebudget.app.mcp.toolResult
 import com.homebudget.app.receipt.AssistantReceiptItem
 import com.homebudget.app.receipt.ReceiptService
+import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.security.SecurityUtils
 import com.homebudget.app.service.SpendingSummaryService
 import com.homebudget.app.service.TransactionService
@@ -41,6 +43,7 @@ class CreateTransactionTool(
     private val receipts: ReceiptService,
     private val summary: SpendingSummaryService,
     private val securityUtils: SecurityUtils,
+    private val households: HouseholdRepository,
     private val clock: Clock,
     private val mapper: ObjectMapper
 ) : McpTool {
@@ -90,7 +93,6 @@ class CreateTransactionTool(
                   }
                 }
               },
-              "required": ["items"],
               "additionalProperties": false
             }
           },
@@ -116,6 +118,11 @@ class CreateTransactionTool(
         val receiptInput = args["receipt"]?.let { receiptInput(it, account.currency) }
 
         val receipt = receiptInput?.let {
+            // Lock the household first, as TransactionService.create does (there it is then a
+            // no-op). Inserting the receipt takes a KEY SHARE lock on the household row (the
+            // foreign key); taking FOR UPDATE on it only afterwards could deadlock on Postgres
+            // with another writer that holds the same share lock and waits for the update lock.
+            households.lockById(securityUtils.getCurrentHousehold().id) ?: throw HouseholdChangedException()
             receipts.createFromAssistant(
                 securityUtils.getCurrentHousehold().id, securityUtils.getCurrentUser().id,
                 it.merchant, date, account.currency.code, it.totalMinor, it.items
@@ -135,8 +142,11 @@ class CreateTransactionTool(
         val receipt = value.asObject("receipt")
         val merchant = receipt.optionalText("merchant", MAX_MERCHANT, "receipt.merchant")
         val total = receipt.optionalDecimal("total", "receipt.total")?.let { positiveMinorUnits("receipt.total", it, currency) }
-        val rawItems = receipt["items"] as? List<*>
-            ?: throw ToolInputException(if (receipt["items"] == null) "\"receipt.items\" is required" else "\"receipt.items\" must be an array")
+        val rawItems = when (val v = receipt["items"]) {
+            null -> emptyList<Any?>()
+            is List<*> -> v
+            else -> throw ToolInputException("\"receipt.items\" must be an array")
+        }
         if (rawItems.size > MAX_ITEMS) throw ToolInputException("\"receipt.items\" must have at most $MAX_ITEMS items")
         val items = rawItems.mapIndexed { i, raw ->
             val label = "receipt.items[$i]"
@@ -158,6 +168,7 @@ class CreateTransactionTool(
         // The receipt keeps the sum and its difference from the total (see Receipt.checkTotal); both must fit.
         try {
             val sum = items.fold(0L) { acc, it -> Math.addExact(acc, it.priceMinor) }
+            if (total == null && sum <= 0) throw ToolInputException("The receipt items add up to zero or less — pass a total")
             total?.let { Math.absExact(Math.subtractExact(sum, it)) }
         } catch (e: ArithmeticException) {
             throw ToolInputException("\"receipt.items\" add up to more than an amount can hold")

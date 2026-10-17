@@ -5,6 +5,7 @@ import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.CreateTransactionRequest
 import com.homebudget.app.dto.UpdateTransactionRequest
+import com.homebudget.app.household.HouseholdChangedException
 import com.homebudget.app.receipt.ReceiptService
 import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.TransactionRepository
@@ -58,6 +59,10 @@ class TransactionService(
         require(req.type != TransactionType.TRANSFER) {
             "Transfers are created through /api/transfers so that both legs are written together"
         }
+        val household = securityUtils.getCurrentHousehold()
+        // Stamped after everything the household already has, under its lock as a sync push
+        // is, so a device whose cursor is the latest stamp still pulls this row.
+        householdRepo.lockById(household.id) ?: throw HouseholdChangedException()
         val user = securityUtils.getCurrentUser()
         val account = accountService.findById(req.accountId)
         val category = req.categoryId?.let { categoryService.findById(it) }
@@ -72,10 +77,6 @@ class TransactionService(
         }
 
         val amountMinor = MinorUnits.toMinor(req.amount, account.currency.decimals)
-        val household = securityUtils.getCurrentHousehold()
-        // Stamped after everything the household already has, under its lock as a sync push
-        // is, so a device whose cursor is the latest stamp still pulls this row.
-        householdRepo.lockById(household.id)
         val receipt = req.receiptUuid?.let { receiptService.linkable(it, household, transactionUuid = null) }
 
         // No balance bookkeeping here on purpose - the balance is derived from these
