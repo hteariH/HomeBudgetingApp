@@ -67,6 +67,7 @@
     <string name="receipt_mismatch">The items don\'t add up to the total — check the amount</string>
     <string name="receipt_items">Items</string>
     <string name="receipt_setup_on_web">Set up receipt recognition in the web app</string>
+    <string name="transaction_via_assistant">via assistant</string>
     <string name="receipt_unavailable">Could not load the receipt. It needs a connection to your server.</string>
 
     <!-- Accounts -->

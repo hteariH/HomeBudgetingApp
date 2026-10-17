@@ -6,6 +6,7 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -64,8 +65,25 @@ class SecurityConfig(
                     // The join page reads an invitation's household and inviter before
                     // anyone has signed in; accepting it (a POST) still needs a session.
                     .requestMatchers(HttpMethod.GET, "/api/invites/*").permitAll()
+                    // Assistants. McpAuthFilter (registered for this path alone) checks their
+                    // personal and OAuth tokens; this chain never accepts those, so they open
+                    // nothing under /api.
+                    .requestMatchers("/mcp").permitAll()
+                    // The OAuth server that web connectors use to obtain those tokens: its
+                    // clients are public and carry no session. The consent page's own calls,
+                    // under /api/oauth/**, need the signed-in user like the rest of /api.
+                    .requestMatchers("/oauth/**", "/.well-known/oauth-*", "/.well-known/oauth-*/**").permitAll()
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
+            }
+            // A request without an accepted credential is a 401, as HTTP defines it. Without
+            // an entry point Spring answers 403, which reads as "signed in but not allowed" -
+            // and an assistant's token tried on the REST API is exactly "not signed in".
+            .exceptionHandling {
+                it.authenticationEntryPoint { _, response, _ ->
+                    response.setHeader("WWW-Authenticate", "Bearer")
+                    response.status = HttpStatus.UNAUTHORIZED.value()
+                }
             }
             .authenticationProvider(authenticationProvider())
             // Rate limiting sits ahead of authentication: a blocked request must not

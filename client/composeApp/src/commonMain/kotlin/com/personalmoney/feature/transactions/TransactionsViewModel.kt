@@ -161,7 +161,8 @@ class TransactionsViewModel constructor(
                 // Blank uuid as well as a zero id: a duplicate is a new row, and reusing the
                 // original's uuid would make the server treat it as an edit of that one.
                 transaction.copy(
-                    id = 0L, uuid = "", occurredAt = now, subscriptionId = null, createdByUserId = null
+                    id = 0L, uuid = "", occurredAt = now, subscriptionId = null, createdByUserId = null,
+                    source = "APP"
                 )
             )
         }

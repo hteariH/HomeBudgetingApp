@@ -62,7 +62,15 @@ export const TransactionRow: React.FC<{
             )}
             <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium text-ink">{title}</span>
-                <span className="block truncate text-xs text-ink-soft">{subtitle}</span>
+                <span className="block truncate text-xs text-ink-soft">
+                    {subtitle}
+                    {tx.source === 'MCP' && (
+                        <>
+                            {' · '}
+                            <span className="text-ink-dim">{t('transaction_via_assistant')}</span>
+                        </>
+                    )}
+                </span>
             </span>
             {crossCurrency ? (
                 <span className="flex flex-col items-end">

@@ -110,6 +110,13 @@ data class Transaction(
     @Formula("(select r.uuid from receipts r where r.id = receipt_id)")
     var receiptUuid: String? = null,
 
+    /**
+     * Who recorded it: [SOURCE_APP] (the apps, sync, imports, the server itself) or
+     * [SOURCE_MCP] (an assistant through the MCP create tools). Set once, never changed.
+     */
+    @Column(nullable = false, length = 8, updatable = false)
+    val source: String = SOURCE_APP,
+
     @Column(nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
@@ -119,6 +126,11 @@ data class Transaction(
     @Column(nullable = false)
     override var deleted: Boolean = false
 ) : Syncable {
+    companion object {
+        const val SOURCE_APP = "APP"
+        const val SOURCE_MCP = "MCP"
+    }
+
     fun linkReceipt(receipt: com.homebudget.app.receipt.Receipt?) {
         receiptId = receipt?.id
         receiptUuid = receipt?.uuid

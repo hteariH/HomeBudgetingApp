@@ -142,6 +142,12 @@ const TransactionEditPage: React.FC = () => {
                         </span>
                         <span className="text-ink-soft">
                             {tx.account.name} · {code}
+                            {tx.source === 'MCP' && (
+                                <>
+                                    {' · '}
+                                    <span>{t('transaction_via_assistant')}</span>
+                                </>
+                            )}
                         </span>
                     </div>
                     <AmountField

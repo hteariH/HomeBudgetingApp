@@ -1,5 +1,6 @@
 package com.homebudget.app.admin
 
+import com.homebudget.app.mcp.McpSettings
 import com.homebudget.app.repository.HouseholdMemberRepository
 import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.SecurityUtils
@@ -22,7 +23,8 @@ class AdminController(
     private val registration: RegistrationService,
     private val authFlow: AuthFlowService,
     private val userService: UserService,
-    private val securityUtils: SecurityUtils
+    private val securityUtils: SecurityUtils,
+    private val mcp: McpSettings
 ) {
     @GetMapping("/users")
     @Transactional(readOnly = true)
@@ -53,6 +55,20 @@ class AdminController(
         }
         registration.setRegistrationOpen(req.open)
         return ResponseEntity.ok(registration())
+    }
+
+    /** Whether assistants may connect over MCP. */
+    @GetMapping("/mcp")
+    fun mcp() = McpSetting(enabled = mcp.enabled(), lockedByEnvironment = mcp.lockedByEnvironment())
+
+    @PutMapping("/mcp")
+    fun setMcp(@RequestBody req: SetMcpRequest): ResponseEntity<Any> {
+        if (mcp.lockedByEnvironment()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(mapOf("message" to "Assistants (MCP) are set by the MCP_ENABLED environment variable."))
+        }
+        mcp.setEnabled(req.enabled)
+        return ResponseEntity.ok(mcp())
     }
 
     @PostMapping("/users/{id}/reset-link")

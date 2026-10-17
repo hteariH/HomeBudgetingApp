@@ -401,7 +401,7 @@ open class JoinHouseholdTest {
             jdbc.queryForObject("SELECT household_id FROM receipts WHERE uuid = ?", Long::class.java, receiptUuid))
         val moved = receiptRepository.findByUuidAndHouseholdId(receiptUuid, anna.household.id)!!
         assertEquals(path, moved.imagePath, "the photo stays where it is; the row points at it")
-        assertTrue(java.nio.file.Files.exists(receiptImages.resolve(moved.imagePath)))
+        assertTrue(java.nio.file.Files.exists(receiptImages.resolve(moved.imagePath!!)))
         assertEquals(moved.id,
             jdbc.queryForObject("SELECT receipt_id FROM transactions WHERE uuid = ?", Long::class.java, tx))
     }

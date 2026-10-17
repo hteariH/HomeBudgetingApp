@@ -170,6 +170,7 @@ object SyncMappers {
         transferFeeMinor = transferFee?.let { decimalStringToMinor(it, decimals) },
         createdByUserId = createdByUserId,
         receiptUuid = receiptUuid,
+        source = source ?: "APP",
         updatedAt = isoToStamp(updatedAt),
         deleted = deleted,
         pendingSync = false

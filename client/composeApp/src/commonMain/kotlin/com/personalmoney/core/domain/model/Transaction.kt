@@ -39,4 +39,6 @@ data class Transaction(
     val createdByUserId: Long? = null,
     /** The server-side receipt this entry was scanned from; its photo and items stay there. */
     val receiptUuid: String? = null,
+    /** `APP`, or `MCP` when an assistant recorded it. The server owns it. */
+    val source: String = "APP",
 )

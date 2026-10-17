@@ -12,7 +12,7 @@ export const en = {
     'hero.title': 'Know where your money',
     'hero.accent': 'actually goes',
     'hero.subtitle':
-        'PersonalMoney is open source (AGPL-3.0) and runs on your NAS or home server. Your accounts, transactions and transfers stay on your hardware, in as many currencies as you hold, and your data never leaves it. Bring your own AI model to read receipts — coming soon.',
+        'PersonalMoney is open source (AGPL-3.0) and runs on your NAS or home server. Your accounts, transactions and transfers stay on your hardware, in as many currencies as you hold, and your data never leaves it. Bring your own AI model to read receipts, and connect your AI assistant to your books.',
     'hero.ctaInstall': 'Install it',
     'hero.ctaSource': 'Source code',
 
@@ -46,6 +46,10 @@ export const en = {
     'features.6.title': 'Receipts read by your own AI model',
     'features.6.body':
         'Photograph a receipt and let a model you choose turn it into a transaction. Nothing goes to a service you did not pick.',
+
+    'features.7.title': 'Your own assistant, with limits',
+    'features.7.body':
+        'Connect Claude, ChatGPT or Cursor over MCP to read your accounts and spending and to add entries. It cannot edit or delete anything, and you can revoke access at any time.',
 
     'install.title': 'Install it on your own machine',
     'install.lead': 'You need a machine that runs Docker: a NAS, a mini PC, a VPS.',
@@ -89,7 +93,7 @@ export const en = {
 
     'ai.title': 'Bring your own AI model',
     'ai.body':
-        'Coming soon: connect any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, OpenRouter), Anthropic or Gemini to read your receipts, and MCP so your own assistant can work with your ledger.',
+        'Connect any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, OpenRouter), Anthropic or Gemini to read your receipts.',
 
     'footer.tagline': 'Personal finance, on your own hardware.',
     'footer.license': 'Open source under AGPL-3.0',

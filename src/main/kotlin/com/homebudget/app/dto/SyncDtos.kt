@@ -122,7 +122,9 @@ data class SyncTransaction(
      * The receipt the entry was saved from. On push, null leaves the server's link as it
      * is, so a client that predates receipts cannot drop one by editing the entry.
      */
-    val receiptUuid: String? = null
+    val receiptUuid: String? = null,
+    /** `APP` or `MCP` (an assistant recorded it). Filled on pull; ignored on push. */
+    val source: String? = null
 ) : SyncRecord
 
 data class SyncCurrencySetting(

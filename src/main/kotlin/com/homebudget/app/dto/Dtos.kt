@@ -156,7 +156,9 @@ data class TransactionResponse(
     val createdAt: LocalDateTime,
     val updatedAt: Instant,
     /** The receipt this entry was saved from, if any. */
-    val receiptUuid: String? = null
+    val receiptUuid: String? = null,
+    /** `APP`, or `MCP` for an entry an assistant recorded. */
+    val source: String = "APP"
 )
 
 data class CreateTransactionRequest(

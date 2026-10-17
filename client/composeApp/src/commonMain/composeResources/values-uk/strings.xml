@@ -63,6 +63,7 @@
     <string name="receipt_mismatch">Позиції не сходяться з підсумком — перевірте суму</string>
     <string name="receipt_items">Позиції</string>
     <string name="receipt_setup_on_web">Налаштуйте розпізнавання чеків у вебзастосунку</string>
+    <string name="transaction_via_assistant">через асистента</string>
     <string name="receipt_unavailable">Не вдалося завантажити чек. Потрібне підключення до вашого сервера.</string>
 
     <string name="accounts_title">Рахунки</string>

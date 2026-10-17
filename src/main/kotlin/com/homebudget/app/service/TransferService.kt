@@ -4,6 +4,9 @@ import com.homebudget.app.domain.MinorUnits
 import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.CreateTransferRequest
+import com.homebudget.app.household.HouseholdChangedException
+import com.homebudget.app.repository.HouseholdMemberRepository
+import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.security.SecurityUtils
 import org.springframework.data.domain.Page
@@ -33,7 +36,10 @@ import java.util.UUID
 class TransferService(
     private val transactionRepo: TransactionRepository,
     private val accountService: AccountService,
-    private val securityUtils: SecurityUtils
+    private val securityUtils: SecurityUtils,
+    private val householdRepo: HouseholdRepository,
+    private val memberRepo: HouseholdMemberRepository,
+    private val syncClock: SyncClock
 ) {
 
     /** The debit leg of each transfer, newest first. */
@@ -56,9 +62,15 @@ class TransferService(
             ?: throw IllegalStateException("Transfer group $groupId is missing its credit leg")
     }
 
-    fun create(req: CreateTransferRequest): Transaction {
+    /** [source] is [Transaction.SOURCE_MCP] only for the assistant's create tool. */
+    fun create(req: CreateTransferRequest, source: String = Transaction.SOURCE_APP): Transaction {
         val household = securityUtils.getCurrentHousehold()
+        // Both legs stamped after everything the household already has, under its lock as a
+        // sync push is, so a device whose cursor is the latest stamp still pulls them.
+        householdRepo.lockById(household.id) ?: throw HouseholdChangedException()
         val user = securityUtils.getCurrentUser()
+        // As for a transaction: not into a household the caller has left since signing in.
+        if (memberRepo.currentHouseholdIdOf(user.id) != listOf(household.id)) throw HouseholdChangedException()
         val fromAccount = accountService.findById(req.fromAccountId)
         val toAccount = accountService.findById(req.toAccountId)
         require(fromAccount.id != toAccount.id) { "Cannot transfer to the same account" }
@@ -72,6 +84,8 @@ class TransferService(
         } else {
             BigDecimal.ONE
         }
+
+        val stamp = syncClock.next(household.id)
 
         val groupId = UUID.randomUUID().toString()
         val occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant()
@@ -91,7 +105,9 @@ class TransferService(
             description = req.description,
             transferGroupId = groupId,
             transferCounterpartAccountId = toAccount.id,
-            transferFeeMinor = feeMinor
+            transferFeeMinor = feeMinor,
+            source = source,
+            updatedAt = stamp
         )
 
         val credit = Transaction(
@@ -107,7 +123,9 @@ class TransferService(
             occurredAt = occurredAt,
             description = req.description,
             transferGroupId = groupId,
-            transferCounterpartAccountId = fromAccount.id
+            transferCounterpartAccountId = fromAccount.id,
+            source = source,
+            updatedAt = stamp
         )
 
         // Both legs in one transaction: a half-written transfer is a corrupted balance.

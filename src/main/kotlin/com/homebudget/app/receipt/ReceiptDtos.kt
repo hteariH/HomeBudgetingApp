@@ -31,5 +31,7 @@ data class ReceiptResponse(
     val suggestedCategoryId: Long? = null,
     /** For the offline-first Android client, which knows categories by uuid. */
     val suggestedCategoryUuid: String? = null,
-    val items: List<ReceiptItemResponse> = emptyList()
+    val items: List<ReceiptItemResponse> = emptyList(),
+    /** False for a receipt an assistant sent as text: `GET /api/receipts/{uuid}/image` answers 404. */
+    val hasImage: Boolean = true
 )

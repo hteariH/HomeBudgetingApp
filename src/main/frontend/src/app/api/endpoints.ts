@@ -147,6 +147,18 @@ export const endpoints = {
     adminResetLink: (userId: number) => api<T.ResetLinkDto>(`/admin/users/${userId}/reset-link`, { method: 'POST' }),
     adminDeleteUser: (userId: number) => api<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
 
+    adminMcp: () => api<T.McpSettingDto>('/admin/mcp'),
+    setAdminMcp: (enabled: boolean) => api<T.McpSettingDto>('/admin/mcp', { method: 'PUT', json: { enabled } }),
+
+    // ── assistants ──────────────────────────────────────────────────────────
+    assistantTokens: () => api<T.TokenView[]>('/assistants/tokens'),
+    createAssistantToken: (body: { name: string; expiresInDays: number | null }) =>
+        api<T.CreatedToken>('/assistants/tokens', { method: 'POST', json: body }),
+    revokeAssistantToken: (id: string) => api<void>(`/assistants/tokens/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    oauthClient: (clientId: string, redirectUri: string) =>
+        api<T.ConsentClient>(`/oauth/clients/${encodeURIComponent(clientId)}`, { query: { redirectUri } }),
+    oauthAuthorize: (body: T.AuthorizeDecision) => api<{ redirect: string }>('/oauth/authorize', { method: 'POST', json: body }),
+
     adminAiProvider: () => api<T.ProviderView>('/admin/ai-provider'),
     setAdminAiProvider: (body: T.ProviderRequest) => api<T.ProviderView>('/admin/ai-provider', { method: 'PUT', json: body }),
     deleteAdminAiProvider: () => api<void>('/admin/ai-provider', { method: 'DELETE' }),

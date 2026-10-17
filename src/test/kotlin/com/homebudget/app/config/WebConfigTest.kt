@@ -46,6 +46,14 @@ class WebConfigTest {
     }
 
     @Test
+    fun `the consent page is the shell and cannot be framed`() {
+        mvc.perform(get("/oauth/consent").param("client_id", "c").param("state", "s"))
+            .andExpect(status().isOk)
+            .andExpect(forwardedUrl("/index.html"))
+            .andExpect(header().string("Content-Security-Policy", "frame-ancestors 'none'"))
+    }
+
+    @Test
     fun `hashed bundles are cached for good`() {
         mvc.perform(get("/assets/app-test.js"))
             .andExpect(status().isOk)

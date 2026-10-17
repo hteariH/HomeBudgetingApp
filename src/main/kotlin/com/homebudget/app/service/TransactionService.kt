@@ -5,7 +5,10 @@ import com.homebudget.app.domain.Transaction
 import com.homebudget.app.domain.TransactionType
 import com.homebudget.app.dto.CreateTransactionRequest
 import com.homebudget.app.dto.UpdateTransactionRequest
+import com.homebudget.app.household.HouseholdChangedException
 import com.homebudget.app.receipt.ReceiptService
+import com.homebudget.app.repository.HouseholdMemberRepository
+import com.homebudget.app.repository.HouseholdRepository
 import com.homebudget.app.repository.TransactionRepository
 import com.homebudget.app.security.SecurityUtils
 import org.springframework.data.domain.Page
@@ -24,7 +27,10 @@ class TransactionService(
     private val accountService: AccountService,
     private val categoryService: CategoryService,
     private val securityUtils: SecurityUtils,
-    private val receiptService: ReceiptService
+    private val receiptService: ReceiptService,
+    private val householdRepo: HouseholdRepository,
+    private val memberRepo: HouseholdMemberRepository,
+    private val syncClock: SyncClock
 ) {
     fun findFiltered(
         accountId: Long?,
@@ -50,11 +56,19 @@ class TransactionService(
     fun findById(id: Long): Transaction = transactionRepo.findByIdAndHousehold(id, securityUtils.getCurrentHousehold())
         ?: throw NoSuchElementException("Transaction not found: $id")
 
-    fun create(req: CreateTransactionRequest): Transaction {
+    /** [source] is [Transaction.SOURCE_MCP] only for the assistant's create tool. */
+    fun create(req: CreateTransactionRequest, source: String = Transaction.SOURCE_APP): Transaction {
         require(req.type != TransactionType.TRANSFER) {
             "Transfers are created through /api/transfers so that both legs are written together"
         }
+        val household = securityUtils.getCurrentHousehold()
+        // Stamped after everything the household already has, under its lock as a sync push
+        // is, so a device whose cursor is the latest stamp still pulls this row.
+        householdRepo.lockById(household.id) ?: throw HouseholdChangedException()
         val user = securityUtils.getCurrentUser()
+        // The caller was authenticated into this household; a join, leave or removal may have
+        // moved them since, and their entry must not land in a household they have left.
+        if (memberRepo.currentHouseholdIdOf(user.id) != listOf(household.id)) throw HouseholdChangedException()
         val account = accountService.findById(req.accountId)
         val category = req.categoryId?.let { categoryService.findById(it) }
 
@@ -68,7 +82,6 @@ class TransactionService(
         }
 
         val amountMinor = MinorUnits.toMinor(req.amount, account.currency.decimals)
-        val household = securityUtils.getCurrentHousehold()
         val receipt = req.receiptUuid?.let { receiptService.linkable(it, household, transactionUuid = null) }
 
         // No balance bookkeeping here on purpose - the balance is derived from these
@@ -83,7 +96,9 @@ class TransactionService(
             accountAmountMinor = amountMinor,
             type = req.type,
             occurredAt = req.occurredAt ?: req.date.atStartOfDay(ZoneOffset.UTC).toInstant(),
-            description = req.description
+            description = req.description,
+            source = source,
+            updatedAt = syncClock.next(household.id)
         )
         transaction.linkReceipt(receipt)
         return transactionRepo.save(transaction)

@@ -38,7 +38,7 @@ import org.jetbrains.compose.resources.decodeToImageBitmap
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
-private sealed interface ReceiptLoad {
+internal sealed interface ReceiptLoad {
     data object Loading : ReceiptLoad
     data class Loaded(val receipt: ReceiptDto, val photo: ImageBitmap?) : ReceiptLoad
     data object Unavailable : ReceiptLoad
@@ -58,7 +58,7 @@ fun ReceiptDialog(
     api: HomeBudgetApi = koinInject(),
 ) {
     val load by produceState<ReceiptLoad>(ReceiptLoad.Loading, receiptUuid) {
-        value = load(api, receiptUuid)
+        value = loadReceipt(api, receiptUuid)
     }
 
     AlertDialog(
@@ -120,11 +120,12 @@ private fun ReceiptContent(state: ReceiptLoad.Loaded) {
 }
 
 @OptIn(ExperimentalResourceApi::class)
-private suspend fun load(api: HomeBudgetApi, uuid: String): ReceiptLoad =
+internal suspend fun loadReceipt(api: HomeBudgetApi, uuid: String): ReceiptLoad =
     try {
         val receipt = api.receipt(uuid)
         // The items are worth showing even if the photo is gone or will not decode.
-        val photo = try {
+        // An entry an assistant recorded has no photo; asking would only earn a 404.
+        val photo = if (!receipt.hasImage) null else try {
             val bytes = api.receiptImage(uuid)
             withContext(Dispatchers.Default) { bytes.decodeToImageBitmap() }
         } catch (e: CancellationException) {

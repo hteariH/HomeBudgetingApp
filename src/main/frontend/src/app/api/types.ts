@@ -83,6 +83,8 @@ export interface RestTransaction {
     createdByUserId?: number | null;
     /** The scanned receipt this entry was saved from, if any. */
     receiptUuid?: string | null;
+    /** `MCP` when an assistant recorded it; absent or `APP` otherwise. */
+    source?: 'APP' | 'MCP';
 }
 
 export interface RestSubscription {
@@ -502,6 +504,12 @@ export interface InstanceDto {
     mailEnabled: boolean;
     bankProviders: string[];
     receiptScan: boolean;
+    /** Assistants may connect over MCP; Settings shows Assistants. */
+    mcpEnabled?: boolean;
+    /** Web connectors (claude.ai, ChatGPT) can sign in with OAuth. */
+    oauthAvailable?: boolean;
+    /** The instance's public address (APP_BASE_URL, no trailing slash); present only with OAuth. */
+    baseUrl?: string;
 }
 
 export interface AdminUserDto {
@@ -583,4 +591,46 @@ export interface ReceiptDto {
     suggestedCategoryId?: number | null;
     suggestedCategoryUuid?: string | null;
     items: ReceiptItemDto[];
+    /** False once the photo has been discarded; there is nothing to request then. */
+    hasImage?: boolean;
+}
+
+// ── Assistants (token/, oauth/, admin/) ─────────────────────────────────────
+
+export interface TokenView {
+    /** What DELETE takes: a personal token's id or an OAuth grant's uuid. */
+    id: string;
+    kind: 'PERSONAL' | 'OAUTH';
+    /** A personal token's name, or the OAuth client's. */
+    name: string;
+    prefix?: string | null;
+    createdAt: string;
+    lastUsedAt?: string | null;
+    expiresAt?: string | null;
+}
+
+/** The one response that carries the raw token. */
+export interface CreatedToken {
+    token: string;
+    item: TokenView;
+}
+
+export interface McpSettingDto {
+    enabled: boolean;
+    lockedByEnvironment: boolean;
+}
+
+export interface ConsentClient {
+    clientName: string;
+    redirectHost: string;
+}
+
+export interface AuthorizeDecision {
+    clientId: string;
+    redirectUri: string;
+    codeChallenge: string;
+    state?: string;
+    scope?: string;
+    resource?: string;
+    approve: boolean;
 }

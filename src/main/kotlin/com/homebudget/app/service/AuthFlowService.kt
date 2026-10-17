@@ -6,6 +6,7 @@ import com.homebudget.app.domain.AuthTokenPurpose
 import com.homebudget.app.domain.User
 import com.homebudget.app.repository.AuthTokenRepository
 import com.homebudget.app.repository.UserRepository
+import com.homebudget.app.token.AccessTokenService
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -31,7 +32,8 @@ class AuthFlowService(
     private val mailService: MailService,
     private val passwordEncoder: PasswordEncoder,
     private val clock: Clock,
-    private val mail: MailAvailability
+    private val mail: MailAvailability,
+    private val accessTokens: AccessTokenService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val random = SecureRandom()
@@ -116,8 +118,9 @@ class AuthFlowService(
         val saved = userRepository.save(user)
 
         // The point of a reset is that control was lost. A session that survives it
-        // would leave whoever took the account still signed in.
+        // would leave whoever took the account still signed in - or their assistant connected.
         refreshTokenService.revokeAll(saved)
+        accessTokens.revokeAllFor(saved)
         return saved
     }
 

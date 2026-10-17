@@ -26,7 +26,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.abs
 
 /**
  * Reads uploaded receipts in the background, at most `AI_CONCURRENCY` at a time; the
@@ -70,7 +69,7 @@ class ReceiptReader(
         }.apply { allowCoreThreadTimeOut(true) }
     }
 
-    private data class Job(val householdId: Long, val imagePath: String, val context: ExtractionContext)
+    private data class Job(val householdId: Long, val imagePath: String?, val context: ExtractionContext)
 
     private sealed interface Outcome {
         data class Read(val receipt: ExtractedReceipt) : Outcome
@@ -130,7 +129,7 @@ class ReceiptReader(
         val outcome = try {
             val job = tx.execute { load(receiptId) } ?: return
             val provider = settings.resolveFor(job.householdId) ?: throw ExtractionException(NO_PROVIDER)
-            val jpeg = images.read(job.imagePath) ?: throw ExtractionException(ExtractionException.UNREADABLE)
+            val jpeg = job.imagePath?.let(images::read) ?: throw ExtractionException(ExtractionException.UNREADABLE)
             Outcome.Read(extractors.create(provider, settings.timeout).extract(jpeg, job.context))
         } catch (e: ExtractionException) {
             Outcome.Failed(e.reason)
@@ -219,9 +218,7 @@ class ReceiptReader(
         receipt.items.clear()
         receipt.items.addAll(items)
 
-        val total = receipt.totalMinor
-        receipt.totalMismatch = items.isNotEmpty() && total != null &&
-            abs(items.fold(0L) { sum, it -> Math.addExact(sum, it.priceMinor) } - total) > items.size
+        receipt.checkTotal()
 
         receipt.suggestedCategoryId = read.suggestedCategory?.trim()?.takeIf { it.isNotEmpty() }?.let { name ->
             categories.findByHouseholdAndType(household, CategoryType.EXPENSE)

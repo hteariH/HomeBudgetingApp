@@ -21,6 +21,9 @@ platforms: [personalmoney.app](https://personalmoney.app).
   household with one set of accounts and transactions.
 - **Receipts read by your own AI model** (planned). Photograph a receipt and let a model you
   choose turn it into a transaction.
+- **Your own AI assistant.** Connect Claude, ChatGPT or Cursor over MCP to read your accounts,
+  categories and spending and to add entries and transfers. It cannot edit or delete anything.
+  See [Connect your AI assistant](#connect-your-ai-assistant).
 - Web app and Android app, in English, Russian and Ukrainian. No ads, no analytics, no tracking.
 
 ## Install
@@ -76,6 +79,7 @@ repository's `.env.example`) lists every setting. Only `DB_PASSWORD` is required
 | `AI_API_KEY` | unset | The provider's API key. Empty is fine for a local model. Stored and shown nowhere. |
 | `AI_TIMEOUT` | `5m` | How long one receipt may take before it is marked failed. |
 | `AI_CONCURRENCY` | `2` | How many receipts are read at the same time. |
+| `MCP_ENABLED` | unset | Whether AI assistants may connect over MCP: `true` or `false`. Unset means off until the administrator turns it on in the app; set here, it wins and the app's switch is locked. See [Connect your AI assistant](#connect-your-ai-assistant). |
 | `SERVER_FORWARD_HEADERS_STRATEGY` | unset | Set to `native` behind a reverse proxy; see [HTTPS](#https). |
 
 `JWT_SECRET` and `CRYPTO_SECRET` are generated into `/data/secrets` (`./data/secrets` on the
@@ -95,6 +99,47 @@ When `AI_PROVIDER` is set the administrator's page shows it but cannot change it
 owners can pick OpenAI or OpenRouter with their own key; any other address, such as a local
 model, is set by the administrator or the environment. API keys are encrypted with
 `CRYPTO_SECRET` and never shown again after they are saved.
+
+## Connect your AI assistant
+
+PersonalMoney can let an AI assistant work with your ledger over the
+[Model Context Protocol](https://modelcontextprotocol.io) (MCP). The assistant gets six tools: list
+accounts and categories, search transactions, summarise spending, and create a transaction or a
+transfer. It cannot edit or delete anything, and entries it adds are marked "via assistant".
+
+1. **Enable it.** Sign in as the administrator, open Admin, and turn on "Let assistants connect"
+   (or set `MCP_ENABLED=true`, which wins over the switch). Until then the MCP address and the OAuth
+   endpoints answer 404.
+2. **Create a token.** Any user opens Settings, Assistants, "Create token", picks a name and an
+   expiry, and copies the token. It is shown once; only a hash is stored. The same page lists your
+   tokens and connections, with last use, and revokes them. A token works only on the `/mcp`
+   address and only for your own household. Each token is limited to 60 tool calls a minute.
+3. **Connect the assistant**, with the address `https://<your server>/mcp` and the token:
+
+   Claude Code:
+
+   ```
+   claude mcp add --transport http personalmoney https://money.example.com/mcp --header "Authorization: Bearer pm_..."
+   ```
+
+   Claude Desktop or Cursor (`mcp.json` / `claude_desktop_config.json`):
+
+   ```json
+   { "mcpServers": { "personalmoney": { "type": "http", "url": "https://money.example.com/mcp", "headers": { "Authorization": "Bearer pm_..." } } } }
+   ```
+
+   claude.ai and ChatGPT cannot send a token you made. In their settings, add a custom connector
+   with the same `/mcp` URL; they sign you in through PersonalMoney and ask you to allow the
+   connection on a consent page (the assistant is shown as unverified). This needs OAuth, which
+   needs a public HTTPS address:
+
+   - Set `APP_BASE_URL` to the bare origin people reach the server at, for example
+     `https://money.example.com`: no path, no trailing slash. Without it the OAuth endpoints answer 404.
+   - Behind a reverse proxy, set `SERVER_FORWARD_HEADERS_STRATEGY=native` (see [HTTPS](#https)).
+     The limits on sign-in, registration and failed MCP attempts count per client address, and
+     without it everyone appears to come from the proxy.
+   - An assistant running on your own computer may use a loopback redirect address
+     (`http://localhost` or `http://127.0.0.1`); the port it registered must match exactly.
 
 ## HTTPS
 

@@ -32,6 +32,9 @@ export const qk = {
     aiProvider: ['household', 'ai-provider'] as const,
     adminAiProvider: ['admin', 'ai-provider'] as const,
     adminRegistration: ['admin', 'registration'] as const,
+    adminMcp: ['admin', 'mcp'] as const,
+    oauthClient: (clientId: string, redirectUri: string) => ['oauth', 'client', clientId, redirectUri] as const,
+    assistantTokens: ['assistants', 'tokens'] as const,
 };
 
 /**

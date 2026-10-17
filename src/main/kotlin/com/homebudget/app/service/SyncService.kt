@@ -388,7 +388,8 @@ class SyncService(
             }
 
             val decimals = account.currency.decimals
-            // The author is whoever first pushed the row; later edits do not rewrite it.
+            // The author is whoever first pushed the row; later edits do not rewrite it. Nor is
+            // the source a client's to set: a new row is the app's, an existing one keeps its own.
             val entity = existing ?: Transaction(
                 uuid = record.uuid,
                 household = household,
@@ -509,6 +510,7 @@ class SyncService(
         transferCounterpartAccountUuid = transferCounterpartAccountId?.let { accountUuids[it] },
         transferFee = transferFeeMinor?.let { MinorUnits.toDecimal(it, account.currency.decimals) },
         createdByUserId = createdBy?.id,
-        receiptUuid = receiptUuid
+        receiptUuid = receiptUuid,
+        source = source
     )
 }

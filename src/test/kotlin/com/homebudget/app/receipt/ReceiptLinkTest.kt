@@ -103,7 +103,7 @@ class ReceiptLinkTest {
     }
 
     private fun gone(receipt: Receipt) =
-        receipts.findById(receipt.id).isEmpty && !Files.exists(images.resolve(receipt.imagePath))
+        receipts.findById(receipt.id).isEmpty && !Files.exists(images.resolve(receipt.imagePath!!))
 
     private fun createBody(receiptUuid: String?) = json.writeValueAsString(
         mapOf(

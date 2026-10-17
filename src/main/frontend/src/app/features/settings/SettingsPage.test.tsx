@@ -10,13 +10,14 @@ import SettingsPage from './SettingsPage';
 const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function stubServer(role: 'OWNER' | 'MEMBER', provider: unknown) {
+function stubServer(role: 'OWNER' | 'MEMBER', provider: unknown, instance: object = { version: '1.0' }) {
     vi.stubGlobal(
         'fetch',
         vi.fn((url: string) => {
             if (url === '/api/users/me') return Promise.resolve(json({ id: 1, email: 'x@example.com', householdId: 5, householdRole: role }));
             if (url === '/api/household/ai-provider') return Promise.resolve(json(provider));
-            if (url === '/api/instance') return Promise.resolve(json({ version: '1.0' }));
+            if (url === '/api/instance') return Promise.resolve(json(instance));
+            if (url === '/api/assistants/tokens') return Promise.resolve(json([]));
             return Promise.resolve(json([]));
         }),
     );
@@ -59,4 +60,17 @@ it('tells a member to ask the owner when nothing is set up', async () => {
     stubServer('MEMBER', { source: 'NONE', hasKey: false });
     renderPage();
     expect(await screen.findByText(appEn.ai_none_member)).toBeInTheDocument();
+});
+
+it('offers Assistants only when the instance has MCP on', async () => {
+    stubServer('OWNER', instanceModel, { version: '1.0', mcpEnabled: true, oauthAvailable: false });
+    renderPage();
+    expect(await screen.findByRole('button', { name: appEn.assistants_create })).toBeInTheDocument();
+});
+
+it('has no Assistants card while MCP is off', async () => {
+    stubServer('OWNER', instanceModel);
+    renderPage();
+    await screen.findByLabelText(appEn.ai_model);
+    expect(screen.queryByRole('button', { name: appEn.assistants_create })).toBeNull();
 });

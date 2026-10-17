@@ -42,6 +42,9 @@ app:
   # An administrator can flip it at runtime unless this is set.
   instance:
     registration: ${REGISTRATION:}
+  mcp:
+    # true | false. Unset: the administrator's switch decides (off until turned on).
+    enabled: ${MCP_ENABLED:}
   homemoney:
     base-url: ${HOMEMONEY_BASE_URL:https://homemoney.ua}
     # Until an application is registered with homemoney.ua, their published demo client

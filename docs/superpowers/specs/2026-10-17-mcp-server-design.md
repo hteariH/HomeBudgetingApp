@@ -16,10 +16,16 @@ receipts it read itself.
 - **The assistant reads receipts itself.** `create_transaction` accepts merchant and line
   items; the transaction gets a `READY` receipt without a photo. No server AI provider is
   needed for this path, and no image bytes cross MCP.
-- **Approach:** the official MCP Java SDK (Streamable HTTP transport for Spring WebMVC) and
-  Spring Authorization Server, both inside the existing application. Tools are thin
-  wrappers over the existing services, so household scoping and validation are shared with
-  REST. Exact versions and Spring Boot 3.4 compatibility are settled in the plan.
+- **Approach:** the official MCP Java SDK (`io.modelcontextprotocol.sdk:mcp-core` with
+  `mcp-json-jackson2`, its servlet Streamable HTTP transport registered at `/mcp`) inside
+  the existing application. Tools are thin wrappers over the existing services, so household
+  scoping and validation are shared with REST.
+- **A small OAuth server of our own**, not Spring Authorization Server (decided after
+  planning research: SAS needs an initial access token for client registration while
+  connectors register anonymously, stores issued tokens in plain text, and authorises
+  through a session login our stateless JWT web app does not have). It implements exactly
+  what MCP clients use: authorization code + PKCE S256, open dynamic registration,
+  refresh rotation, the two metadata documents.
 - **Off by default.** The administrator enables MCP on the admin page; `MCP_ENABLED`
   (environment) wins over the page.
 
@@ -34,8 +40,8 @@ Money is a decimal string with an explicit ISO currency code, as in REST.
 | `list_categories` | `type?` (`INCOME`/`EXPENSE`) | uuid, name, type, parent uuid |
 | `search_transactions` | `from?`, `to?` (dates), `account?`, `category?`, `type?` (`INCOME`/`EXPENSE`/`TRANSFER`), `text?` (note or receipt merchant, case-insensitive), `minAmount?`, `maxAmount?`, `limit?` (default 50, max 100), `cursor?` | transactions newest first with account, category, amount, currency, date, note, author, source, receipt merchant and items when present; `nextCursor` |
 | `summarize_spending` | `from`, `to`, `groupBy` (`CATEGORY` default, `ACCOUNT`, `MONTH`), `type?` (`EXPENSE` default, `INCOME`) | groups with totals **per currency** (no conversion), plus per-currency grand totals |
-| `create_transaction` | `account`, `type` (`INCOME`/`EXPENSE`), `amount`, `date?` (today in the household's zone), `category?`, `note?`, `receipt?` `{ merchant?, total?, items: [{ name, quantity?, price }] }` | the created transaction |
-| `create_transfer` | `fromAccount`, `toAccount`, `amount`, `toAmount?` (required when currencies differ), `date?`, `note?` | the created transfer |
+| `create_transaction` | `account`, `type` (`INCOME`/`EXPENSE`), `amount`, `date?` (today in UTC; households have no time zone), `category?`, `note?`, `receipt?` `{ merchant?, total?, items: [{ name, quantity?, price }] }` | the created transaction |
+| `create_transfer` | `fromAccount`, `toAccount`, `amount`, `toAmount?` (required when currencies differ), `date?` (today in UTC), `note?` | the created transfer |
 
 - **References by uuid or name.** `account`, `category`, `fromAccount`, `toAccount` accept a
   uuid or an exact name (case-insensitive). An ambiguous or unknown name is a tool error
@@ -69,8 +75,17 @@ Money is a decimal string with an explicit ISO currency code, as in REST.
 
 ### OAuth 2.1 (web connectors)
 
-- Spring Authorization Server, authorization code flow, **PKCE S256 required**, public and
-  confidential clients.
+- Authorization code flow, **PKCE S256 required**, public clients only
+  (`token_endpoint_auth_method: none`); registrations asking for another method get
+  `none`.
+- Endpoints: `GET /oauth/authorize` (validates the request, then redirects the browser to
+  the web app's `/oauth/consent?...`), `POST /api/oauth/authorize` (JWT-authenticated, called
+  by the consent page; returns the redirect URL with `code` and `state`, or with
+  `error=access_denied`), `POST /oauth/token` (`authorization_code`, `refresh_token`; form
+  encoded), `POST /oauth/register`, `POST /oauth/revoke` (RFC 7009).
+- Authorization codes: 32 random bytes, stored hashed, single use, 60 s, bound to client,
+  redirect URI, code challenge and user (not household: tools act in the user's current
+  household). Reuse of a code revokes the grant it produced.
 - Dynamic client registration (RFC 7591) is open, as connectors require. Accepted redirect
   URIs: `https://…`, and `http://localhost` / `http://127.0.0.1` with any port. Clients that
   never obtained a token are deleted 24 h after registration.
@@ -90,11 +105,15 @@ Money is a decimal string with an explicit ISO currency code, as in REST.
 
 - `access_tokens` — `id`, `user_id` (cascade), `kind` (`PERSONAL` | `OAUTH_ACCESS` |
   `OAUTH_REFRESH`), `name`, `token_hash` (unique), `prefix` (first 7 characters, shown in
-  lists), `oauth_authorization_id` (nullable, cascade), `created_at`, `expires_at`
+  lists), `oauth_grant_id` (nullable, cascade), `created_at`, `expires_at`
   (nullable), `last_used_at`.
-- Spring Authorization Server's client and authorization tables (its JDBC schema, adapted
-  to Postgres/H2), with `user_id` on authorizations so a user's grants are listed and
-  revoked and deleted with the account.
+- `oauth_clients` — `id`, `client_id` (unique, random), `client_name`, `redirect_uris`
+  (newline-separated), `created_at`, `last_used_at`.
+- `oauth_grants` — `id`, `uuid`, `client_id` (cascade), `user_id` (cascade), `scope`,
+  `created_at`, `revoked_at`. One grant per consent; its access and refresh tokens live in
+  `access_tokens` with `oauth_grant_id` (cascade). Settings lists grants.
+- `oauth_codes` — `id`, `code_hash` (unique), `client_id`, `grant_id`, `redirect_uri`,
+  `code_challenge`, `expires_at`, `used_at`.
 - `transactions.source` `VARCHAR(8) NOT NULL DEFAULT 'APP'`.
 - The admin switch is the key `mcp.enabled` (`true`/`false`, absent = false) in the
   existing key-value `instance_settings` table; no schema change.
@@ -104,14 +123,22 @@ Money is a decimal string with an explicit ISO currency code, as in REST.
 - Members and owners are equal: an assistant can do what its user can in the books, minus
   editing and deleting.
 - Rate limit: 60 tool calls per minute per token (429 above).
-- MCP disabled → `/mcp` and the OAuth endpoints answer 404.
-- Deleting a user deletes their tokens and grants; leaving or switching households keeps
-  them (they act in the current household).
+- MCP disabled → `/mcp` and the OAuth endpoints answer 404, and no token can be created;
+  existing tokens and grants can still be listed and revoked, so a user can cut an
+  assistant off during an incident.
+- Deleting a user deletes their tokens and grants and closes their open streams; leaving or
+  switching households keeps them (they act in the current household). A create that races a
+  household change is refused with the tool error "Your household changed — try again".
+- A password reset (mailed or an administrator's link) deletes the user's personal tokens and
+  revokes their OAuth grants, closing their open streams. Signing out does not: assistant
+  tokens are not device sessions.
 
 ## Web
 
 - **Settings → Assistants** (any user, shown when MCP is enabled):
-  - The endpoint URL `{APP_BASE_URL or window origin}/mcp` with a copy button.
+  - The endpoint URL `{APP_BASE_URL or window origin}/mcp` with a copy button. The web app
+    reads the base URL from `InstanceInfo.baseUrl`: `APP_BASE_URL` without a trailing slash,
+    present only when OAuth is available (MCP on and `APP_BASE_URL` set).
   - "Create token" → name + expiry → the token once, with ready-made snippets:
     Claude Code `claude mcp add --transport http personalmoney {url} --header
     "Authorization: Bearer {token}"`, Claude Desktop / Cursor JSON.

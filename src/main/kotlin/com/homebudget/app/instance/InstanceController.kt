@@ -2,6 +2,7 @@ package com.homebudget.app.instance
 
 import com.homebudget.app.ai.AiProviderSettings
 import com.homebudget.app.bank.BankConnectionService
+import com.homebudget.app.mcp.McpSettings
 import com.homebudget.app.service.MailAvailability
 import com.homebudget.app.service.RegistrationService
 import org.springframework.beans.factory.ObjectProvider
@@ -19,6 +20,7 @@ class InstanceController(
     private val banks: BankConnectionService,
     private val ai: AiProviderSettings,
     private val build: ObjectProvider<BuildProperties>,
+    private val mcp: McpSettings,
     @Value("\${app.base-url:}") private val baseUrl: String
 ) {
     companion object {
@@ -26,18 +28,25 @@ class InstanceController(
     }
 
     @GetMapping
-    fun get() = InstanceInfo(
-        name = "PersonalMoney",
-        version = build.ifAvailable?.version ?: "dev",
-        apiVersion = API_VERSION,
-        setupRequired = registration.setupRequired(),
-        registrationOpen = registration.registrationOpen(),
-        mailEnabled = mail.enabled,
-        // Bank providers are beans that exist only when configured (Monobank corporate needs
-        // a registered key). CSV files need nothing; the HomeMoney import needs APP_BASE_URL,
-        // because HomeMoney redirects back to an absolute address on this instance.
-        bankProviders = banks.availableProviders().map { it.id } + "CSV" +
-            (if (baseUrl.isNotBlank()) listOf("HOMEMONEY") else emptyList()),
-        receiptScan = ai.instanceProvider() != null
-    )
+    fun get(): InstanceInfo {
+        val mcpEnabled = mcp.enabled()
+        val oauthAvailable = mcpEnabled && baseUrl.isNotBlank()
+        return InstanceInfo(
+            name = "PersonalMoney",
+            version = build.ifAvailable?.version ?: "dev",
+            apiVersion = API_VERSION,
+            setupRequired = registration.setupRequired(),
+            registrationOpen = registration.registrationOpen(),
+            mailEnabled = mail.enabled,
+            // Bank providers are beans that exist only when configured (Monobank corporate needs
+            // a registered key). CSV files need nothing; the HomeMoney import needs APP_BASE_URL,
+            // because HomeMoney redirects back to an absolute address on this instance.
+            bankProviders = banks.availableProviders().map { it.id } + "CSV" +
+                (if (baseUrl.isNotBlank()) listOf("HOMEMONEY") else emptyList()),
+            receiptScan = ai.instanceProvider() != null,
+            mcpEnabled = mcpEnabled,
+            oauthAvailable = oauthAvailable,
+            baseUrl = if (oauthAvailable) baseUrl.trim().trimEnd('/') else null
+        )
+    }
 }
