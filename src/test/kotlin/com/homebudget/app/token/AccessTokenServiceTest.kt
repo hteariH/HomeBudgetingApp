@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.Duration
@@ -152,6 +153,7 @@ class AccessTokenServiceTest {
 
         mvc.perform(get("/api/accounts").header("Authorization", "Bearer ${created.token}"))
             .andExpect(status().isUnauthorized)
+            .andExpect(header().string("WWW-Authenticate", "Bearer"))
     }
 
     @Test

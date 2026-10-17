@@ -4,6 +4,7 @@ import com.homebudget.app.domain.InstanceSetting
 import com.homebudget.app.repository.InstanceSettingRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 class McpSettings(
     private val settings: InstanceSettingRepository,
+    private val events: ApplicationEventPublisher,
     @Value("\${app.mcp.enabled:}") environment: String
 ) {
     companion object {
@@ -41,5 +43,6 @@ class McpSettings(
     fun setEnabled(enabled: Boolean) {
         check(!lockedByEnvironment()) { "MCP is set by the MCP_ENABLED environment variable" }
         settings.save(InstanceSetting(KEY, enabled.toString()))
+        if (!enabled) events.publishEvent(McpDisabledEvent)
     }
 }

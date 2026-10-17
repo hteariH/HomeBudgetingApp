@@ -2,6 +2,7 @@ package com.homebudget.app.token
 
 import com.homebudget.app.domain.User
 import com.homebudget.app.security.SecurityUtils
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -19,7 +20,8 @@ import java.time.Instant
 class AccessTokenService(
     private val repo: AccessTokenRepository,
     private val securityUtils: SecurityUtils,
-    private val clock: Clock
+    private val clock: Clock,
+    private val events: ApplicationEventPublisher
 ) {
     companion object {
         const val PERSONAL_PREFIX = "pm_"
@@ -67,6 +69,7 @@ class AccessTokenService(
             repo.findByIdAndUserIdAndKind(it, securityUtils.getCurrentUser().id, AccessTokenKind.PERSONAL)
         } ?: throw NoSuchElementException("Token not found")
         repo.delete(token)
+        events.publishEvent(TokenRevokedEvent(token.id))
     }
 
     /**

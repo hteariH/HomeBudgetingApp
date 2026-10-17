@@ -6,6 +6,9 @@ import com.homebudget.app.domain.Role
 import com.homebudget.app.repository.InstanceSettingRepository
 import com.homebudget.app.repository.UserRepository
 import com.homebudget.app.security.UserPrincipal
+import com.homebudget.app.token.AccessTokenService
+import org.springframework.security.core.context.SecurityContextHolder
+import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -59,6 +62,8 @@ class McpSwitchTest {
     @Autowired private lateinit var identity: TestIdentity
     @Autowired private lateinit var users: UserRepository
     @Autowired private lateinit var settings: InstanceSettingRepository
+    @Autowired private lateinit var tokens: AccessTokenService
+    @Autowired private lateinit var sessions: McpSessions
 
     private lateinit var admin: UserPrincipal
 
@@ -108,6 +113,47 @@ class McpSwitchTest {
     }
 
     @Test
+    fun `turning it off ends open streams and closes existing sessions`() {
+        mvc.perform(
+            put("/api/admin/mcp").with(asUser(admin)).contentType(MediaType.APPLICATION_JSON).content("""{"enabled":true}""")
+        ).andExpect(status().isOk)
+        identity.signIn(admin)
+        val token = try { tokens.createPersonal("t", null).token } finally { SecurityContextHolder.clearContext() }
+        val http = HttpClient.newHttpClient()
+        fun mcp(body: String, session: String? = null) = HttpRequest.newBuilder(URI.create("http://localhost:$port/mcp"))
+            .header("Accept", "application/json, text/event-stream")
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer $token")
+            .apply { session?.let { header("Mcp-Session-Id", it) } }
+            .POST(HttpRequest.BodyPublishers.ofString(body)).build()
+        val init = http.send(
+            mcp("""{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}"""),
+            HttpResponse.BodyHandlers.ofString()
+        )
+        val session = init.headers().firstValue("Mcp-Session-Id").get()
+        val before = sessions.openStreams()
+        val stream = http.sendAsync(
+            HttpRequest.newBuilder(URI.create("http://localhost:$port/mcp"))
+                .header("Accept", "text/event-stream").header("Authorization", "Bearer $token")
+                .header("Mcp-Session-Id", session).GET().build(),
+            HttpResponse.BodyHandlers.ofInputStream()
+        ).thenApply { it.body().use { body -> body.readAllBytes() } }
+        val deadline = System.currentTimeMillis() + 5000
+        while (sessions.openStreams() == before) {
+            check(System.currentTimeMillis() < deadline) { "the stream never opened" }
+            Thread.sleep(20)
+        }
+
+        mvc.perform(
+            put("/api/admin/mcp").with(asUser(admin)).contentType(MediaType.APPLICATION_JSON).content("""{"enabled":false}""")
+        ).andExpect(status().isOk)
+
+        stream.get(5, TimeUnit.SECONDS)
+        val after = http.send(mcp("""{"jsonrpc":"2.0","id":2,"method":"tools/list"}""", session), HttpResponse.BodyHandlers.ofString())
+        assertEquals(404, after.statusCode())
+    }
+
+    @Test
     fun `only an administrator flips it`() {
         val member = identity.newMember("member")
         mvc.perform(
@@ -153,5 +199,25 @@ class McpSwitchLockedTest {
         mvc.perform(
             put("/api/admin/mcp").with(asAdmin).contentType(MediaType.APPLICATION_JSON).content("""{"enabled":true}""")
         ).andExpect(status().isConflict)
+    }
+}
+
+/** Failed authentications on `/mcp` are capped per address. */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
+@TestPropertySource(properties = [
+    "spring.datasource.url=jdbc:h2:mem:mcp-auth-failures;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
+    "app.mcp.enabled=true"
+])
+class McpAuthFailureLimitTest {
+
+    @LocalServerPort private var port: Int = 0
+
+    @Test
+    fun `the 31st failed authentication in a minute is refused before the token is checked`() {
+        repeat(30) { assertEquals(401, postMcp(port).statusCode(), "attempt ${it + 1}") }
+        val refused = postMcp(port)
+        assertEquals(429, refused.statusCode())
+        assertTrue(refused.headers().firstValue("Retry-After").isPresent)
     }
 }

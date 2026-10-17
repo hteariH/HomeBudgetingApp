@@ -25,13 +25,16 @@ import java.io.InputStreamReader
  * challenge points at the OAuth protected-resource metadata when `APP_BASE_URL` is set. A
  * good token → its owner, loaded as a JWT sign-in loads it (current household included), in
  * the request attribute [McpPrincipalScope.ATTRIBUTE] and in the `SecurityContext`. Tool
- * calls over [McpRateLimiter.LIMIT] a minute → 429.
+ * calls over [McpRateLimiter.LIMIT] a minute → 429, and so is an address that failed to
+ * authenticate [McpRateLimiter.FAILED_AUTH_LIMIT] times this minute. A session id that
+ * [McpSessions] does not hold for this user → 404.
  */
 class McpAuthFilter(
     private val settings: McpSettings,
     private val tokens: AccessTokenService,
     private val userDetails: CustomUserDetailsService,
     private val rateLimiter: McpRateLimiter,
+    private val sessions: McpSessions,
     private val objectMapper: ObjectMapper,
     baseUrl: String
 ) : OncePerRequestFilter() {
@@ -39,6 +42,7 @@ class McpAuthFilter(
     companion object {
         /** The largest JSON-RPC body accepted; the transport is given the same limit. */
         const val MAX_BODY_BYTES = 1_048_576
+        private const val SESSION_HEADER = "Mcp-Session-Id"
     }
 
     private val challenge = if (baseUrl.isBlank()) "Bearer"
@@ -49,22 +53,35 @@ class McpAuthFilter(
             response.status = HttpServletResponse.SC_NOT_FOUND
             return
         }
+        val address = request.remoteAddr ?: "unknown"
+        if (rateLimiter.authBlocked(address)) {
+            response.status = 429
+            response.setHeader("Retry-After", "60")
+            return
+        }
         val bearer = request.getHeader("Authorization")
             ?.takeIf { it.regionMatches(0, "Bearer ", 0, 7, ignoreCase = true) }
             ?.substring(7)?.trim()
         val authenticated = bearer?.let { tokens.authenticate(it) }
-        if (authenticated == null) {
+        val principal = authenticated?.let {
+            try {
+                userDetails.loadUserByUsername(it.user.email)
+            } catch (e: UsernameNotFoundException) {
+                null // deleted after the token check; the cascade has taken the token too
+            }
+        }
+        if (authenticated == null || principal == null) {
+            rateLimiter.recordAuthFailure(address)
             response.status = HttpServletResponse.SC_UNAUTHORIZED
             response.setHeader("WWW-Authenticate", challenge)
             return
         }
+        val userId = authenticated.user.id
 
-        val principal = try {
-            userDetails.loadUserByUsername(authenticated.user.email)
-        } catch (e: UsernameNotFoundException) {
-            // Deleted between the token check and here; the cascade has taken the token too.
-            response.status = HttpServletResponse.SC_UNAUTHORIZED
-            response.setHeader("WWW-Authenticate", challenge)
+        // A session belongs to whoever opened it; to anyone else it does not exist.
+        val sessionId = request.getHeader(SESSION_HEADER)
+        if (sessionId != null && !sessions.allows(sessionId, userId)) {
+            response.status = HttpServletResponse.SC_NOT_FOUND
             return
         }
 
@@ -88,6 +105,16 @@ class McpAuthFilter(
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
         chain.doFilter(forwarded, response)
+
+        when {
+            // An initialize answered with a new session.
+            sessionId == null && request.method == "POST" ->
+                response.getHeader(SESSION_HEADER)?.let { sessions.bind(it, userId) }
+            sessionId != null && request.method == "GET" && request.isAsyncStarted ->
+                sessions.track(authenticated.tokenId, sessionId, request.asyncContext)
+            sessionId != null && request.method == "DELETE" && response.status in 200..299 ->
+                sessions.unbind(sessionId)
+        }
     }
 
     /** How many `tools/call` requests the JSON-RPC body holds (a batch may hold several). */

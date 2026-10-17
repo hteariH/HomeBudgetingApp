@@ -13,7 +13,6 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
 @Configuration
@@ -76,7 +75,12 @@ class SecurityConfig(
             // A request without an accepted credential is a 401, as HTTP defines it. Without
             // an entry point Spring answers 403, which reads as "signed in but not allowed" -
             // and an assistant's token tried on the REST API is exactly "not signed in".
-            .exceptionHandling { it.authenticationEntryPoint(HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)) }
+            .exceptionHandling {
+                it.authenticationEntryPoint { _, response, _ ->
+                    response.setHeader("WWW-Authenticate", "Bearer")
+                    response.status = HttpStatus.UNAUTHORIZED.value()
+                }
+            }
             .authenticationProvider(authenticationProvider())
             // Rate limiting sits ahead of authentication: a blocked request must not
             // reach the password check at all, or it is not a limit on guessing.

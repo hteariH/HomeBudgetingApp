@@ -25,5 +25,8 @@ data class CreatedToken(val token: String, val item: TokenView)
 
 data class CreateTokenRequest(val name: String? = null, val expiresInDays: Int? = null)
 
+/** A token stopped working; anything it holds open is closed. */
+data class TokenRevokedEvent(val tokenId: Long)
+
 /** Whom a token presented on `/mcp` belongs to. */
 data class AuthenticatedToken(val user: User, val tokenId: Long)

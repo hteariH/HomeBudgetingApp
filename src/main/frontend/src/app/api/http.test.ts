@@ -64,7 +64,7 @@ it('an empty 200 or a 204 resolves to undefined', async () => {
     await expect(api('/x', { method: 'DELETE' })).resolves.toBeUndefined();
 });
 
-it('renews on a 403 too, because that is what the server answers an expired token with', async () => {
+it('renews on a 403 too, because servers before the MCP release answered an expired token with it', async () => {
     let refreshes = 0;
     vi.stubGlobal(
         'fetch',

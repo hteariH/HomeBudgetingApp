@@ -7,6 +7,7 @@ import com.homebudget.app.domain.Account
 import com.homebudget.app.domain.AccountType
 import com.homebudget.app.repository.AccountRepository
 import com.homebudget.app.repository.CurrencyRepository
+import com.homebudget.app.security.JwtUtils
 import com.homebudget.app.security.UserPrincipal
 import com.homebudget.app.service.CategoryService
 import com.homebudget.app.token.AccessTokenRepository
@@ -31,7 +32,11 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.io.InputStream
+import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 /** The MCP endpoint over real HTTP, the way an assistant reaches it. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -53,6 +58,8 @@ class McpEndpointTest {
     @Autowired private lateinit var references: References
     @Autowired private lateinit var mapper: ObjectMapper
     @Autowired private lateinit var categoryService: CategoryService
+    @Autowired private lateinit var sessions: McpSessions
+    @Autowired private lateinit var jwt: JwtUtils
 
     private val http = HttpClient.newHttpClient()
     private lateinit var me: UserPrincipal
@@ -96,6 +103,33 @@ class McpEndpointTest {
         token?.let { request.header("Authorization", "Bearer $it") }
         sessionId?.let { request.header("Mcp-Session-Id", it) }
         return http.send(request.build(), HttpResponse.BodyHandlers.ofString())
+    }
+
+    private fun request(token: String, sessionId: String) = HttpRequest.newBuilder(URI.create("http://localhost:$port/mcp"))
+        .header("Authorization", "Bearer $token")
+        .header("Mcp-Session-Id", sessionId)
+
+    private fun get(token: String, sessionId: String): HttpResponse<String> = http.send(
+        request(token, sessionId).header("Accept", "text/event-stream").timeout(Duration.ofSeconds(5)).GET().build(),
+        HttpResponse.BodyHandlers.ofString()
+    )
+
+    private fun delete(token: String, sessionId: String): HttpResponse<String> =
+        http.send(request(token, sessionId).DELETE().build(), HttpResponse.BodyHandlers.ofString())
+
+    /** Opens the session's SSE stream; the future completes once the stream has ended. */
+    private fun openStream(token: String, sessionId: String): CompletableFuture<ByteArray> {
+        val before = sessions.openStreams()
+        val future = http.sendAsync(
+            request(token, sessionId).header("Accept", "text/event-stream").GET().build(),
+            HttpResponse.BodyHandlers.ofInputStream()
+        ).thenApply { response -> response.body().use(InputStream::readAllBytes) }
+        val deadline = System.currentTimeMillis() + 5000
+        while (sessions.openStreams() == before) {
+            check(System.currentTimeMillis() < deadline) { "the stream never opened" }
+            Thread.sleep(20)
+        }
+        return future
     }
 
     /** The JSON-RPC response in the body, whether the transport answered with JSON or SSE. */
@@ -228,5 +262,53 @@ class McpEndpointTest {
         )
         assertEquals(usd.id, McpPrincipalScope.runAs(me) { references.account(usd.uuid) }.id)
         assertEquals(null, SecurityContextHolder.getContext().authentication, "runAs leaves no principal behind")
+    }
+
+    @Test
+    fun `a session answers only the user who opened it`() {
+        val session = initialize(token)
+        val other = identity.newMember("intruder")
+        val otherToken = tokenFor(other)
+        val list = """{"jsonrpc":"2.0","id":2,"method":"tools/list"}"""
+
+        assertEquals(404, post(otherToken, list, session.id).statusCode())
+        assertEquals(404, get(otherToken, session.id!!).statusCode())
+        assertEquals(404, delete(otherToken, session.id).statusCode())
+        assertEquals(404, post(token, list, "not-a-session").statusCode())
+
+        assertEquals(200, post(token, list, session.id).statusCode())
+        assertEquals(200, delete(token, session.id).statusCode())
+        assertEquals(404, post(token, list, session.id).statusCode(), "deleted")
+    }
+
+    @Test
+    fun `revoking the token ends its open stream`() {
+        val session = initialize(token)
+        val stream = openStream(token, session.id!!)
+
+        identity.signIn(me)
+        tokens.revoke(tokens.listFor(me.user).single().id)
+        SecurityContextHolder.clearContext()
+
+        stream.get(5, TimeUnit.SECONDS)
+        assertEquals(401, post(token, """{"jsonrpc":"2.0","id":2,"method":"tools/list"}""", session.id).statusCode())
+    }
+
+    @Test
+    fun `a web sign-in token does not open the endpoint`() {
+        val response = post(jwt.generateToken(me), """{"jsonrpc":"2.0","id":1,"method":"tools/list"}""")
+        assertEquals(401, response.statusCode())
+    }
+
+    @Test
+    fun `reference errors quote the name without its surrounding spaces`() {
+        assertEquals(
+            "Account \"Nope\" not found — list_accounts shows the accounts",
+            assertThrows<ToolInputException> { McpPrincipalScope.runAs(me) { references.account("  Nope ") } }.message
+        )
+        assertEquals(
+            "Category \"Nope\" not found — list_categories shows the categories",
+            assertThrows<ToolInputException> { McpPrincipalScope.runAs(me) { references.category(" Nope") } }.message
+        )
     }
 }

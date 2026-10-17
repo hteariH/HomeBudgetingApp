@@ -91,10 +91,11 @@ class McpServerConfig {
         tokens: AccessTokenService,
         userDetails: CustomUserDetailsService,
         rateLimiter: McpRateLimiter,
+        sessions: McpSessions,
         objectMapper: ObjectMapper,
         @Value("\${app.base-url:}") baseUrl: String
     ) = FilterRegistrationBean(
-        McpAuthFilter(settings, tokens, userDetails, rateLimiter, objectMapper, baseUrl)
+        McpAuthFilter(settings, tokens, userDetails, rateLimiter, sessions, objectMapper, baseUrl)
     ).apply {
         setName("mcpAuthFilter")
         addUrlPatterns(ENDPOINT)
