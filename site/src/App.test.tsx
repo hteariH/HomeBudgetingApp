@@ -22,3 +22,20 @@ it('never offers a hosted account', () => {
     render(<App />);
     expect(document.body.innerHTML).not.toMatch(/\/register|\/login|Premium/);
 });
+
+it('marks only unshipped features as coming soon', () => {
+    render(<App />);
+    const card = (n: number) => screen.getByText(en[`features.${n}.title` as keyof typeof en]).closest('article')!;
+    expect(card(6).textContent).not.toContain(en['features.soon']);
+    expect(card(7).textContent).not.toContain(en['features.soon']);
+});
+
+it('lets the last feature card fill its row, so the grid has no empty cell', () => {
+    render(<App />);
+    const cards = Array.from(document.querySelectorAll('#features article'));
+    expect(cards).toHaveLength(7);
+    // Seven cards: 2 columns leave one over, 3 columns leave one over.
+    expect(cards[6].className).toContain('sm:col-span-2');
+    expect(cards[6].className).toContain('lg:col-span-3');
+    cards.slice(0, 6).forEach((c) => expect(c.className).not.toContain('col-span'));
+});

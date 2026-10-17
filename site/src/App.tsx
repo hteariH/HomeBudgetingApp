@@ -22,7 +22,7 @@ const FEATURES = [
     { n: 3, Icon: FileSpreadsheet, soon: false },
     { n: 4, Icon: LineChart, soon: false },
     { n: 5, Icon: Users, soon: true },
-    { n: 6, Icon: Receipt, soon: true },
+    { n: 6, Icon: Receipt, soon: false },
     { n: 7, Icon: Plug, soon: false },
 ] as const;
 
@@ -282,6 +282,16 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle?: string 
     );
 }
 
+/**
+ * The last feature card widens to fill its row in both the two- and three-column layouts, so
+ * a count that does not divide evenly leaves no empty cell. Literal class names, for Tailwind.
+ */
+function lastCardSpan(count: number): string {
+    const sm = count % 2 === 1 ? 'sm:col-span-2' : '';
+    const lg = ['lg:col-span-1', 'lg:col-span-3', 'lg:col-span-2'][count % 3];
+    return sm ? `${sm} ${lg}` : count % 3 === 0 ? '' : lg;
+}
+
 function Features() {
     const t = useT();
 
@@ -291,10 +301,10 @@ function Features() {
                 <SectionHeading title={t('features.title')} />
 
                 <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {FEATURES.map(({ n, Icon, soon }) => (
+                    {FEATURES.map(({ n, Icon, soon }, i) => (
                         <article
                             key={n}
-                            className="group rounded-token-lg border border-line bg-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-line-strong hover:shadow-token"
+                            className={`${i === FEATURES.length - 1 ? lastCardSpan(FEATURES.length) : ''} group rounded-token-lg border border-line bg-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-line-strong hover:shadow-token`}
                         >
                             <div className="mb-4 flex items-start justify-between gap-3">
                                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-token bg-brand/10 transition-colors group-hover:bg-brand/20">
