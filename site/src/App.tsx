@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import {
     ArrowLeftRight, ArrowRight, Download, FileSpreadsheet, LineChart, Moon,
-    Receipt, Sun, TrendingUp, Users, Wallet,
+    Plug, Receipt, Sun, TrendingUp, Users, Wallet,
 } from 'lucide-react';
 import { I18nProvider, LanguageSwitcher, useT, type Key } from './i18n';
 import {
@@ -23,6 +23,7 @@ const FEATURES = [
     { n: 4, Icon: LineChart, soon: false },
     { n: 5, Icon: Users, soon: true },
     { n: 6, Icon: Receipt, soon: true },
+    { n: 7, Icon: Plug, soon: false },
 ] as const;
 
 /** Bars for the mock chart. Fixed values - it illustrates the layout, not real data. */

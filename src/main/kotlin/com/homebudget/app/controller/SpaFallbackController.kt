@@ -1,5 +1,6 @@
 package com.homebudget.app.controller
 
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 
@@ -18,6 +19,17 @@ class SpaFallbackController {
      */
     @GetMapping("/app", "/app/")
     fun appRoot(): String = "forward:/index.html"
+
+    /**
+     * The page where a signed-in user approves an assistant's connection. It is the shell like
+     * any route, but it asks for a decision, so it must not be framed by another site
+     * (clickjacking an "Allow" button); the application's other pages only forbid foreign frames.
+     */
+    @GetMapping("/oauth/consent")
+    fun oauthConsent(response: HttpServletResponse): String {
+        response.setHeader("Content-Security-Policy", "frame-ancestors 'none'")
+        return "forward:/index.html"
+    }
 
     @GetMapping("/{path:[^\\.]*}")
     fun spa(): String = "forward:/index.html"

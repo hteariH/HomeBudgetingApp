@@ -20,6 +20,7 @@ const AdminPage: React.FC = () => {
     const t = useT();
     const users = useQuery({ queryKey: qk.adminUsers, queryFn: endpoints.adminUsers });
     const registration = useQuery({ queryKey: qk.adminRegistration, queryFn: endpoints.adminRegistration });
+    const mcp = useQuery({ queryKey: qk.adminMcp, queryFn: endpoints.adminMcp });
     const provider = useQuery({ queryKey: qk.adminAiProvider, queryFn: endpoints.adminAiProvider });
     const [link, setLink] = useState<{ email: string; url: string } | null>(null);
     const [deleting, setDeleting] = useState<AdminUserDto | null>(null);
@@ -28,6 +29,13 @@ const AdminPage: React.FC = () => {
     const toggle = useMutation({
         mutationFn: endpoints.setAdminRegistration,
         onSuccess: (data) => queryClient.setQueryData(qk.adminRegistration, data),
+    });
+    const toggleMcp = useMutation({
+        mutationFn: endpoints.setAdminMcp,
+        onSuccess: (data) => {
+            queryClient.setQueryData(qk.adminMcp, data);
+            queryClient.invalidateQueries({ queryKey: qk.instance });
+        },
     });
     const reset = useMutation({
         mutationFn: (u: AdminUserDto) =>
@@ -56,6 +64,19 @@ const AdminPage: React.FC = () => {
                             description={t(registration.data?.lockedByEnvironment ? 'admin_registration_locked' : 'admin_registration_hint')}
                         />
                         <ErrorBanner error={registration.error ?? toggle.error} />
+                    </div>
+                </Card>
+
+                <Card title={t('admin_mcp')}>
+                    <div className="px-5 pb-4">
+                        <Switch
+                            checked={mcp.data?.enabled ?? false}
+                            onChange={(enabled) => toggleMcp.mutate(enabled)}
+                            disabled={mcp.isPending || mcp.isError || mcp.data?.lockedByEnvironment || toggleMcp.isPending}
+                            label={t('admin_mcp_enabled')}
+                            description={t(mcp.data?.lockedByEnvironment ? 'admin_mcp_locked' : 'admin_mcp_hint')}
+                        />
+                        <ErrorBanner error={mcp.error ?? toggleMcp.error} />
                     </div>
                 </Card>
 

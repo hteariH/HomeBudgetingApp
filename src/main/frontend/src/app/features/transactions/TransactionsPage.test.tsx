@@ -105,3 +105,10 @@ it('shows neither initials nor the filter for a household of one', async () => {
     expect(screen.queryByLabelText(appEn.filter_who)).toBeNull();
     expect(screen.queryByTitle('Ada Lovelace')).toBeNull();
 });
+
+it('marks an entry an assistant recorded', async () => {
+    stubServer([ada], [row(1, 'Groceries', 1, { source: 'MCP' }), row(2, 'Coffee', 1)]);
+    renderPage();
+    expect(await screen.findByText(/Groceries/)).toBeInTheDocument();
+    expect(screen.getAllByText(appEn.transaction_via_assistant)).toHaveLength(1);
+});

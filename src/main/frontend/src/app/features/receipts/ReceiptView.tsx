@@ -8,10 +8,11 @@ import { ErrorBanner } from '../../components/ErrorBanner';
 import { Card } from '../../components/forms';
 import { receiptPrice } from './receiptPrice';
 
-/** An object URL for a protected photo, revoked when the photo changes or the view goes away. */
-function useReceiptPhoto(uuid: string): string | null {
+/** An object URL for a protected photo, revoked when the photo changes or the view goes away. Asks for nothing until `wanted`. */
+function useReceiptPhoto(uuid: string, wanted: boolean): string | null {
     const [url, setUrl] = useState<string | null>(null);
     useEffect(() => {
+        if (!wanted) return;
         let made: string | null = null;
         let cancelled = false;
         endpoints
@@ -29,7 +30,7 @@ function useReceiptPhoto(uuid: string): string | null {
             if (made) URL.revokeObjectURL(made);
             setUrl(null);
         };
-    }, [uuid]);
+    }, [uuid, wanted]);
     return url;
 }
 
@@ -37,8 +38,10 @@ function useReceiptPhoto(uuid: string): string | null {
 export const ReceiptView: React.FC<{ uuid: string }> = ({ uuid }) => {
     const t = useT();
     const [open, setOpen] = useState(false);
-    const photo = useReceiptPhoto(uuid);
     const { data: receipt, error } = useQuery({ queryKey: qk.receipt(uuid), queryFn: () => endpoints.receipt(uuid) });
+    // A receipt whose photo was discarded has none to ask for; one the server did not say
+    // anything about (an older server) is asked for as before.
+    const photo = useReceiptPhoto(uuid, receipt !== undefined && receipt.hasImage !== false);
 
     return (
         <Card className="mt-4 flex flex-col gap-3 p-5">

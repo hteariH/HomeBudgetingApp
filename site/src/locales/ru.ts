@@ -49,6 +49,10 @@ export const ru: Record<keyof typeof en, string> = {
     'features.6.body':
         'Сфотографируйте чек, и выбранная вами модель превратит его в операцию. Ничего не уходит в сервис, который вы не выбирали.',
 
+    'features.7.title': 'Ваш ассистент — в заданных рамках',
+    'features.7.body':
+        'Подключите Claude, ChatGPT или Cursor по MCP, чтобы он читал счета и расходы и добавлял записи. Изменять и удалять он не может, а доступ можно отозвать в любой момент.',
+
     'install.title': 'Установите на своём компьютере',
     'install.lead': 'Нужна машина с Docker: NAS, мини-ПК или VPS.',
     'install.tab.compose': 'Docker Compose',
@@ -91,7 +95,7 @@ export const ru: Record<keyof typeof en, string> = {
 
     'ai.title': 'Подключите свою ИИ-модель',
     'ai.body':
-        'Скоро: подключите любой OpenAI-совместимый сервер (Ollama, LM Studio, vLLM, OpenRouter), Anthropic или Gemini, чтобы читать чеки, и MCP, чтобы ваш собственный ассистент мог работать с вашим бюджетом.',
+        'Скоро: подключите любой OpenAI-совместимый сервер (Ollama, LM Studio, vLLM, OpenRouter), Anthropic или Gemini, чтобы читать чеки.',
 
     'footer.tagline': 'Личные финансы — на вашем железе.',
     'footer.license': 'Открытый код под лицензией AGPL-3.0',

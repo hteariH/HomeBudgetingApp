@@ -14,6 +14,7 @@ import { PageLoading } from './app/shell/Page';
 
 // Lazy, so the sign-in pages load without the application.
 const AppRoot = lazy(() => import('./app/AppRoot'));
+const ConsentRoute = lazy(() => import('./app/features/oauth/ConsentRoute'));
 
 /**
  * Where the application's screens lived before there was an /app at all, when this React
@@ -54,6 +55,14 @@ const App: React.FC = () => (
                     <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route
+                        path="/oauth/consent"
+                        element={
+                            <Suspense fallback={<PageLoading />}>
+                                <ConsentRoute />
+                            </Suspense>
+                        }
+                    />
                     <Route
                         path="/app/*"
                         element={

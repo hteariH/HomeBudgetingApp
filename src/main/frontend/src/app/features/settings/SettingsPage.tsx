@@ -15,6 +15,7 @@ import { Card, Segmented } from '../../components/forms';
 import { AppRoutes } from '../../lib/routes';
 import { prefs } from '../../prefs';
 import { Page } from '../../shell/Page';
+import { AssistantsCard } from '../assistants/AssistantsCard';
 import { ProviderForm } from '../ai/ProviderForm';
 
 /** The instance serves its own privacy page. */
@@ -165,6 +166,8 @@ const SettingsPage: React.FC = () => {
                 </Card>
 
                 <ReceiptRecognitionCard />
+
+                {instance?.mcpEnabled && <AssistantsCard oauthAvailable={!!instance.oauthAvailable} />}
 
                 {/* The way out of the product, at the bottom where it belongs - deliberately
                     awkward to trigger by accident, and not hidden behind a support email. */}

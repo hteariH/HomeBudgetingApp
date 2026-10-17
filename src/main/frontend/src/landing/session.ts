@@ -23,6 +23,12 @@ const APP_PATH_SHAPE = /^\/app(\/[A-Za-z0-9/?&=_.,:%-]*)?$/;
 // anything else along.
 const JOIN_PATH_SHAPE = /^\/join\?token=[A-Za-z0-9_-]{1,100}$/;
 
+// The assistant-consent page and the parameters of the request it was opened with. It is an
+// address of this server, never another, and only the query characters an authorization
+// request legitimately has (percent-escapes included) are accepted.
+const CONSENT_PATH_SHAPE = /^\/oauth\/consent\?[A-Za-z0-9_.~:%=&+-]+$/;
+const CONSENT_PATH_MAX = 2000;
+
 /**
  * Where to go after signing in: the screen the visitor was sent away from.
  *
@@ -32,6 +38,7 @@ const JOIN_PATH_SHAPE = /^\/join\?token=[A-Za-z0-9_-]{1,100}$/;
  */
 export function nextPath(search: string): string {
     const next = new URLSearchParams(search).get('next');
+    if (next && next.length <= CONSENT_PATH_MAX && CONSENT_PATH_SHAPE.test(next)) return next;
     if (!next || next.length > 200) return AppRoutes.dashboard;
     if (JOIN_PATH_SHAPE.test(next)) return next;
     if (APP_PATH_SHAPE.test(next) && !next.includes('..')) return next;

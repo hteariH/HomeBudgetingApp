@@ -14,8 +14,10 @@ const users = [
     { id: 2, email: 'kid@example.com', firstName: 'Kid', lastName: 'A', role: 'USER', createdAt: '2026-10-02T10:00:00', lastSignInAt: '2026-10-03T10:00:00Z', householdId: 2 },
 ];
 
-function stubServer(registration = { open: false, lockedByEnvironment: false }, aiProvider: object = { source: 'NONE', hasKey: false }) {
+function stubServer(registration = { open: false, lockedByEnvironment: false }, aiProvider: object = { source: 'NONE', hasKey: false }, mcp = { enabled: false, lockedByEnvironment: false }) {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+        if (url === '/api/admin/mcp' && init?.method === 'PUT') return Promise.resolve(json({ enabled: true, lockedByEnvironment: false }));
+        if (url === '/api/admin/mcp') return Promise.resolve(json(mcp));
         if (url.startsWith('/api/admin/ai-provider')) return Promise.resolve(json(aiProvider));
         if (url.startsWith('/api/admin/users/2/reset-link')) return Promise.resolve(json({ path: '/reset-password?token=abc', expiresAt: '2026-10-04T10:00:00Z' }));
         if (url.startsWith('/api/admin/users')) return Promise.resolve(json(users));
@@ -91,4 +93,29 @@ it('shows a provider the environment sets, with no form to change it', async () 
     expect(screen.getByText('Photos are sent to generativelanguage.googleapis.com')).toBeInTheDocument();
     expect(screen.queryByLabelText(appEn.ai_model)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: appEn.ai_test })).not.toBeInTheDocument();
+});
+
+const mcpSwitch = () => screen.findByRole('switch', { name: new RegExp(appEn.admin_mcp_enabled) });
+
+it('turns assistants on with a PUT', async () => {
+    const fetchMock = stubServer();
+    renderPage();
+    const toggle = await mcpSwitch();
+    await waitFor(() => expect(toggle).toBeEnabled());
+    fireEvent.click(toggle);
+    await waitFor(() =>
+        expect(
+            fetchMock.mock.calls.some(([url, init]) => url === '/api/admin/mcp' && init?.method === 'PUT' && init.body === JSON.stringify({ enabled: true })),
+        ).toBe(true),
+    );
+});
+
+it('leaves assistants alone when the environment decides it', async () => {
+    const fetchMock = stubServer(undefined, undefined, { enabled: true, lockedByEnvironment: true });
+    renderPage();
+    await screen.findByText(appEn.admin_mcp_locked);
+    const toggle = await mcpSwitch();
+    expect(toggle).toBeDisabled();
+    fireEvent.click(toggle);
+    expect(fetchMock.mock.calls.some(([url, init]) => url === '/api/admin/mcp' && init?.method === 'PUT')).toBe(false);
 });

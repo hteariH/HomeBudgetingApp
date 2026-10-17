@@ -11,6 +11,7 @@ const receipt = {
     merchant: 'Corner Shop',
     currency: 'EUR',
     totalMismatch: false,
+    hasImage: true,
     items: [
         { name: 'Milk', quantity: '2', price: '3.00' },
         { name: 'Bread', price: '1.5' },
@@ -57,4 +58,13 @@ it('shows item prices as money in the receipt currency', async () => {
     renderView();
     const price = await screen.findByText(/1\.50/);
     expect(price.textContent).toMatch(/€|EUR/);
+});
+
+it('requests no photo when the receipt has none, and still lists the items', async () => {
+    const fetchMock = vi.fn(async (_url: string) => new Response(JSON.stringify({ ...receipt, hasImage: false }), { headers: { 'Content-Type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+    renderView();
+    expect(await screen.findByText(/Milk/)).toBeInTheDocument();
+    expect(screen.getByText('Bread')).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/image'))).toBe(false);
 });
