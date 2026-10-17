@@ -13,3 +13,7 @@
 4e65a025ab163b1b0d0b9a32cac8eb582f7b273d:src/main/frontend/src/app/features/assistants/CreateTokenDialog.tsx:generic-api-key:16
 4e65a025ab163b1b0d0b9a32cac8eb582f7b273d:src/main/frontend/src/app/features/assistants/snippets.test.ts:generic-api-key:5
 ae484e249bafd538234af269c07bf9404abc1520:src/test/resources/application-test.yml:generic-api-key:22
+# - HomeMoneyConfig.kt (old Android code, removed in 9d46068): a real HomeMoney OAuth client
+#   secret, revoked by the owner in the HomeMoney account (отозван). Kept
+#   listed so the scan stays green; the value no longer works.
+f027c4e053d13f4279f001611124e59fe017f1a6:app/src/main/java/com/personalmoney/core/homemoney/HomeMoneyConfig.kt:generic-api-key:16
