@@ -3,7 +3,8 @@ name: Site
 on:
   push:
     branches: [master]
-    paths: ['site/**', 'deploy/docker-compose.site.yml', 'deploy/personalmoney.caddy']
+    paths: ['site/**', 'deploy/docker-compose.site.yml', 'deploy/personalmoney.caddy', '.github/workflows/site.yml']
+  workflow_dispatch:
 
 # Two quick merges must not interleave their copy and restart steps.
 concurrency:
@@ -22,6 +23,21 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - working-directory: site
         run: npm ci && npm test && npm run build
+      # The SSH user copies files without sudo, so the two target directories must exist and
+      # be writable by it. The deploy user has passwordless sudo; this is a no-op once set up.
+      - name: Prepare the directories
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            for dir in /opt/personalmoney-site /opt/edge/conf.d; do
+              sudo mkdir -p "$dir"
+              [ -w "$dir" ] || sudo chown "$(id -un)" "$dir"
+            done
       - name: Copy the site
         uses: appleboy/scp-action@v0.1.7
         with:

@@ -52,6 +52,8 @@ final `mysqldump` before removing the volume; otherwise remove it with
 The site workflow (`.github/workflows/site.yml`) builds `site/` (`npm test`, `npm run build`)
 and, on the VPS:
 
+- creates `/opt/personalmoney-site` and `/opt/edge/conf.d` if they are missing and makes them
+  writable by the SSH user (it needs passwordless `sudo` for this, as for `docker`);
 - copies `site/dist/` and `deploy/docker-compose.site.yml` into `/opt/personalmoney-site`
   (they land as `site/dist/` and `deploy/docker-compose.site.yml` there);
 - replaces the contents of `/opt/personalmoney-site/dist` with the new build in place (nginx
