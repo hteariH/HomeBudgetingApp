@@ -47,7 +47,9 @@ class McpSessions(private val clock: Clock) {
     @Volatile private var lastSweep: Instant = Instant.EPOCH
 
     fun bind(sessionId: String, userId: Long) {
-        bindings[sessionId] = Binding(userId, Instant.now(clock))
+        val now = Instant.now(clock)
+        sweep(now)
+        bindings[sessionId] = Binding(userId, now)
     }
 
     /** Whether [userId] may use [sessionId]; marks the session as used when it may. */

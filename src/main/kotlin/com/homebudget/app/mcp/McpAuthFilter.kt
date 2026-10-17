@@ -10,6 +10,7 @@ import jakarta.servlet.ServletInputStream
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletRequestWrapper
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletResponseWrapper
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -25,8 +26,8 @@ import java.io.InputStreamReader
  * challenge points at the OAuth protected-resource metadata when `APP_BASE_URL` is set. A
  * good token → its owner, loaded as a JWT sign-in loads it (current household included), in
  * the request attribute [McpPrincipalScope.ATTRIBUTE] and in the `SecurityContext`. Tool
- * calls over [McpRateLimiter.LIMIT] a minute → 429, and so is an address that failed to
- * authenticate [McpRateLimiter.FAILED_AUTH_LIMIT] times this minute. A session id that
+ * calls over [McpRateLimiter.LIMIT] a minute → 429. A rejected token from an address that
+ * has had [McpRateLimiter.FAILED_AUTH_LIMIT] tokens rejected this minute → 429 instead of 401. A session id that
  * [McpSessions] does not hold for this user → 404.
  */
 class McpAuthFilter(
@@ -53,12 +54,6 @@ class McpAuthFilter(
             response.status = HttpServletResponse.SC_NOT_FOUND
             return
         }
-        val address = request.remoteAddr ?: "unknown"
-        if (rateLimiter.authBlocked(address)) {
-            response.status = 429
-            response.setHeader("Retry-After", "60")
-            return
-        }
         val bearer = request.getHeader("Authorization")
             ?.takeIf { it.regionMatches(0, "Bearer ", 0, 7, ignoreCase = true) }
             ?.substring(7)?.trim()
@@ -71,7 +66,18 @@ class McpAuthFilter(
             }
         }
         if (authenticated == null || principal == null) {
-            rateLimiter.recordAuthFailure(address)
+            // Only a token that was presented and refused counts against the address: a
+            // request without one is the protocol's discovery step, and a valid token is
+            // never held up by someone else's failures behind the same proxy or egress.
+            if (bearer != null) {
+                val address = request.remoteAddr ?: "unknown"
+                if (rateLimiter.authBlocked(address)) {
+                    response.status = 429
+                    response.setHeader("Retry-After", "60")
+                    return
+                }
+                rateLimiter.recordAuthFailure(address)
+            }
             response.status = HttpServletResponse.SC_UNAUTHORIZED
             response.setHeader("WWW-Authenticate", challenge)
             return
@@ -104,12 +110,13 @@ class McpAuthFilter(
         request.setAttribute(McpPrincipalScope.ATTRIBUTE, principal)
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(principal, null, principal.authorities)
-        chain.doFilter(forwarded, response)
+        // An initialize answers with a new session id: bound the moment the header is set, so
+        // before the response is flushed and the client can use the session.
+        val forwardedResponse = if (sessionId == null && request.method == "POST")
+            SessionCapturingResponse(response) { sessions.bind(it, userId) } else response
+        chain.doFilter(forwarded, forwardedResponse)
 
         when {
-            // An initialize answered with a new session.
-            sessionId == null && request.method == "POST" ->
-                response.getHeader(SESSION_HEADER)?.let { sessions.bind(it, userId) }
             sessionId != null && request.method == "GET" && request.isAsyncStarted ->
                 sessions.track(authenticated.tokenId, sessionId, request.asyncContext)
             sessionId != null && request.method == "DELETE" && response.status in 200..299 ->
@@ -126,6 +133,25 @@ class McpAuthFilter(
         }
         val messages = if (tree.isArray) tree.toList() else listOf(tree)
         return messages.count { it.path("method").asText() == "tools/call" }
+    }
+
+    /** Hands the `Mcp-Session-Id` the transport sets to [onSession]. */
+    private class SessionCapturingResponse(response: HttpServletResponse, private val onSession: (String) -> Unit) :
+        HttpServletResponseWrapper(response) {
+
+        override fun setHeader(name: String, value: String?) {
+            capture(name, value)
+            super.setHeader(name, value)
+        }
+
+        override fun addHeader(name: String, value: String?) {
+            capture(name, value)
+            super.addHeader(name, value)
+        }
+
+        private fun capture(name: String, value: String?) {
+            if (value != null && name.equals(SESSION_HEADER, ignoreCase = true)) onSession(value)
+        }
     }
 
     /** The request with its body already read, so the transport can read it again. */

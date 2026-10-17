@@ -202,9 +202,10 @@ class McpSwitchLockedTest {
     }
 }
 
-/** Failed authentications on `/mcp` are capped per address. */
+/** Rejected tokens on `/mcp` are capped per address; valid tokens and discovery are not. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@Import(TestIdentity::class)
 @TestPropertySource(properties = [
     "spring.datasource.url=jdbc:h2:mem:mcp-auth-failures;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
     "app.mcp.enabled=true"
@@ -212,12 +213,39 @@ class McpSwitchLockedTest {
 class McpAuthFailureLimitTest {
 
     @LocalServerPort private var port: Int = 0
+    @Autowired private lateinit var identity: TestIdentity
+    @Autowired private lateinit var tokens: AccessTokenService
+
+    private fun post(authorization: String?): HttpResponse<String> = HttpClient.newHttpClient().send(
+        HttpRequest.newBuilder(URI.create("http://localhost:$port/mcp"))
+            .header("Accept", "application/json, text/event-stream")
+            .header("Content-Type", "application/json")
+            .apply { authorization?.let { header("Authorization", it) } }
+            .POST(HttpRequest.BodyPublishers.ofString(
+                """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}"""
+            ))
+            .build(),
+        HttpResponse.BodyHandlers.ofString()
+    )
 
     @Test
-    fun `the 31st failed authentication in a minute is refused before the token is checked`() {
-        repeat(30) { assertEquals(401, postMcp(port).statusCode(), "attempt ${it + 1}") }
-        val refused = postMcp(port)
+    fun `only rejected tokens count, and a valid token still gets through over the cap`() {
+        val me = identity.newMember("capped")
+        identity.signIn(me)
+        val valid = try { tokens.createPersonal("t", null).token } finally { SecurityContextHolder.clearContext() }
+        val bad = "Bearer pm_" + "a".repeat(40)
+
+        // Discovery - no Authorization header at all - is never counted.
+        repeat(40) { assertEquals(401, post(null).statusCode(), "discovery ${it + 1}") }
+
+        repeat(30) { assertEquals(401, post(bad).statusCode(), "attempt ${it + 1}") }
+        val refused = post(bad)
         assertEquals(429, refused.statusCode())
         assertTrue(refused.headers().firstValue("Retry-After").isPresent)
+
+        assertEquals(200, post("Bearer $valid").statusCode(), "a valid token is never capped")
+        val discovery = post(null)
+        assertEquals(401, discovery.statusCode())
+        assertEquals("Bearer", discovery.headers().firstValue("WWW-Authenticate").orElse(null))
     }
 }

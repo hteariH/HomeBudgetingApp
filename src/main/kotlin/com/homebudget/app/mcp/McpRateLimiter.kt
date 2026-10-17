@@ -10,9 +10,9 @@ import java.util.concurrent.ConcurrentHashMap
  * The two limits on `/mcp`, each counted in a fixed one-minute window:
  *
  * - [LIMIT] tool calls per token;
- * - [FAILED_AUTH_LIMIT] failed authentications per client address, beyond which the address
- *   is refused before any token is checked, so `/mcp` is no cheaper to guess tokens at than
- *   the sign-in form is to guess passwords at (see `AuthRateLimitFilter`, including why the
+ * - [FAILED_AUTH_LIMIT] rejected tokens per client address, beyond which further rejected
+ *   tokens get 429 instead of 401 (valid tokens are never refused), so `/mcp` is no cheaper
+ *   to guess tokens at than the sign-in form is to guess passwords at (see `AuthRateLimitFilter`, including why the
  *   address is the socket's and never a forwarding header).
  *
  * In memory, which is right for the single-container deployment; windows older than two
