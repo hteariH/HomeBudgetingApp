@@ -82,7 +82,7 @@ class SpendingSummaryService(
         criteria.text?.let {
             hql.append(
                 " AND (lower(t.description) LIKE :text ESCAPE '\\' OR EXISTS (SELECT 1 FROM Receipt r " +
-                    "WHERE r.id = t.receiptId AND lower(r.merchant) LIKE :text ESCAPE '\\'))"
+                    "WHERE r.id = t.receiptId AND r.household = :household AND lower(r.merchant) LIKE :text ESCAPE '\\'))"
             )
             params["text"] = "%" + it.lowercase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         }
@@ -102,7 +102,7 @@ class SpendingSummaryService(
             val fetched = query.resultList
             exhausted = fetched.size < batch
             for (t in fetched) {
-                if (!filtersAmount || withinAmounts(t, criteria, decimals)) rows.add(t)
+                if (!filtersAmount || withinAmounts(t, criteria, decimals)) rows.add(t) else em.detach(t)
                 if (rows.size > limit) break
             }
             fetched.lastOrNull()?.let { last = it.occurredAt to it.id }
@@ -120,39 +120,52 @@ class SpendingSummaryService(
         require(type != TransactionType.TRANSFER) { "type must be EXPENSE or INCOME" }
         val household = securityUtils.getCurrentHousehold()
         val decimals = decimals()
-        val rows = em.createQuery(
-            "SELECT c.uuid, c.name, a.uuid, a.name, t.currencyCode, t.occurredAt, t.amountMinor " +
-                "FROM Transaction t JOIN t.account a LEFT JOIN t.category c " +
-                "WHERE t.household = :household AND t.type = :type " +
-                "AND t.occurredAt >= :from AND t.occurredAt < :until",
-            Array<Any?>::class.java
-        )
-            .setParameter("household", household)
-            .setParameter("type", type)
-            .setParameter("from", startOf(from))
-            .setParameter("until", startOf(to.plusDays(1)))
-            .resultList
-
         class Acc(val uuid: String?, val name: String, val monthKey: String?) {
             val minor = linkedMapOf<String, Long>()
         }
         val groups = linkedMapOf<String, Acc>()
         val grand = linkedMapOf<String, Long>()
-        for (r in rows) {
-            val currency = r[4] as String
-            val amount = r[6] as Long
-            val at = r[5] as Instant
-            val key = when (groupBy) {
-                GroupBy.CATEGORY -> Key((r[0] as String?).orEmpty(), r[0] as String?, (r[1] as String?) ?: "Uncategorised", null)
-                GroupBy.ACCOUNT -> Key(r[2] as String, r[2] as String, r[3] as String, null)
-                GroupBy.MONTH -> at.atZone(ZoneOffset.UTC).let {
-                    val m = "%04d-%02d".format(it.year, it.monthValue)
-                    Key(m, null, m, m)
+        fun add(key: String, uuid: String?, name: String, month: String?, currency: String, sum: Long) {
+            groups.getOrPut(key) { Acc(uuid, name, month) }.minor.merge(currency, sum, Long::plus)
+            grand.merge(currency, sum, Long::plus)
+        }
+
+        // The database sums; the JVM only sees one row per (group, currency).
+        fun grouped(select: String, groupBy: String, start: LocalDate, end: LocalDate): List<Array<Any?>> =
+            em.createQuery(
+                "SELECT $select, t.currencyCode, SUM(t.amountMinor) " +
+                    "FROM Transaction t JOIN t.account a LEFT JOIN t.category c " +
+                    "WHERE t.household = :household AND t.type = :type " +
+                    "AND t.occurredAt >= :from AND t.occurredAt < :until " +
+                    "GROUP BY $groupBy, t.currencyCode",
+                Array<Any?>::class.java
+            )
+                .setParameter("household", household)
+                .setParameter("type", type)
+                .setParameter("from", startOf(start))
+                .setParameter("until", startOf(end.plusDays(1)))
+                .resultList
+
+        when (groupBy) {
+            GroupBy.CATEGORY -> grouped("c.uuid, c.name", "c.uuid, c.name", from, to).forEach {
+                add((it[0] as String?).orEmpty(), it[0] as String?, (it[1] as String?) ?: "Uncategorised", null,
+                    it[2] as String, it[3] as Long)
+            }
+            GroupBy.ACCOUNT -> grouped("a.uuid, a.name", "a.uuid, a.name", from, to).forEach {
+                add(it[0] as String, it[0] as String, it[1] as String, null, it[2] as String, it[3] as Long)
+            }
+            // One grouped query per calendar month (UTC), so no database time-zone function is involved.
+            GroupBy.MONTH -> {
+                var month = java.time.YearMonth.from(from)
+                while (!month.isAfter(java.time.YearMonth.from(to))) {
+                    val start = maxOf(from, month.atDay(1))
+                    val end = minOf(to, month.atEndOfMonth())
+                    grouped("1", "1", start, end).forEach {
+                        add(month.toString(), null, month.toString(), month.toString(), it[1] as String, it[2] as Long)
+                    }
+                    month = month.plusMonths(1)
                 }
             }
-            val g = groups.getOrPut(key.key) { Acc(key.uuid, key.name, key.month) }
-            g.minor.merge(currency, amount, Long::plus)
-            grand.merge(currency, amount, Long::plus)
         }
         fun money(m: Map<String, Long>) = m.entries
             .sortedBy { it.key }
@@ -167,8 +180,6 @@ class SpendingSummaryService(
         }
         return Summary(sorted, money(grand))
     }
-
-    private class Key(val key: String, val uuid: String?, val name: String, val month: String?)
 
     private fun withinAmounts(t: Transaction, c: SearchCriteria, decimals: Map<String, Int>): Boolean {
         val value = MinorUnits.toDecimal(Math.abs(t.amountMinor), decimals[t.currencyCode] ?: 2)
@@ -190,7 +201,7 @@ class SpendingSummaryService(
             "SELECT DISTINCT r FROM Receipt r LEFT JOIN FETCH r.items WHERE r.id IN :ids AND r.household = :household",
             Receipt::class.java
         ).setParameter("ids", receiptIds).setParameter("household", household).resultList.associateBy { it.id }
-        // `source` is not on the entity (the sync path owns it); read just that column.
+        // TEMPORARY until Task 3 adds `source` to the Transaction entity: then read the field and drop this query.
         val sources = em.createNativeQuery("SELECT id, source FROM transactions WHERE id IN (:ids)")
             .setParameter("ids", page.map { it.id }).resultList
             .associate { row ->

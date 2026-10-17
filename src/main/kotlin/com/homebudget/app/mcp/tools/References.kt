@@ -40,12 +40,12 @@ class References(
     }
 
     /**
-     * A non-archived category. With a [type], one of the other type is refused by name
+     * A non-archived category (or any, with [includeArchived], for reading history). With a [type], one of the other type is refused by name
      * ("Category "Salary" is an income category") rather than reported as missing.
      */
-    fun category(reference: String, type: CategoryType? = null): Category {
+    fun category(reference: String, type: CategoryType? = null, includeArchived: Boolean = false): Category {
         val ref = reference.trim()
-        val all = categories.findAll(includeArchived = false).sortedWith(compareBy({ it.sortOrder }, { it.id }))
+        val all = categories.findAll(includeArchived = includeArchived).sortedWith(compareBy({ it.sortOrder }, { it.id }))
         val byUuid = all.firstOrNull { it.uuid == ref }
         val named = if (byUuid != null) listOf(byUuid) else all.filter { it.name.equals(ref, ignoreCase = true) }
         val matching = if (type == null) named else named.filter { it.type == type }

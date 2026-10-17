@@ -31,7 +31,8 @@ class SummarizeSpendingTool(
     override val name = "summarize_spending"
     override val description =
         "Totals spending (or income) over a date range, grouped by category, account or month. " +
-            "Each total is per currency - currencies are never added together. Transfers are not counted."
+            "Each total is per currency - currencies are never added together or converted - so groups are ordered by " +
+            "their largest single-currency total. Transfers are not counted."
     override val inputSchema = """
         {
           "type": "object",

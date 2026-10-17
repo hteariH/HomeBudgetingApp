@@ -250,6 +250,31 @@ class McpReadToolsTest {
             errorText(call(search, mapOf("account" to "Nope"))))
     }
 
+    @Test
+    fun `search finds rows of an archived category by uuid and by name`() {
+        val old = categories.save(Category(name = "Old hobby", type = CategoryType.EXPENSE, household = me.household, archived = true))
+        val t = tx(me, card, old, 500, "2026-03-01")
+        tx(me, card, food, 600, "2026-03-02")
+        assertEquals(listOf(t.uuid), uuids(json(call(search, mapOf("category" to old.uuid)))))
+        assertEquals(listOf(t.uuid), uuids(json(call(search, mapOf("category" to "old hobby")))))
+    }
+
+    @Test
+    fun `a cursor naming another household's row leaks nothing`() {
+        val mine = tx(me, card, food, 100, "2026-03-01")
+        val other = identity.newMember("other")
+        val theirs = tx(other, account(other, "Theirs", "UAH"), null, 300, "2026-03-03")
+        val cursor = java.util.Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("${theirs.occurredAt}|${theirs.id + 1}".toByteArray())
+        assertEquals(listOf(mine.uuid), uuids(json(call(search, mapOf("cursor" to cursor)))))
+    }
+
+    @Test
+    fun `a cursor without its separator is a tool error`() {
+        val cursor = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("2026-03-01T12:00:00Z".toByteArray())
+        assertTrue(errorText(call(search, mapOf("cursor" to cursor))).startsWith("Invalid cursor"))
+    }
+
     // ---- summary ---------------------------------------------------------------------
 
     private fun seedSpending() {

@@ -96,7 +96,7 @@ class SearchTransactionsTool(
             from = from,
             to = to,
             accountId = args.optionalString("account")?.let { references.account(it, includeArchived = true).id },
-            categoryId = args.optionalString("category")?.let { references.category(it).id },
+            categoryId = args.optionalString("category")?.let { references.category(it, includeArchived = true).id },
             type = type,
             text = args.optionalString("text")?.trim(),
             minAmount = args.optionalDecimal("minAmount"),
