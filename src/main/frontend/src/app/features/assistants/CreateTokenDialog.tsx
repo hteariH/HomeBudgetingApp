@@ -43,6 +43,8 @@ export const CreateTokenDialog: React.FC<{ open: boolean; onClose: () => void; u
     const [created, setCreated] = useState<CreatedToken | null>(null);
 
     const create = useMutation({
+        // The result holds the raw token: never kept in the mutation cache after the dialog lets go.
+        gcTime: 0,
         mutationFn: () => endpoints.createAssistantToken({ name: name.trim(), expiresInDays: expiry === 'never' ? null : Number(expiry) }),
         onSuccess: (data) => {
             setCreated(data);

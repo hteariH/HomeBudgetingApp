@@ -24,11 +24,15 @@ function stubServer() {
     return fetchMock;
 }
 
-const renderCard = (oauthAvailable = true) =>
+const renderCard = (
+    oauthAvailable = true,
+    baseUrl?: string,
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) =>
     render(
-        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <QueryClientProvider client={client}>
             <I18nProvider>
-                <AssistantsCard oauthAvailable={oauthAvailable} />
+                <AssistantsCard oauthAvailable={oauthAvailable} baseUrl={baseUrl} />
             </I18nProvider>
         </QueryClientProvider>,
     );
@@ -66,6 +70,34 @@ it('creates a token, shows it once with its snippets, and forgets it on close', 
     fireEvent.click(screen.getByRole('button', { name: appEn.assistants_done }));
     await waitFor(() => expect(screen.queryByDisplayValue(TOKEN)).toBeNull());
     expect(document.body.textContent).not.toContain(TOKEN);
+});
+
+it('keeps no copy of the new token in the mutation cache once the dialog closes', async () => {
+    stubServer();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    renderCard(true, undefined, client);
+    fireEvent.click(await screen.findByRole('button', { name: appEn.assistants_create }));
+    fireEvent.click(screen.getByRole('button', { name: appEn.assistants_create_confirm }));
+    await screen.findByDisplayValue(TOKEN);
+    fireEvent.click(screen.getByRole('button', { name: appEn.assistants_done }));
+    await waitFor(() =>
+        expect(client.getMutationCache().getAll().some((m) => JSON.stringify(m.state.data ?? null).includes(TOKEN))).toBe(false),
+    );
+});
+
+it('uses the instance public address for the endpoint and the snippets when it has one', async () => {
+    stubServer();
+    renderCard(true, 'https://money.example.com');
+    expect(screen.getByDisplayValue('https://money.example.com/mcp')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue(endpointUrl)).toBeNull();
+    fireEvent.click(await screen.findByRole('button', { name: appEn.assistants_create }));
+    fireEvent.click(screen.getByRole('button', { name: appEn.assistants_create_confirm }));
+    await screen.findByDisplayValue(TOKEN);
+    expect(document.body.textContent).toContain(
+        `claude mcp add --transport http personalmoney https://money.example.com/mcp --header "Authorization: Bearer ${TOKEN}"`,
+    );
+    expect(document.body.textContent).toContain('"url": "https://money.example.com/mcp"');
+    expect(document.body.textContent).toContain('Add a custom connector with this URL: https://money.example.com/mcp');
 });
 
 it('says web connectors need the public address when OAuth is unavailable', async () => {

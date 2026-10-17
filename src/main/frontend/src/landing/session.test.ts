@@ -26,6 +26,15 @@ it('returns to the consent page with everything it needs', () => {
     const consent = '/oauth/consent?response_type=code&client_id=abc&redirect_uri=https%3A%2F%2Fclaude.ai%2Fcb&code_challenge=CH&state=xyz&scope=ledger%3Awrite&resource=https%3A%2F%2Fm.example.com%2Fmcp&code_challenge_method=S256';
     expect(nextPath(`?next=${encodeURIComponent(consent)}`)).toBe(consent);
 });
+it("keeps a state carrying the characters encodeURIComponent leaves alone: * ! ' ( )", () => {
+    const consent = "/oauth/consent?client_id=abc&code_challenge=CH&state=a*b!c'd(e)f";
+    expect(nextPath(`?next=${encodeURIComponent(consent)}`)).toBe(consent);
+});
+it('refuses a consent query carrying a slash, backslash, fragment, at sign or whitespace', () => {
+    for (const bad of ['state=a/b', 'state=a\\b', 'state=a#b', 'state=a@b', 'state=a b', 'state=a\tb']) {
+        expect(nextPath(`?next=${encodeURIComponent(`/oauth/consent?client_id=abc&${bad}`)}`)).toBe('/app');
+    }
+});
 it('refuses a consent path that is not the consent page', () => {
     expect(nextPath('?next=%2Foauth%2Fconsent%2F..%2F..%2Fevil')).toBe('/app');
     expect(nextPath('?next=%2Foauth%2Ftoken%3Fa%3D1')).toBe('/app');

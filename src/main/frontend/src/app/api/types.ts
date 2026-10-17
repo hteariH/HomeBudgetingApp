@@ -508,6 +508,8 @@ export interface InstanceDto {
     mcpEnabled?: boolean;
     /** Web connectors (claude.ai, ChatGPT) can sign in with OAuth. */
     oauthAvailable?: boolean;
+    /** The instance's public address (APP_BASE_URL, no trailing slash); present only with OAuth. */
+    baseUrl?: string;
 }
 
 export interface AdminUserDto {

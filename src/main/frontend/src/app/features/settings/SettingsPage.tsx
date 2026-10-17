@@ -167,7 +167,7 @@ const SettingsPage: React.FC = () => {
 
                 <ReceiptRecognitionCard />
 
-                {instance?.mcpEnabled && <AssistantsCard oauthAvailable={!!instance.oauthAvailable} />}
+                {instance?.mcpEnabled && <AssistantsCard oauthAvailable={!!instance.oauthAvailable} baseUrl={instance.baseUrl} />}
 
                 {/* The way out of the product, at the bottom where it belongs - deliberately
                     awkward to trigger by accident, and not hidden behind a support email. */}

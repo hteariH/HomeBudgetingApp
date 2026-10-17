@@ -100,3 +100,11 @@ it('shows a generic error when the server refuses the decision', async () => {
     expect(await screen.findByText(appEn.consent_failed)).toBeInTheDocument();
     expect(assign).not.toHaveBeenCalled();
 });
+
+it('refuses to follow a redirect that is not http or https', async () => {
+    stubServer(undefined, () => json({ redirect: 'javascript:alert(1)' }));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: appEn.consent_allow }));
+    expect(await screen.findByText(appEn.consent_failed)).toBeInTheDocument();
+    expect(assign).not.toHaveBeenCalled();
+});

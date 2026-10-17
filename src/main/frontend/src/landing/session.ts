@@ -25,8 +25,9 @@ const JOIN_PATH_SHAPE = /^\/join\?token=[A-Za-z0-9_-]{1,100}$/;
 
 // The assistant-consent page and the parameters of the request it was opened with. It is an
 // address of this server, never another, and only the query characters an authorization
-// request legitimately has (percent-escapes included) are accepted.
-const CONSENT_PATH_SHAPE = /^\/oauth\/consent\?[A-Za-z0-9_.~:%=&+-]+$/;
+// request legitimately has (percent-escapes included, and the * ! ' ( ) that
+// encodeURIComponent leaves unescaped in a client's state) are accepted.
+const CONSENT_PATH_SHAPE = /^\/oauth\/consent\?[A-Za-z0-9_.~:%=&+*!'()-]+$/;
 const CONSENT_PATH_MAX = 2000;
 
 /**

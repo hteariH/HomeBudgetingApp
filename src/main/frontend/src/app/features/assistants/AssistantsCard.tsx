@@ -12,10 +12,14 @@ import { CreateTokenDialog } from './CreateTokenDialog';
 
 const date = (iso: string) => new Date(iso).toLocaleDateString();
 
-/** Settings → Assistants: the address to connect to, and the tokens and OAuth connections that work today. */
-export const AssistantsCard: React.FC<{ oauthAvailable: boolean }> = ({ oauthAvailable }) => {
+/**
+ * Settings → Assistants: the address to connect to, and the tokens and OAuth connections that
+ * work today. The address is the instance's public one when it has one: the browser may have
+ * reached it some other way (a LAN address, a tunnel) that an assistant cannot use.
+ */
+export const AssistantsCard: React.FC<{ oauthAvailable: boolean; baseUrl?: string }> = ({ oauthAvailable, baseUrl }) => {
     const t = useT();
-    const url = `${window.location.origin}/mcp`;
+    const url = `${baseUrl || window.location.origin}/mcp`;
     const tokens = useQuery({ queryKey: qk.assistantTokens, queryFn: endpoints.assistantTokens });
     const [creating, setCreating] = useState(false);
     const [revoking, setRevoking] = useState<TokenView | null>(null);

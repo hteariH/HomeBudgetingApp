@@ -54,8 +54,8 @@ const ConsentPage: React.FC = () => {
     });
 
     const decide = useMutation({
-        mutationFn: (approve: boolean) =>
-            endpoints.oauthAuthorize({
+        mutationFn: async (approve: boolean) => {
+            const answer = await endpoints.oauthAuthorize({
                 clientId: clientId!,
                 redirectUri: redirectUri!,
                 codeChallenge: codeChallenge!,
@@ -63,7 +63,13 @@ const ConsentPage: React.FC = () => {
                 scope: params.get('scope') ?? undefined,
                 resource: params.get('resource') ?? undefined,
                 approve,
-            }),
+            });
+            // Only ever a web address: the server checks the redirect URI, and this page does not
+            // navigate to anything else (javascript:, data:) whatever it is handed.
+            const protocol = new URL(answer.redirect).protocol;
+            if (protocol !== 'https:' && protocol !== 'http:') throw new Error('Refusing a non-web redirect');
+            return answer;
+        },
         onSuccess: ({ redirect }) => window.location.assign(redirect),
     });
 
